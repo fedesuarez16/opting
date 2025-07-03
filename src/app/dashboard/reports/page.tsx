@@ -16,6 +16,13 @@ interface ReportData {
   }[];
 }
 
+interface DocumentData {
+  type: string;
+  uploadedAt: string;
+  uploadedBy: string;
+  [key: string]: string | number | boolean;
+}
+
 export default function ReportsPage() {
   const { user } = useAuth();
   const [reportData, setReportData] = useState<ReportData | null>(null);
@@ -43,14 +50,14 @@ export default function ReportsPage() {
             const snapshot = await get(documentsRef);
             if (snapshot.exists()) {
               const docsData = snapshot.val();
-              const docsArray = Object.values(docsData);
+              const docsArray = Object.values(docsData) as DocumentData[];
 
               // Calculate metrics
               const documentsByType: Record<string, number> = {};
               const documentsByMonth: Record<string, number> = {};
               const userActivity: Record<string, { documentsUploaded: number; lastActive: string }> = {};
 
-              docsArray.forEach((doc: any) => {
+              docsArray.forEach((doc) => {
                 // Count by type
                 documentsByType[doc.type] = (documentsByType[doc.type] || 0) + 1;
 

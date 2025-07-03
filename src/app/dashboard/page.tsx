@@ -5,6 +5,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { ref, get, set } from 'firebase/database';
 import { database } from '@/lib/firebase';
 import { useRouter } from 'next/navigation';
+import Image from 'next/image';
 
 type UserRole = 'admin' | 'general_manager' | 'branch_manager';
 
@@ -16,7 +17,12 @@ interface UserData {
 
 interface BranchData {
   name: string;
-  [key: string]: any;
+  [key: string]: string | number | boolean;
+}
+
+interface BranchUser {
+  branchId?: string;
+  [key: string]: string | number | boolean | undefined;
 }
 
 interface DashboardStats {
@@ -131,8 +137,8 @@ export default function DashboardPage() {
                 get(branchUsersRef),
               ]);
 
-              const branchUsers = Object.values(usersSnapshot.val() || {}).filter(
-                (user: any) => user.branchId === branchId
+              const branchUsers = (Object.values(usersSnapshot.val() || {}) as BranchUser[]).filter(
+                (user) => user.branchId === branchId
               );
 
               branchStats.push({
@@ -154,8 +160,8 @@ export default function DashboardPage() {
             get(branchUsersRef),
           ]);
 
-          const branchUsers = Object.values(usersSnapshot.val() || {}).filter(
-            (user: any) => user.branchId === userData.branchId
+          const branchUsers = (Object.values(usersSnapshot.val() || {}) as BranchUser[]).filter(
+            (user) => user.branchId === userData.branchId
           );
 
           setStats({
@@ -301,9 +307,27 @@ export default function DashboardPage() {
                         </div>
                         <div className="mt-4 flex-shrink-0 sm:mt-0">
                           <div className="flex overflow-hidden -space-x-1">
-                            <img className="inline-block h-6 w-6 rounded-full ring-2 ring-white" src="https://images.unsplash.com/photo-1491528323818-fdd1faba62cc?ixlib=rb-1.2.1&ixid=eyJhcHBfaWQiOjEyMDd9&auto=format&fit=facearea&facepad=2&w=256&h=256&q=80" alt="" />
-                            <img className="inline-block h-6 w-6 rounded-full ring-2 ring-white" src="https://images.unsplash.com/photo-1550525811-e5869dd03032?ixlib=rb-1.2.1&auto=format&fit=facearea&facepad=2&w=256&h=256&q=80" alt="" />
-                            <img className="inline-block h-6 w-6 rounded-full ring-2 ring-white" src="https://images.unsplash.com/photo-1500648767791-00dcc994a43e?ixlib=rb-1.2.1&ixid=eyJhcHBfaWQiOjEyMDd9&auto=format&fit=facearea&facepad=2.25&w=256&h=256&q=80" alt="" />
+                            <Image 
+                              src="https://images.unsplash.com/photo-1491528323818-fdd1faba62cc" 
+                              alt=""
+                              width={24}
+                              height={24}
+                              className="inline-block h-6 w-6 rounded-full ring-2 ring-white"
+                            />
+                            <Image 
+                              src="https://images.unsplash.com/photo-1550525811-e5869dd03032" 
+                              alt=""
+                              width={24}
+                              height={24}
+                              className="inline-block h-6 w-6 rounded-full ring-2 ring-white"
+                            />
+                            <Image 
+                              src="https://images.unsplash.com/photo-1500648767791-00dcc994a43e" 
+                              alt=""
+                              width={24}
+                              height={24}
+                              className="inline-block h-6 w-6 rounded-full ring-2 ring-white"
+                            />
                           </div>
                         </div>
                       </div>
@@ -330,8 +354,20 @@ export default function DashboardPage() {
                         </div>
                         <div className="mt-4 flex-shrink-0 sm:mt-0">
                           <div className="flex overflow-hidden -space-x-1">
-                            <img className="inline-block h-6 w-6 rounded-full ring-2 ring-white" src="https://images.unsplash.com/photo-1500648767791-00dcc994a43e?ixlib=rb-1.2.1&ixid=eyJhcHBfaWQiOjEyMDd9&auto=format&fit=facearea&facepad=2.25&w=256&h=256&q=80" alt="" />
-                            <img className="inline-block h-6 w-6 rounded-full ring-2 ring-white" src="https://images.unsplash.com/photo-1491528323818-fdd1faba62cc?ixlib=rb-1.2.1&ixid=eyJhcHBfaWQiOjEyMDd9&auto=format&fit=facearea&facepad=2&w=256&h=256&q=80" alt="" />
+                            <Image 
+                              src="https://images.unsplash.com/photo-1500648767791-00dcc994a43e" 
+                              alt=""
+                              width={24}
+                              height={24}
+                              className="inline-block h-6 w-6 rounded-full ring-2 ring-white"
+                            />
+                            <Image 
+                              src="https://images.unsplash.com/photo-1491528323818-fdd1faba62cc" 
+                              alt=""
+                              width={24}
+                              height={24}
+                              className="inline-block h-6 w-6 rounded-full ring-2 ring-white"
+                            />
                           </div>
                         </div>
                       </div>

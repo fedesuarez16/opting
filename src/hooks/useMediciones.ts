@@ -9,7 +9,8 @@ interface Medicion {
   SERVICIO: string;
   SUCURSAL: string;
   CLIENTE: string;
-  [key: string]: any;
+  fechaCreacion?: string;
+  [key: string]: string | number | boolean | undefined;
 }
 
 export function useMediciones(empresa: string, sucursal: string) {

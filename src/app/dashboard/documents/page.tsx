@@ -16,6 +16,17 @@ interface Document {
   branchId?: string;
 }
 
+interface DocumentData {
+  name: string;
+  type: string;
+  size: number;
+  url: string;
+  uploadedAt: string;
+  uploadedBy: string;
+  branchId?: string;
+  [key: string]: string | number | undefined;
+}
+
 export default function DocumentsPage() {
   const { user } = useAuth();
   const [documents, setDocuments] = useState<Document[]>([]);
@@ -44,9 +55,9 @@ export default function DocumentsPage() {
             const snapshot = await get(documentsRef);
             if (snapshot.exists()) {
               const docsData = snapshot.val();
-              const docsArray = Object.entries(docsData).map(([id, doc]: [string, any]) => ({
+              const docsArray = Object.entries(docsData).map(([id, docData]) => ({
                 id,
-                ...doc,
+                ...docData as DocumentData
               }));
               setDocuments(docsArray);
             }
@@ -92,9 +103,9 @@ export default function DocumentsPage() {
       const snapshot = await get(ref(database, 'documents'));
       if (snapshot.exists()) {
         const docsData = snapshot.val();
-        const docsArray = Object.entries(docsData).map(([id, doc]: [string, any]) => ({
+        const docsArray = Object.entries(docsData).map(([id, docData]) => ({
           id,
-          ...doc,
+          ...docData as DocumentData
         }));
         setDocuments(docsArray);
       }
