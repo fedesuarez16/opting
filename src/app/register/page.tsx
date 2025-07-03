@@ -39,7 +39,7 @@ export default function RegisterPage() {
       });
 
       router.push('/dashboard');
-    } catch (err: unknown) {
+    } catch {
       setError('Failed to create an account');
     }
     setLoading(false);

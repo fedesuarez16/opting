@@ -20,7 +20,7 @@ export default function LoginPage() {
       setLoading(true);
       await signIn(email, password);
       router.push('/dashboard');
-    } catch (err: unknown) {
+    } catch {
       setError('Failed to sign in');
     }
     setLoading(false);
