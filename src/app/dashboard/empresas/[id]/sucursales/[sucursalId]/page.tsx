@@ -42,7 +42,17 @@ export default function SucursalDetailPage({ params }: SucursalDetailPageProps) 
       const sucursalRef = doc(firestore, 'empresas', empresaId, 'sucursales', sucursalId);
       const q = query(collection(sucursalRef, 'archivos'), orderBy('fechaSubida', 'desc'));
       const snap = await getDocs(q);
-      const list = snap.docs.map((d) => ({ id: d.id, ...(d.data() as Record<string, unknown>) }));
+      const list = snap.docs.map((d) => {
+        const data = d.data() as Record<string, unknown>;
+        return {
+          id: d.id,
+          nombre: (data.nombre as string) || 'Sin nombre',
+          tipo: data.tipo as string,
+          tamano: data.tamano as number,
+          url: (data.url as string) || '',
+          fechaSubida: data.fechaSubida
+        };
+      });
       setArchivos(list);
     } catch (e) {
       console.error('Error al cargar archivos:', e);
