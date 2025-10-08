@@ -112,10 +112,10 @@ async function getOneDriveFiles(accessToken: string, folderId: string): Promise<
 
 export async function GET(
   req: NextRequest,
-  { params }: { params: { clientId: string } }
+  { params }: { params: Promise<{ clientId: string }> }
 ) {
   try {
-    const { clientId } = params;
+    const { clientId } = await params;
 
     if (!clientId) {
       return NextResponse.json(
