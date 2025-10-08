@@ -22,6 +22,13 @@ interface OneDriveResponse {
   value: OneDriveFile[];
 }
 
+interface Client {
+  id: string;
+  nombre?: string;
+  oneDriveFolderId?: string;
+  [key: string]: unknown;
+}
+
 async function getAccessToken(): Promise<string> {
   try {
     const tokenUrl = `https://login.microsoftonline.com/${process.env.AZURE_TENANT_ID}/oauth2/v2.0/token`;
@@ -57,7 +64,7 @@ async function getAccessToken(): Promise<string> {
   }
 }
 
-async function getClientById(clientId: string) {
+async function getClientById(clientId: string): Promise<Client | null> {
   try {
     const clientDoc = await adminFirestore
       .collection('empresas')
@@ -71,7 +78,7 @@ async function getClientById(clientId: string) {
     return {
       id: clientDoc.id,
       ...clientDoc.data()
-    };
+    } as Client;
   } catch (error) {
     console.error('Error getting client from database:', error);
     throw new Error('Failed to retrieve client from database');
