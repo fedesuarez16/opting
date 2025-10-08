@@ -107,8 +107,8 @@ export default function SucursalDetailPage({ params }: SucursalDetailPageProps) 
 
   const filteredMediciones = mediciones.filter(medicion => 
     medicion.fecha.toLowerCase().includes(search.toLowerCase()) ||
-    (medicion.datos.TÉCNICOS && medicion.datos.TÉCNICOS.toLowerCase().includes(search.toLowerCase())) ||
-    (medicion.datos.SERVICIO && medicion.datos.SERVICIO.toLowerCase().includes(search.toLowerCase()))
+    (medicion.datos.TÉCNICOS && typeof medicion.datos.TÉCNICOS === 'string' && medicion.datos.TÉCNICOS.toLowerCase().includes(search.toLowerCase())) ||
+    (medicion.datos.SERVICIO && typeof medicion.datos.SERVICIO === 'string' && medicion.datos.SERVICIO.toLowerCase().includes(search.toLowerCase()))
   );
 
   // Totales de KPI para ESTA sucursal
