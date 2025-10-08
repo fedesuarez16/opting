@@ -3,9 +3,10 @@
 import { useAuth } from '@/contexts/AuthContext';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
-import Sidebar from '@/components/Sidebar';
+import ClientSidebar from '@/components/ClientSidebar';
+import ClientTopbar from '@/components/ClientTopbar';
 
-export default function DashboardLayout({
+export default function ClientesLayout({
   children,
 }: {
   children: React.ReactNode;
@@ -37,7 +38,7 @@ export default function DashboardLayout({
       {/* Desktop Sidebar */}
       <div className="hidden md:flex md:flex-shrink-0">
         <div className="flex flex-col w-auto">
-          <Sidebar />
+          <ClientSidebar />
         </div>
       </div>
 
@@ -66,22 +67,15 @@ export default function DashboardLayout({
               </button>
             </div>
 
-            <Sidebar isMobile onCloseMobileMenu={() => setIsMobileMenuOpen(false)} />
+            <ClientSidebar isMobile onCloseMobileMenu={() => setIsMobileMenuOpen(false)} />
           </div>
         </div>
       </div>
 
-      {/* Mobile header */}
+      {/* Main content */}
       <div className="flex flex-col w-0 flex-1 overflow-hidden">
-        <div className="md:hidden pl-1 pt-1 sm:pl-3 sm:pt-3">
-          <button
-            className="-ml-0.5 -mt-0.5 h-12 w-12 inline-flex items-center justify-center rounded-md text-gray-500 hover:text-gray-900"
-            onClick={() => setIsMobileMenuOpen(true)}
-          >
-            <span className="sr-only">Open sidebar</span>
-            <span className="text-xl">☰</span>
-          </button>
-        </div>
+        {/* Topbar */}
+        <ClientTopbar onOpenMobileMenu={() => setIsMobileMenuOpen(true)} />
 
         {/* Main content */}
         <main className="flex-1 relative z-0 overflow-y-auto focus:outline-none">
@@ -90,4 +84,4 @@ export default function DashboardLayout({
       </div>
     </div>
   );
-} 
+}

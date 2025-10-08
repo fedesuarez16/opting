@@ -2,6 +2,7 @@ import { initializeApp, getApps } from 'firebase/app';
 import { getAuth } from 'firebase/auth';
 import { getDatabase } from 'firebase/database';
 import { getFirestore } from 'firebase/firestore';
+import { getStorage } from 'firebase/storage';
 
 const firebaseConfig = {
   apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
@@ -31,4 +32,7 @@ console.log('Firebase Database Initialized:', !!database);
 const firestore = getFirestore(app);
 console.log('Firebase Firestore Initialized:', !!firestore);
 
-export { app, auth, database, firestore }; 
+const storage = getStorage(app);
+console.log('Firebase Storage Initialized:', !!storage);
+
+export { app, auth, database, firestore, storage }; 

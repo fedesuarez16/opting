@@ -307,27 +307,21 @@ export default function DashboardPage() {
                         </div>
                         <div className="mt-4 flex-shrink-0 sm:mt-0">
                           <div className="flex overflow-hidden -space-x-1">
-                            <Image 
-                              src="https://images.unsplash.com/photo-1491528323818-fdd1faba62cc" 
-                              alt=""
-                              width={24}
-                              height={24}
-                              className="inline-block h-6 w-6 rounded-full ring-2 ring-white"
-                            />
-                            <Image 
-                              src="https://images.unsplash.com/photo-1550525811-e5869dd03032" 
-                              alt=""
-                              width={24}
-                              height={24}
-                              className="inline-block h-6 w-6 rounded-full ring-2 ring-white"
-                            />
-                            <Image 
-                              src="https://images.unsplash.com/photo-1500648767791-00dcc994a43e" 
-                              alt=""
-                              width={24}
-                              height={24}
-                              className="inline-block h-6 w-6 rounded-full ring-2 ring-white"
-                            />
+                            <div 
+                              className="inline-block h-6 w-6 rounded-full ring-2 ring-white bg-indigo-100 text-indigo-600 flex items-center justify-center text-xs font-medium"
+                            >
+                              ES
+                            </div>
+                            <div 
+                              className="inline-block h-6 w-6 rounded-full ring-2 ring-white bg-green-100 text-green-600 flex items-center justify-center text-xs font-medium"
+                            >
+                              JD
+                            </div>
+                            <div 
+                              className="inline-block h-6 w-6 rounded-full ring-2 ring-white bg-blue-100 text-blue-600 flex items-center justify-center text-xs font-medium"
+                            >
+                              RB
+                            </div>
                           </div>
                         </div>
                       </div>
@@ -354,20 +348,16 @@ export default function DashboardPage() {
                         </div>
                         <div className="mt-4 flex-shrink-0 sm:mt-0">
                           <div className="flex overflow-hidden -space-x-1">
-                            <Image 
-                              src="https://images.unsplash.com/photo-1500648767791-00dcc994a43e" 
-                              alt=""
-                              width={24}
-                              height={24}
-                              className="inline-block h-6 w-6 rounded-full ring-2 ring-white"
-                            />
-                            <Image 
-                              src="https://images.unsplash.com/photo-1491528323818-fdd1faba62cc" 
-                              alt=""
-                              width={24}
-                              height={24}
-                              className="inline-block h-6 w-6 rounded-full ring-2 ring-white"
-                            />
+                            <div 
+                              className="inline-block h-6 w-6 rounded-full ring-2 ring-white bg-purple-100 text-purple-600 flex items-center justify-center text-xs font-medium"
+                            >
+                              AB
+                            </div>
+                            <div 
+                              className="inline-block h-6 w-6 rounded-full ring-2 ring-white bg-yellow-100 text-yellow-600 flex items-center justify-center text-xs font-medium"
+                            >
+                              MP
+                            </div>
                           </div>
                         </div>
                       </div>

@@ -14,6 +14,7 @@ interface Sucursal {
   fechaCreacion: string;
   estado: 'activa' | 'inactiva';
   manager: string;
+  enNube?: boolean;
 }
 
 const sucursalesMock: Sucursal[] = [
@@ -28,7 +29,8 @@ const sucursalesMock: Sucursal[] = [
     totalEmpleados: 5,
     fechaCreacion: '2021-06-10',
     estado: 'activa',
-    manager: 'Juan Pérez'
+    manager: 'Juan Pérez',
+    enNube: true,
   },
   {
     id: '2',
@@ -41,7 +43,8 @@ const sucursalesMock: Sucursal[] = [
     totalEmpleados: 4,
     fechaCreacion: '2021-08-15',
     estado: 'activa',
-    manager: 'Laura Gómez'
+    manager: 'Laura Gómez',
+    enNube: false,
   },
   {
     id: '3',
@@ -54,7 +57,8 @@ const sucursalesMock: Sucursal[] = [
     totalEmpleados: 6,
     fechaCreacion: '2022-02-20',
     estado: 'activa',
-    manager: 'Carlos Martínez'
+    manager: 'Carlos Martínez',
+    enNube: true,
   },
   {
     id: '4',
@@ -67,7 +71,8 @@ const sucursalesMock: Sucursal[] = [
     totalEmpleados: 3,
     fechaCreacion: '2022-03-05',
     estado: 'inactiva',
-    manager: 'Marcela Rodríguez'
+    manager: 'Marcela Rodríguez',
+    enNube: false,
   },
 ];
 
@@ -241,6 +246,9 @@ export default function SucursalesPage() {
                             <div className="text-sm font-medium text-gray-900">{sucursal.nombre}</div>
                             <div className="text-sm text-gray-500">{sucursal.email}</div>
                           </div>
+                          <span className={`ml-3 inline-flex items-center px-2 py-0.5 text-xs font-medium rounded-full ${sucursal.enNube ? 'bg-emerald-100 text-emerald-700 ring-1 ring-emerald-200' : 'bg-gray-100 text-gray-700 ring-1 ring-gray-200'}`}>
+                            {sucursal.enNube ? 'En nube' : 'Local'}
+                          </span>
                         </div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
