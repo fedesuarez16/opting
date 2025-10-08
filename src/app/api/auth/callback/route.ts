@@ -45,10 +45,10 @@ export async function GET(req: NextRequest) {
     return NextResponse.redirect(
       `${req.nextUrl.origin}/dashboard/onedrive-setup?success=true`
     );
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Error in auth callback:', error);
     return NextResponse.redirect(
-      `${req.nextUrl.origin}/dashboard/onedrive-setup?error=token_exchange&message=${encodeURIComponent(error.message)}`
+      `${req.nextUrl.origin}/dashboard/onedrive-setup?error=token_exchange&message=${encodeURIComponent(error instanceof Error ? error.message : 'Unknown error')}`
     );
   }
 }

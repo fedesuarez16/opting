@@ -23,12 +23,12 @@ async function getAccessToken(): Promise<string> {
     });
 
     return response.data.access_token;
-  } catch (error: any) {
+  } catch (_error: unknown) {
     throw new Error('Failed to obtain access token');
   }
 }
 
-export async function GET(req: NextRequest) {
+export async function GET(_req: NextRequest) {
   try {
     const accessToken = await getAccessToken();
 
@@ -43,7 +43,7 @@ export async function GET(req: NextRequest) {
       }
     );
 
-    const sites = sitesResponse.data.value.map((site: any) => ({
+    const sites = sitesResponse.data.value.map((site: { displayName: string; webUrl: string; id: string; description?: string }) => ({
       name: site.displayName,
       webUrl: site.webUrl,
       id: site.id,
@@ -80,12 +80,12 @@ export async function GET(req: NextRequest) {
       });
     }
 
-  } catch (error: any) {
-    console.error('Error checking SharePoint:', error.response?.data);
+  } catch (error: unknown) {
+    console.error('Error checking SharePoint:', (error as any).response?.data);
     
     return NextResponse.json({
       error: 'Failed to check SharePoint',
-      details: error.response?.data || error.message,
+      details: (error as any).response?.data || (error instanceof Error ? error.message : 'Unknown error'),
       possibleReasons: [
         'La aplicación necesita permisos de Sites.Read.All',
         'No se ha dado "Grant admin consent"',

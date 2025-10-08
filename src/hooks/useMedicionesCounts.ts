@@ -32,7 +32,7 @@ export function useMedicionesCounts() {
         let registroExtintoresEnNube = 0;
         medicionesSnap.forEach((docSnap) => {
           const data = docSnap.data() as Record<string, unknown>;
-          const getUpper = (k: string) => String((data[k] ?? '') as any).toUpperCase();
+          const getUpper = (k: string) => String((data[k] ?? '') as unknown).toUpperCase();
           if (getUpper('PUESTA A TIERRA') === 'EN NUBE') puestaTierraEnNube += 1;
           if (getUpper('INFORME DE VISITA') === 'EN NUBE') informeVisitaEnNube += 1;
           if (getUpper('INCUMPLIMIENTO') === 'PENDIENTE') incumplimientoPendiente += 1;

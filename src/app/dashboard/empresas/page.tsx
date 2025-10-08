@@ -1,12 +1,12 @@
 'use client';
 
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect } from 'react';
 import { useEmpresas, Empresa } from '@/hooks/useEmpresas';
 import Link from 'next/link';
 import { collection, getDocs, addDoc } from 'firebase/firestore';
 import { firestore } from '@/lib/firebase';
 import Breadcrumb from '@/components/Breadcrumb';
-import { useSucursales } from '@/hooks/useSucursales';
+// import { useSucursales } from '@/hooks/useSucursales';
 import { useSucursalesCount } from '@/hooks/useSucursalesCount';
 import { useMedicionesCounts } from '@/hooks/useArchivosCounts';
 
@@ -43,7 +43,7 @@ export default function EmpresasPage() {
   const [showModal, setShowModal] = useState(false);
   const [currentEmpresa, setCurrentEmpresa] = useState<Empresa | null>(null);
   const [search, setSearch] = useState('');
-  const [usarMock, setUsarMock] = useState(false);
+  const [_usarMock, setUsarMock] = useState(false);
   const [empresasAMostrar, setEmpresasAMostrar] = useState<Empresa[]>([]);
   const { sucursalesCounts: sucursalesPorEmpresa, loading: loadingSucursales, totalSucursales } = useSucursalesCount();
   const { medicionesCounts, loading: loadingMediciones } = useMedicionesCounts();
@@ -93,7 +93,7 @@ export default function EmpresasPage() {
   );
 
   // Función para crear una empresa de prueba
-  const crearEmpresaPrueba = async () => {
+  const _crearEmpresaPrueba = async () => {
     try {
       const empresasCollection = collection(firestore, 'empresas');
       await addDoc(empresasCollection, {
@@ -120,7 +120,7 @@ export default function EmpresasPage() {
     setShowModal(true);
   };
 
-  const handleDelete = (id: string) => {
+  const _handleDelete = (id: string) => {
     // No permitir eliminar empresas mock
     if (id.startsWith('mock-')) {
       alert('No se pueden eliminar empresas de prueba');

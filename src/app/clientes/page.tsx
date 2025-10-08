@@ -6,12 +6,12 @@ export default function ClientesPage() {
   const [search, setSearch] = useState('');
 
   // Datos vacíos para mostrar la estructura
-  const empresasCliente: any[] = [];
+  const _empresasCliente: unknown[] = [];
   const totalSucursales = 0;
-  const medicionesCounts = { puestaTierra: 0, ruido: 0, iluminacion: 0 };
-  const sucursalesPorEmpresa: Record<string, number> = {};
+  const _medicionesCounts = { puestaTierra: 0, ruido: 0, iluminacion: 0 };
+  const _sucursalesPorEmpresa: Record<string, number> = {};
   
-  const loading = false;
+  const _loading = false;
 
   return (
     <div className='p-8 bg-white'>

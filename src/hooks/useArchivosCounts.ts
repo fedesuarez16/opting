@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { collection, getDocs, collectionGroup } from 'firebase/firestore';
+import { getDocs, collectionGroup } from 'firebase/firestore';
 import { firestore } from '@/lib/firebase';
 
 export function useMedicionesCounts() {
@@ -25,7 +25,7 @@ export function useMedicionesCounts() {
       
       medicionesSnapshot.forEach((doc) => {
         const datos = doc.data() as Record<string, unknown>;
-        const getValue = (k: string) => String((datos[k] ?? '') as any);
+        const getValue = (k: string) => String((datos[k] ?? '') as unknown);
         
         // Usar la misma lógica que en las páginas de sucursales
         if (getValue('PUESTA A TIERRA') === 'EN NUBE') puestaTierra += 1;

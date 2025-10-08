@@ -55,9 +55,9 @@ export class OneDriveAuth {
       });
 
       return response.data;
-    } catch (error: any) {
-      console.error('Error getting token from code:', error.response?.data);
-      throw new Error(`Failed to get token: ${error.response?.data?.error_description || error.message}`);
+    } catch (error: unknown) {
+      console.error('Error getting token from code:', (error as any).response?.data);
+      throw new Error(`Failed to get token: ${(error as any).response?.data?.error_description || (error instanceof Error ? error.message : 'Unknown error')}`);
     }
   }
 
@@ -80,9 +80,9 @@ export class OneDriveAuth {
       });
 
       return response.data;
-    } catch (error: any) {
-      console.error('Error refreshing token:', error.response?.data);
-      throw new Error(`Failed to refresh token: ${error.response?.data?.error_description || error.message}`);
+    } catch (error: unknown) {
+      console.error('Error refreshing token:', (error as any).response?.data);
+      throw new Error(`Failed to refresh token: ${(error as any).response?.data?.error_description || (error instanceof Error ? error.message : 'Unknown error')}`);
     }
   }
 
@@ -107,9 +107,9 @@ export async function getOneDriveFilesWithToken(accessToken: string, folderId: s
     });
 
     return response.data.value;
-  } catch (error: any) {
-    console.error('Error getting OneDrive files:', error.response?.data);
-    throw new Error(`Failed to get files: ${error.response?.data?.error?.message || error.message}`);
+  } catch (error: unknown) {
+    console.error('Error getting OneDrive files:', (error as any).response?.data);
+    throw new Error(`Failed to get files: ${(error as any).response?.data?.error?.message || (error instanceof Error ? error.message : 'Unknown error')}`);
   }
 }
 
@@ -125,9 +125,9 @@ export async function searchOneDriveFolders(accessToken: string, query: string) 
       },
     });
 
-    return response.data.value.filter((item: any) => item.folder);
-  } catch (error: any) {
-    console.error('Error searching folders:', error.response?.data);
-    throw new Error(`Failed to search folders: ${error.response?.data?.error?.message || error.message}`);
+    return response.data.value.filter((item: { folder?: unknown }) => item.folder);
+  } catch (error: unknown) {
+    console.error('Error searching folders:', (error as any).response?.data);
+    throw new Error(`Failed to search folders: ${(error as any).response?.data?.error?.message || (error instanceof Error ? error.message : 'Unknown error')}`);
   }
 }

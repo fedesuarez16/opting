@@ -3,7 +3,7 @@ import { OneDriveAuth } from '@/lib/onedrive-auth';
 import { adminFirestore } from '@/lib/firebaseAdmin';
 
 // Obtener un access token válido (renovando si es necesario)
-export async function GET(req: NextRequest) {
+export async function GET(_req: NextRequest) {
   try {
     // Obtener tokens guardados
     const tokenDoc = await adminFirestore
@@ -57,12 +57,12 @@ export async function GET(req: NextRequest) {
       access_token: newTokens.access_token,
       expires_at: new Date(Date.now() + newTokens.expires_in * 1000).toISOString(),
     });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Error getting token:', error);
     return NextResponse.json(
       { 
         error: 'Failed to get valid token', 
-        details: error.message,
+        details: error instanceof Error ? error.message : 'Unknown error',
         loginUrl: '/api/auth/login'
       },
       { status: 500 }

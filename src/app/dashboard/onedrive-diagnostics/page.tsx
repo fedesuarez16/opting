@@ -3,7 +3,7 @@
 import { useState } from 'react';
 
 export default function OneDriveDiagnosticsPage() {
-  const [testResult, setTestResult] = useState<any>(null);
+  const [testResult, setTestResult] = useState<unknown>(null);
   const [loading, setLoading] = useState(false);
 
   const runDiagnostics = async () => {
@@ -12,8 +12,8 @@ export default function OneDriveDiagnosticsPage() {
       const response = await fetch('/api/onedrive/test-auth');
       const data = await response.json();
       setTestResult({ ...data, status: response.status });
-    } catch (error: any) {
-      setTestResult({ error: error.message, status: 500 });
+    } catch (error: unknown) {
+      setTestResult({ error: error instanceof Error ? error.message : 'Unknown error', status: 500 });
     } finally {
       setLoading(false);
     }
@@ -219,7 +219,7 @@ ONEDRIVE_USER_EMAIL=tu-email@dominio.com`}
                 <li>Microsoft Graph → Application permissions</li>
                 <li>Files.Read.All</li>
                 <li>Sites.Read.All (opcional)</li>
-                <li>⚠️ ¡No olvides "Grant admin consent"!</li>
+                <li>⚠️ ¡No olvides &quot;Grant admin consent&quot;!</li>
               </ul>
             </div>
           </div>

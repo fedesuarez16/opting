@@ -37,15 +37,15 @@ async function getAccessToken(): Promise<string> {
     });
 
     return response.data.access_token;
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('❌ Error getting access token');
-    console.error('📋 Error details from Microsoft:', error.response?.data);
-    console.error('🔍 Status code:', error.response?.status);
+    console.error('📋 Error details from Microsoft:', (error as any).response?.data);
+    console.error('🔍 Status code:', (error as any).response?.status);
     console.error('🔑 Using Tenant ID:', process.env.AZURE_TENANT_ID?.substring(0, 8) + '...');
     console.error('🔑 Using Client ID:', process.env.AZURE_CLIENT_ID?.substring(0, 8) + '...');
     
     // Devolver el error específico de Microsoft si está disponible
-    const msError = error.response?.data;
+    const msError = (error as any).response?.data;
     if (msError) {
       throw new Error(`Microsoft Auth Error: ${msError.error} - ${msError.error_description || 'No description'}`);
     }
@@ -200,13 +200,13 @@ export async function GET(req: NextRequest) {
       }
     }, { status: 400 });
 
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Error in OneDrive helpers API:', error);
     
     return NextResponse.json(
       { 
-        error: error.message || 'Internal server error',
-        details: process.env.NODE_ENV === 'development' ? error.response?.data : undefined
+        error: error instanceof Error ? error.message : 'Internal server error',
+        details: process.env.NODE_ENV === 'development' ? (error as any).response?.data : undefined
       },
       { status: 500 }
     );

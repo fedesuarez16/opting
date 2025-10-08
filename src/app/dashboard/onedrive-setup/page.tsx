@@ -45,8 +45,8 @@ export default function OneDriveSetupPage() {
       }
       
       setFolders(data.folders);
-    } catch (err: any) {
-      setError(err.message);
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : 'Unknown error');
       setFolders([]);
     } finally {
       setLoading(false);
@@ -72,8 +72,8 @@ export default function OneDriveSetupPage() {
       }
       
       setFolders(data.folders);
-    } catch (err: any) {
-      setError(err.message);
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : 'Unknown error');
       setFolders([]);
     } finally {
       setLoading(false);
@@ -150,7 +150,7 @@ export default function OneDriveSetupPage() {
             ¿Cómo funciona?
           </h2>
           <ol className="list-decimal list-inside space-y-2 text-blue-800">
-            <li>Haz clic en "Iniciar Sesión con Microsoft" arriba</li>
+            <li>Haz clic en &quot;Iniciar Sesión con Microsoft&quot; arriba</li>
             <li>Autoriza la aplicación en la pantalla de Microsoft</li>
             <li>Regresarás aquí automáticamente</li>
             <li>Busca o lista las carpetas de tu OneDrive</li>
@@ -361,7 +361,7 @@ export default function OneDriveSetupPage() {
             <div>
               <h4 className="font-medium text-gray-800 mb-2">3. Compartir Link</h4>
               <p className="text-gray-600 text-sm">
-                Haz clic derecho en la carpeta → "Compartir" → Copia el link. El ID estará en la URL compartida.
+                Haz clic derecho en la carpeta → &quot;Compartir&quot; → Copia el link. El ID estará en la URL compartida.
               </p>
             </div>
           </div>

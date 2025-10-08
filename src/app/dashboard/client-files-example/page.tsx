@@ -82,8 +82,8 @@ export default function ClientFilesExamplePage() {
             <div>
               <h3 className="text-lg font-medium text-gray-800 mb-2">Requisitos previos:</h3>
               <ul className="list-disc list-inside text-gray-700 space-y-1">
-                <li>El cliente debe existir en la colección 'empresas' de Firestore</li>
-                <li>El cliente debe tener el campo 'oneDriveFolderId' configurado</li>
+                <li>El cliente debe existir en la colección &apos;empresas&apos; de Firestore</li>
+                <li>El cliente debe tener el campo &apos;oneDriveFolderId&apos; configurado</li>
                 <li>Las variables de entorno de Azure deben estar configuradas:
                   <ul className="list-disc list-inside ml-4 mt-2">
                     <li>AZURE_TENANT_ID</li>

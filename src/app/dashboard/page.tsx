@@ -5,7 +5,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { ref, get, set } from 'firebase/database';
 import { database } from '@/lib/firebase';
 import { useRouter } from 'next/navigation';
-import Image from 'next/image';
+// import Image from 'next/image';
 
 type UserRole = 'admin' | 'general_manager' | 'branch_manager';
 

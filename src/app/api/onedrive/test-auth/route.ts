@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import axios from 'axios';
 
-export async function GET(req: NextRequest) {
+export async function GET(_req: NextRequest) {
   try {
     // Verificar que las variables de entorno existan
     const config = {
@@ -83,16 +83,16 @@ export async function GET(req: NextRequest) {
         ]
       });
 
-    } catch (authError: any) {
+    } catch (authError: unknown) {
       // Error al obtener token
-      const errorDetails = authError.response?.data;
+      const errorDetails = (authError as any).response?.data;
       
       return NextResponse.json({
         error: 'Error de autenticación con Microsoft Graph',
         configStatus,
         preview,
         errorDetails: {
-          status: authError.response?.status,
+          status: (authError as any).response?.status,
           errorCode: errorDetails?.error,
           errorDescription: errorDetails?.error_description,
           timestamp: errorDetails?.timestamp
@@ -120,11 +120,11 @@ export async function GET(req: NextRequest) {
       }, { status: 401 });
     }
 
-  } catch (error: any) {
+  } catch (error: unknown) {
     return NextResponse.json({
       error: 'Error inesperado',
-      message: error.message,
-      stack: process.env.NODE_ENV === 'development' ? error.stack : undefined
+      message: error instanceof Error ? error.message : 'Unknown error',
+      stack: process.env.NODE_ENV === 'development' ? (error instanceof Error ? error.stack : undefined) : undefined
     }, { status: 500 });
   }
 }

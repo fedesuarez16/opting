@@ -40,15 +40,15 @@ async function getAccessToken(): Promise<string> {
     });
 
     return response.data.access_token;
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('❌ Error getting access token');
-    console.error('📋 Error details from Microsoft:', error.response?.data);
-    console.error('🔍 Status code:', error.response?.status);
+    console.error('📋 Error details from Microsoft:', (error as any).response?.data);
+    console.error('🔍 Status code:', (error as any).response?.status);
     console.error('🔑 Using Tenant ID:', process.env.AZURE_TENANT_ID?.substring(0, 8) + '...');
     console.error('🔑 Using Client ID:', process.env.AZURE_CLIENT_ID?.substring(0, 8) + '...');
     
     // Devolver el error específico de Microsoft si está disponible
-    const msError = error.response?.data;
+    const msError = (error as any).response?.data;
     if (msError) {
       throw new Error(`Microsoft Auth Error: ${msError.error} - ${msError.error_description || 'No description'}`);
     }
@@ -97,12 +97,12 @@ async function getOneDriveFiles(accessToken: string, folderId: string): Promise<
     });
 
     return response.data.value;
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Error fetching OneDrive files:', error);
     
-    if (error.response?.status === 404) {
+    if ((error as any).response?.status === 404) {
       throw new Error('OneDrive folder not found');
-    } else if (error.response?.status === 403) {
+    } else if ((error as any).response?.status === 403) {
       throw new Error('Access denied to OneDrive folder');
     }
     
@@ -174,13 +174,13 @@ export async function GET(
       totalFiles: formattedFiles.length
     });
 
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Error in OneDrive API:', error);
     
     return NextResponse.json(
       { 
-        error: error.message || 'Internal server error',
-        details: process.env.NODE_ENV === 'development' ? error.stack : undefined
+        error: error instanceof Error ? error.message : 'Internal server error',
+        details: process.env.NODE_ENV === 'development' ? (error instanceof Error ? error.stack : undefined) : undefined
       },
       { status: 500 }
     );

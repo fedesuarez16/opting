@@ -23,12 +23,12 @@ async function getAccessToken(): Promise<string> {
     });
 
     return response.data.access_token;
-  } catch (error: any) {
+  } catch (_error: unknown) {
     throw new Error('Failed to obtain access token');
   }
 }
 
-export async function GET(req: NextRequest) {
+export async function GET(_req: NextRequest) {
   try {
     const accessToken = await getAccessToken();
 
@@ -43,7 +43,7 @@ export async function GET(req: NextRequest) {
       }
     );
 
-    const users = usersResponse.data.value.map((user: any) => ({
+    const users = usersResponse.data.value.map((user: { displayName: string; userPrincipalName: string; mail: string; id: string }) => ({
       displayName: user.displayName,
       userPrincipalName: user.userPrincipalName,
       mail: user.mail,
@@ -62,12 +62,12 @@ export async function GET(req: NextRequest) {
       ]
     });
 
-  } catch (error: any) {
-    console.error('Error listing users:', error.response?.data);
+  } catch (error: unknown) {
+    console.error('Error listing users:', (error as any).response?.data);
     
     return NextResponse.json({
       error: 'Failed to list users',
-      details: error.response?.data || error.message,
+      details: (error as any).response?.data || (error instanceof Error ? error.message : 'Unknown error'),
       possibleReasons: [
         'La aplicación necesita permisos de User.Read.All',
         'No se ha dado "Grant admin consent" al permiso User.Read.All',

@@ -136,12 +136,12 @@ export default function SucursalesPage({ params }: SucursalesPageProps) {
     (sucursal.direccion && sucursal.direccion.toLowerCase().includes(search.toLowerCase()))
   );
 
-  const handleAddEdit = (sucursal: Sucursal | null) => {
+  const _handleAddEdit = (sucursal: Sucursal | null) => {
     setCurrentSucursal(sucursal);
     setShowModal(true);
   };
 
-  const handleDelete = (sucursalId: string) => {
+  const _handleDelete = (sucursalId: string) => {
     if (confirm('¿Está seguro de que desea eliminar esta sucursal?')) {
       deleteSucursal(empresaId, sucursalId).catch(error => {
         console.error('Error al eliminar sucursal:', error);
@@ -522,7 +522,7 @@ interface SucursalFormModalProps {
   onSave: (data: Partial<Sucursal>) => void;
 }
 
-function SucursalFormModal({ sucursal, empresaId, onClose, onSave }: SucursalFormModalProps) {
+function SucursalFormModal({ sucursal, empresaId: _empresaId, onClose, onSave }: SucursalFormModalProps) {
   const [formData, setFormData] = useState<Partial<Sucursal>>(
     sucursal || {
       nombre: '',

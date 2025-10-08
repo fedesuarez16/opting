@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { collection, getDocs, doc, deleteDoc, addDoc, updateDoc, query, where, getDoc } from 'firebase/firestore';
+import { collection, getDocs, doc, deleteDoc, addDoc, updateDoc, getDoc } from 'firebase/firestore';
 import { firestore } from '@/lib/firebase';
 
 export interface Empresa {

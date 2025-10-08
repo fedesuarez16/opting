@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { collection, getDocs, doc, deleteDoc, addDoc, updateDoc, query, where, orderBy } from 'firebase/firestore';
+import { collection, getDocs, doc, getDoc } from 'firebase/firestore';
 import { firestore } from '@/lib/firebase';
 
 export interface Medicion {
@@ -7,7 +7,7 @@ export interface Medicion {
   empresaId: string;
   sucursalId: string;
   fecha: string;
-  datos: Record<string, any>;
+  datos: Record<string, unknown>;
   createdAt?: string;
 }
 
@@ -111,7 +111,7 @@ export function useMediciones(empresaId?: string, sucursalId?: string) {
   // Cargar mediciones al montar el componente o cuando cambian los IDs
   useEffect(() => {
     fetchMediciones();
-  }, [empresaId, sucursalId]);
+  }, [empresaId, sucursalId, fetchMediciones]);
 
   return {
     mediciones,

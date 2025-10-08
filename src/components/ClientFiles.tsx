@@ -55,9 +55,9 @@ export default function ClientFiles({ clientId }: ClientFilesProps) {
         } else {
           throw new Error(data.error || 'Unknown error occurred');
         }
-      } catch (err: any) {
+      } catch (err: unknown) {
         console.error('Error fetching OneDrive files:', err);
-        setError(err.message || 'Failed to load files');
+        setError(err instanceof Error ? err.message : 'Failed to load files');
         setFiles([]);
       } finally {
         setLoading(false);

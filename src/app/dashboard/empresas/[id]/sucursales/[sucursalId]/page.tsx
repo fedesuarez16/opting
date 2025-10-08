@@ -33,7 +33,7 @@ export default function SucursalDetailPage({ params }: SucursalDetailPageProps) 
   const [uploading, setUploading] = useState<boolean>(false);
   const [uploadError, setUploadError] = useState<string | null>(null);
   const [uploadedOk, setUploadedOk] = useState<boolean>(false);
-  const [archivos, setArchivos] = useState<Array<{ id: string; nombre: string; tipo?: string; tamano?: number; url: string; fechaSubida?: any }>>([]);
+  const [archivos, setArchivos] = useState<Array<{ id: string; nombre: string; tipo?: string; tamano?: number; url: string; fechaSubida?: unknown }>>([]);
   const [loadingArchivos, setLoadingArchivos] = useState<boolean>(true);
 
   const fetchArchivos = async () => {
@@ -42,7 +42,7 @@ export default function SucursalDetailPage({ params }: SucursalDetailPageProps) 
       const sucursalRef = doc(firestore, 'empresas', empresaId, 'sucursales', sucursalId);
       const q = query(collection(sucursalRef, 'archivos'), orderBy('fechaSubida', 'desc'));
       const snap = await getDocs(q);
-      const list = snap.docs.map((d) => ({ id: d.id, ...(d.data() as any) }));
+      const list = snap.docs.map((d) => ({ id: d.id, ...(d.data() as Record<string, unknown>) }));
       setArchivos(list);
     } catch (e) {
       console.error('Error al cargar archivos:', e);
@@ -102,7 +102,7 @@ export default function SucursalDetailPage({ params }: SucursalDetailPageProps) 
   );
 
   // Totales de KPI para ESTA sucursal
-  const kpis = (() => {
+  const _kpis = (() => {
     let puesta = 0;
     let informe = 0;
     let incumpl = 0;

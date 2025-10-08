@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { collection, getDocs, doc } from 'firebase/firestore';
+import { collection, getDocs } from 'firebase/firestore';
 import { firestore } from '@/lib/firebase';
 
 export function useSucursalesCount() {
