@@ -38,6 +38,7 @@ export class OneDriveAuth {
   // Intercambiar código de autorización por tokens
   async getTokenFromCode(code: string): Promise<TokenResponse> {
     try {
+      // Usar 'common' para soportar cuentas personales de Microsoft
       const tokenUrl = `https://login.microsoftonline.com/common/oauth2/v2.0/token`;
       
       const params = new URLSearchParams({
@@ -64,6 +65,7 @@ export class OneDriveAuth {
   // Renovar access token usando refresh token
   async refreshAccessToken(refreshToken: string): Promise<TokenResponse> {
     try {
+      // Usar 'common' para soportar cuentas personales de Microsoft
       const tokenUrl = `https://login.microsoftonline.com/common/oauth2/v2.0/token`;
       
       const params = new URLSearchParams({

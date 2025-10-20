@@ -111,7 +111,8 @@ export function useMediciones(empresaId?: string, sucursalId?: string) {
   // Cargar mediciones al montar el componente o cuando cambian los IDs
   useEffect(() => {
     fetchMediciones();
-  }, [empresaId, sucursalId, fetchMediciones]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [empresaId, sucursalId]);
 
   return {
     mediciones,

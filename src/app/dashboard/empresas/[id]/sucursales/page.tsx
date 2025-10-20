@@ -6,6 +6,13 @@ import { useEmpresas } from '@/hooks/useEmpresas';
 import Link from 'next/link';
 import Breadcrumb from '@/components/Breadcrumb';
 import { useMediciones } from '@/hooks/useMediciones';
+import { cn } from '@/lib/utils';
+import { Bar, BarChart, CartesianGrid, XAxis, YAxis } from "recharts";
+import {
+  ChartContainer,
+  ChartTooltip,
+  ChartTooltipContent,
+} from "@/components/ui/chart";
 
 interface SucursalesPageProps {
   params: Promise<{
@@ -122,6 +129,112 @@ export default function SucursalesPage({ params }: SucursalesPageProps) {
     return { puesta, informe, incumpl, extintores };
   }, [mediciones]);
 
+  // Conteos de mediciones por tipo de estudio para esta empresa específica
+  const medicionesCountsEmpresa = useMemo(() => {
+    const counts = {
+      pat: {
+        pendienteVisita: 0,
+        pedirTecnico: 0,
+        procesar: 0,
+        enNube: 0
+      },
+      iluminacion: {
+        pendienteVisita: 0,
+        pedirTecnico: 0,
+        procesar: 0,
+        enNube: 0
+      },
+      ruido: {
+        pendienteVisita: 0,
+        pedirTecnico: 0,
+        procesar: 0,
+        enNube: 0
+      },
+      cargaTermica: {
+        pendienteVisita: 0,
+        pedirTecnico: 0,
+        procesar: 0,
+        enNube: 0
+      },
+      termografia: {
+        pendienteVisita: 0,
+        pedirTecnico: 0,
+        procesar: 0,
+        enNube: 0
+      }
+    };
+
+    mediciones.forEach((m) => {
+      const datos = m.datos as Record<string, unknown>;
+      const getValue = (k: string) => String((datos[k] ?? '') as any);
+      
+      // PAT (PUESTA A TIERRA)
+      const patValue = getValue('PUESTA A TIERRA');
+      if (patValue === 'PENDIENTE') counts.pat.pendienteVisita += 1;
+      else if (patValue === 'PEDIR A TEC') counts.pat.pedirTecnico += 1;
+      else if (patValue === 'PROCESAR') counts.pat.procesar += 1;
+      else if (patValue === 'EN NUBE') counts.pat.enNube += 1;
+      
+      // ILUMINACIÓN
+      const iluValue = getValue('ILUMINACIÓN');
+      if (iluValue === 'PENDIENTE') counts.iluminacion.pendienteVisita += 1;
+      else if (iluValue === 'PEDIR A TEC') counts.iluminacion.pedirTecnico += 1;
+      else if (iluValue === 'PROCESAR') counts.iluminacion.procesar += 1;
+      else if (iluValue === 'EN NUBE') counts.iluminacion.enNube += 1;
+      
+      // RUIDO
+      const ruidoValue = getValue('RUIDO');
+      if (ruidoValue === 'PENDIENTE') counts.ruido.pendienteVisita += 1;
+      else if (ruidoValue === 'PEDIR A TEC') counts.ruido.pedirTecnico += 1;
+      else if (ruidoValue === 'PROCESAR') counts.ruido.procesar += 1;
+      else if (ruidoValue === 'EN NUBE') counts.ruido.enNube += 1;
+      
+      // CARGA TÉRMICA
+      const cargaValue = getValue('CARGA TÉRMICA');
+      if (cargaValue === 'PENDIENTE') counts.cargaTermica.pendienteVisita += 1;
+      else if (cargaValue === 'PEDIR A TEC') counts.cargaTermica.pedirTecnico += 1;
+      else if (cargaValue === 'PROCESAR') counts.cargaTermica.procesar += 1;
+      else if (cargaValue === 'EN NUBE') counts.cargaTermica.enNube += 1;
+      
+      // ESTUDIO TERMOGRAFÍA
+      const termoValue = getValue('ESTUDIO TERMOGRAFIA');
+      if (termoValue === 'PENDIENTE') counts.termografia.pendienteVisita += 1;
+      else if (termoValue === 'PEDIR A TEC') counts.termografia.pedirTecnico += 1;
+      else if (termoValue === 'PROCESAR') counts.termografia.procesar += 1;
+      else if (termoValue === 'EN NUBE') counts.termografia.enNube += 1;
+    });
+
+    console.log('Mediciones counts para empresa:', empresaId, counts);
+    return counts;
+  }, [mediciones, empresaId]);
+
+  // Conteos de incumplimientos específicos para esta empresa
+  const incumplimientosCountsEmpresa = useMemo(() => {
+    const counts = {
+      patNoCumple: 0,
+      iluNoCumple: 0,
+      ruidoNoCumple: 0
+    };
+
+    mediciones.forEach((m) => {
+      const datos = m.datos as Record<string, unknown>;
+      const getValue = (k: string) => String((datos[k] ?? '') as any);
+      
+      // INCUMPLIMIENTOS
+      const incumplimientoPAT = getValue('INCUMPLIMIENTO PAT');
+      if (incumplimientoPAT === 'NO CUMPLE') counts.patNoCumple += 1;
+      
+      const incumplimientoILU = getValue('INCUMPLIMIENTO ILU');
+      if (incumplimientoILU === 'NO CUMPLE') counts.iluNoCumple += 1;
+      
+      const incumplimientoRUIDO = getValue('INCUMPLIMIENTO RUIDO');
+      if (incumplimientoRUIDO === 'NO CUMPLE') counts.ruidoNoCumple += 1;
+    });
+
+    console.log('Incumplimientos counts para empresa:', empresaId, counts);
+    return counts;
+  }, [mediciones, empresaId]);
+
   // Update custom labels when empresa is loaded
   useEffect(() => {
     if (empresa) {
@@ -210,9 +323,14 @@ export default function SucursalesPage({ params }: SucursalesPageProps) {
       <div className="bg-gradient-to-b from-black to-gray-700  rounded-3xl p-6 text-white border border-gray-800 shadow-sm">
         <div className="flex items-center justify-between">
           <div>
-            <p className="text-gray-300 text-sm">Incumplimiento gral</p>
-            <p className="text-3xl font-bold text-orange-400">32%</p>
-            <p className="text-red-400 text-sm">-0.03%</p>
+            <p className="text-gray-300 text-sm">Incumplimiento de Estudios PAT</p>
+            {loadingMediciones ? (
+              <div className="animate-pulse">
+                <div className="h-8 bg-gray-300 rounded w-16"></div>
+              </div>
+            ) : (
+              <p className="text-3xl font-bold text-white">{incumplimientosCountsEmpresa.patNoCumple}</p>
+            )}
           </div>
           <div className="text-gray-400">
             <svg className="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -225,9 +343,14 @@ export default function SucursalesPage({ params }: SucursalesPageProps) {
       <div className="bg-gradient-to-b from-black to-gray-700  rounded-3xl p-6 text-white border border-gray-800 shadow-sm">
         <div className="flex items-center justify-between">
           <div>
-            <p className="text-gray-300 text-sm">Empresas que incumplen</p>
-            <p className="text-3xl font-bold"></p>
-            <p className="text-red-400 text-sm">-0.03%</p>
+            <p className="text-gray-300 text-sm">Incumplimiento de Estudios iluminación</p>
+            {loadingMediciones ? (
+              <div className="animate-pulse">
+                <div className="h-8 bg-gray-300 rounded w-16"></div>
+              </div>
+            ) : (
+              <p className="text-3xl font-bold text-white">{incumplimientosCountsEmpresa.iluNoCumple}</p>
+            )}
           </div>
           <div className="text-gray-400">
             <svg className="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -240,9 +363,14 @@ export default function SucursalesPage({ params }: SucursalesPageProps) {
       <div className="bg-gradient-to-b from-black to-gray-700  rounded-3xl p-6 text-white border border-gray-800 shadow-sm">
         <div className="flex items-center justify-between">
           <div>
-            <p className="text-gray-300 text-sm">Sucursales que incumplen</p>
-           
-            <p className="text-green-400 text-sm">+6.08%</p>
+            <p className="text-gray-300 text-sm">Incumplimiento de Estudios ruido</p>
+            {loadingMediciones ? (
+              <div className="animate-pulse">
+                <div className="h-8 bg-gray-300 rounded w-16"></div>
+              </div>
+            ) : (
+              <p className="text-3xl font-bold text-white">{incumplimientosCountsEmpresa.ruidoNoCumple}</p>
+            )}
           </div>
           <div className="text-gray-400">
             <svg className="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -254,101 +382,110 @@ export default function SucursalesPage({ params }: SucursalesPageProps) {
     </div>
 
       
-      {/* Gráficos lado a lado */}
-      <div className="bg-white mb-6 rounded-2xl p-6 border border-gray-200 shadow-sm">
+
+      {/* Gráfico de Estados de Mediciones por Tipo de Estudio */}
+      <div className="mb-6">
+        <div className="bg-white rounded-2xl p-6 border border-gray-200 shadow-sm">
         <div className="flex items-center justify-between mb-4">
-          <h4 className="text-lg font-medium text-gray-900">Análisis de Mediciones - {empresa?.nombre || 'Empresa'}</h4>
-          <span className="text-xs text-gray-400">Totales</span>
+            <h4 className="text-lg font-medium text-gray-900">Estados de Mediciones por Tipo de Estudio (Cantidad de Mediciones) - {empresa?.nombre || 'Empresa'}</h4>
+            <span className="text-xs text-gray-400">Esta empresa</span>
         </div>
         
         {loadingMediciones ? (
           <div className="space-y-2 animate-pulse">
-            <div className="h-48 bg-gray-100 rounded" />
+              <div className="h-[350px] bg-gray-100 rounded" />
           </div>
         ) : (
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-            {/* Gráfico 1: Mediciones EN NUBE */}
-            <div>
-              <h5 className="text-sm font-medium text-gray-700 mb-4 text-center">Mediciones EN NUBE</h5>
-              <div className="flex items-end justify-center gap-4 h-48">
-                <div className="flex flex-col items-center">
-                  <div className="text-xs text-gray-500 mb-1">{totalesMedicionesEmpresa.puestaTierra}</div>
-                  <div className="w-12 h-36 bg-gray-100 rounded relative overflow-hidden">
-                    <div 
-                      className="absolute bottom-0 left-0 right-0 bg-green-500 rounded" 
-                      style={{ height: `${totalesMedicionesEmpresa.puestaTierra > 0 ? Math.max(10, (totalesMedicionesEmpresa.puestaTierra / Math.max(totalesMedicionesEmpresa.puestaTierra, totalesMedicionesEmpresa.iluminacion, totalesMedicionesEmpresa.ruido, 1)) * 100) : 0}%` }}
-                    />
-                  </div>
-                  <div className="mt-2 text-xs text-gray-600 text-center">Puesta a Tierra</div>
-                </div>
-                
-                <div className="flex flex-col items-center">
-                  <div className="text-xs text-gray-500 mb-1">{totalesMedicionesEmpresa.iluminacion}</div>
-                  <div className="w-12 h-36 bg-gray-100 rounded relative overflow-hidden">
-                    <div 
-                      className="absolute bottom-0 left-0 right-0 bg-yellow-500 rounded" 
-                      style={{ height: `${totalesMedicionesEmpresa.iluminacion > 0 ? Math.max(10, (totalesMedicionesEmpresa.iluminacion / Math.max(totalesMedicionesEmpresa.puestaTierra, totalesMedicionesEmpresa.iluminacion, totalesMedicionesEmpresa.ruido, 1)) * 100) : 0}%` }}
-                    />
-                  </div>
-                  <div className="mt-2 text-xs text-gray-600 text-center">Iluminación</div>
-                </div>
-                
-                <div className="flex flex-col items-center">
-                  <div className="text-xs text-gray-500 mb-1">{totalesMedicionesEmpresa.ruido}</div>
-                  <div className="w-12 h-36 bg-gray-100 rounded relative overflow-hidden">
-                    <div 
-                      className="absolute bottom-0 left-0 right-0 bg-red-500 rounded" 
-                      style={{ height: `${totalesMedicionesEmpresa.ruido > 0 ? Math.max(10, (totalesMedicionesEmpresa.ruido / Math.max(totalesMedicionesEmpresa.puestaTierra, totalesMedicionesEmpresa.iluminacion, totalesMedicionesEmpresa.ruido, 1)) * 100) : 0}%` }}
-                    />
-                  </div>
-                  <div className="mt-2 text-xs text-gray-600 text-center">Ruido</div>
-                </div>
-              </div>
-            </div>
+            (() => {
+              const chartData = [
+                {
+                  name: "PAT",
+                  "PENDIENTE": medicionesCountsEmpresa.pat.pendienteVisita,
+                  "PEDIR A TEC": medicionesCountsEmpresa.pat.pedirTecnico,
+                  "Procesar": medicionesCountsEmpresa.pat.procesar,
+                  "En nube": medicionesCountsEmpresa.pat.enNube
+                },
+                {
+                  name: "Iluminación",
+                  "PENDIENTE": medicionesCountsEmpresa.iluminacion.pendienteVisita,
+                  "PEDIR A TEC": medicionesCountsEmpresa.iluminacion.pedirTecnico,
+                  "Procesar": medicionesCountsEmpresa.iluminacion.procesar,
+                  "En nube": medicionesCountsEmpresa.iluminacion.enNube
+                },
+                {
+                  name: "Ruido",
+                  "PENDIENTE": medicionesCountsEmpresa.ruido.pendienteVisita,
+                  "PEDIR A TEC": medicionesCountsEmpresa.ruido.pedirTecnico,
+                  "Procesar": medicionesCountsEmpresa.ruido.procesar,
+                  "En nube": medicionesCountsEmpresa.ruido.enNube
+                },
+                {
+                  name: "Carga Térmica",
+                  "PENDIENTE": medicionesCountsEmpresa.cargaTermica.pendienteVisita,
+                  "PEDIR A TEC": medicionesCountsEmpresa.cargaTermica.pedirTecnico,
+                  "Procesar": medicionesCountsEmpresa.cargaTermica.procesar,
+                  "En nube": medicionesCountsEmpresa.cargaTermica.enNube
+                },
+                {
+                  name: "ESTUDIO TERMOGRAFÍA",
+                  "PENDIENTE": medicionesCountsEmpresa.termografia.pendienteVisita,
+                  "PEDIR A TEC": medicionesCountsEmpresa.termografia.pedirTecnico,
+                  "Procesar": medicionesCountsEmpresa.termografia.procesar,
+                  "En nube": medicionesCountsEmpresa.termografia.enNube
+                }
+              ];
 
-            {/* Gráfico 2: Incumplimientos que CUMPLE */}
-            <div>
-              <h5 className="text-sm font-medium text-gray-700 mb-4 text-center">Incumplimientos CUMPLE</h5>
-              <div className="flex items-end justify-center gap-4 h-48">
-                <div className="flex flex-col items-center">
-                  <div className="text-xs text-gray-500 mb-1">{totalesIncumplimientosEmpresa.incumplimientoPAT}</div>
-                  <div className="w-12 h-36 bg-gray-100 rounded relative overflow-hidden">
-                    <div 
-                      className="absolute bottom-0 left-0 right-0 bg-green-500 rounded" 
-                      style={{ height: `${totalesIncumplimientosEmpresa.incumplimientoPAT > 0 ? Math.max(10, (totalesIncumplimientosEmpresa.incumplimientoPAT / Math.max(totalesIncumplimientosEmpresa.incumplimientoPAT, totalesIncumplimientosEmpresa.incumplimientoILU, totalesIncumplimientosEmpresa.incumplimientoRUIDO, 1)) * 100) : 0}%` }}
+              const chartConfig = {
+                "PENDIENTE": {
+                  label: "PENDIENTE",
+                  color: "#ef4444"
+                },
+                "PEDIR A TEC": {
+                  label: "PEDIR A TEC",
+                  color: "#f59e0b"
+                },
+                "Procesar": {
+                  label: "PROCESAR",
+                  color: "#3b82f6"
+                },
+                "En nube": {
+                  label: "EN NUBE",
+                  color: "#22c55e"
+                }
+              };
+
+              return (
+                <ChartContainer config={chartConfig} className="h-[350px] text-black w-full">
+                  <BarChart data={chartData}>
+                    <CartesianGrid strokeDasharray="3 3" vertical={false} />
+                    <XAxis
+                      dataKey="name"
+                      tickLine={false}
+                      tickMargin={10}
+                      axisLine={false}
+                      tick={{ fontSize: 12 }}
                     />
-                  </div>
-                  <div className="mt-2 text-xs text-gray-600 text-center">PAT</div>
-                </div>
-                
-                <div className="flex flex-col items-center">
-                  <div className="text-xs text-gray-500 mb-1">{totalesIncumplimientosEmpresa.incumplimientoILU}</div>
-                  <div className="w-12 h-36 bg-gray-100 rounded relative overflow-hidden">
-                    <div 
-                      className="absolute bottom-0 left-0 right-0 bg-yellow-500 rounded" 
-                      style={{ height: `${totalesIncumplimientosEmpresa.incumplimientoILU > 0 ? Math.max(10, (totalesIncumplimientosEmpresa.incumplimientoILU / Math.max(totalesIncumplimientosEmpresa.incumplimientoPAT, totalesIncumplimientosEmpresa.incumplimientoILU, totalesIncumplimientosEmpresa.incumplimientoRUIDO, 1)) * 100) : 0}%` }}
+                    <YAxis
+                      tickLine={false}
+                      axisLine={false}
+                      tick={{ fontSize: 12 }}
+                      label={{ value: 'Cantidad de Mediciones', angle: -90, position: 'insideLeft' }}
                     />
-                  </div>
-                  <div className="mt-2 text-xs text-gray-600 text-center">ILU</div>
-                </div>
-                
-                <div className="flex flex-col items-center">
-                  <div className="text-xs text-gray-500 mb-1">{totalesIncumplimientosEmpresa.incumplimientoRUIDO}</div>
-                  <div className="w-12 h-36 bg-gray-100 rounded relative overflow-hidden">
-                    <div 
-                      className="absolute bottom-0 left-0 right-0 bg-red-500 rounded" 
-                      style={{ height: `${totalesIncumplimientosEmpresa.incumplimientoRUIDO > 0 ? Math.max(10, (totalesIncumplimientosEmpresa.incumplimientoRUIDO / Math.max(totalesIncumplimientosEmpresa.incumplimientoPAT, totalesIncumplimientosEmpresa.incumplimientoILU, totalesIncumplimientosEmpresa.incumplimientoRUIDO, 1)) * 100) : 0}%` }}
+                    <ChartTooltip
+                      cursor={false}
+                      content={<ChartTooltipContent />}
                     />
-                  </div>
-                  <div className="mt-2 text-xs text-gray-600 text-center">RUIDO</div>
-                </div>
-              </div>
-            </div>
+                    <Bar dataKey="PENDIENTE" fill="#ef4444" radius={4} />
+                    <Bar dataKey="PEDIR A TEC" fill="#f59e0b" radius={4} />
+                    <Bar dataKey="Procesar" fill="#3b82f6" radius={4} />
+                    <Bar dataKey="En nube" fill="#22c55e" radius={4} />
+                  </BarChart>
+                </ChartContainer>
+              );
+            })()
+          )}
           </div>
-        )}
       </div>
-
-    
 
       <div className="mb-6 ">
         <div className="mt-1 relative rounded-md shadow-sm">
@@ -378,113 +515,131 @@ export default function SucursalesPage({ params }: SucursalesPageProps) {
         </div>
       </div>
 
-      {/* Tabla de sucursales */}
-      <div className="bg-gray-100 rounded-3xl shadow-sm border border-gray-100">
-        <div className="px-6 py-4 border-b border-gray-200 bg-gray-50/50">
-          <div className="flex items-center justify-between">
-            <h3 className="text-lg font-medium text-gray-900">Sucursales</h3>
-            <button type="button" className="p-2 rounded hover:bg-gray-100">
-              <svg className="h-5 w-5 text-gray-500" viewBox="0 0 20 20" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
-                <path d="M6 10a2 2 0 11-4 0 2 2 0 014 0zm6 0a2 2 0 11-4 0 2 2 0 014 0zm6 0a2 2 0 11-4 0 2 2 0 014 0z" />
-              </svg>
-            </button>
+      {/* Tabla de sucursales con estilos shadcn */}
+      <div className="w-full">
+        <div className="rounded-md border border-gray-200 shadow-md">
+          <div className="px-6 py-4 border-b bg-muted/50 border-gray-100 text-gray-500">
+            <div className="flex items-center justify-between">
+              <h3 className="text-lg font-semibold">Sucursales</h3>
+              <div className="flex items-center gap-2">
+                <span className="text-sm text-muted-foreground">{filteredSucursales.length} sucursales</span>
+                <button type="button" className="p-2 rounded hover:bg-muted">
+                  <svg className="h-4 w-4 text-muted-foreground" viewBox="0 0 20 20" fill="currentColor">
+                    <path d="M6 10a2 2 0 11-4 0 2 2 0 014 0zm6 0a2 2 0 11-4 0 2 2 0 014 0zm6 0a2 2 0 11-4 0 2 2 0 014 0z" />
+                  </svg>
+                </button>
+              </div>
+            </div>
           </div>
-        </div>
-        
-        {filteredSucursales.length === 0 ? (
-          <div className="p-6 text-center text-gray-500">
-            No se encontraron sucursales para esta empresa.
-        </div>
-      ) : (
-          <div className="overflow-x-auto">
-            <table className="min-w-full divide-y divide-gray-200">
-              <thead className="bg-gray-50">
-                <tr>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Sucursal
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Mediciones
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Status
-                  </th>
-                  <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Actions
-                  </th>
-                </tr>
-              </thead>
-              <tbody className="bg-white divide-y divide-gray-200">
-                {filteredSucursales.map((sucursal) => (
-                  <tr key={sucursal.id} className="hover:bg-gray-50 transition-colors">
-                    <td className="px-6 py-4">
-                    <div className="flex items-center">
-                        <div className="flex-shrink-0 h-10 w-10 flex items-center justify-center bg-gray-100 rounded-full ring-1 ring-gray-200">
-                          <span className="text-gray-600 text-lg font-medium">
-                          {sucursal.nombre.charAt(0)}
-                        </span>
-                      </div>
-                      <div className="ml-4">
-                          <div className="text-sm font-medium text-gray-900">{sucursal.nombre}</div>
-                          <div className="text-sm text-gray-500">{sucursal.direccion || 'No disponible'}</div>
-                          <div className="text-xs text-gray-400 mt-1">
-                            <div>Email: {sucursal.email || 'No disponible'}</div>
-                            <div>Teléfono: {sucursal.telefono || 'No disponible'}</div>
+
+          {filteredSucursales.length === 0 ? (
+            <div className="h-32 flex items-center justify-center text-muted-foreground">
+              <div className="text-center">
+                <p className="text-lg font-medium">No se encontraron sucursales</p>
+                <p className="text-sm">Las sucursales aparecerán aquí una vez que se agreguen al sistema.</p>
+              </div>
+            </div>
+          ) : (
+            <div className="relative text-gray-500 overflow-x-auto">
+              <table className="w-full text-gray-500 caption-bottom text-sm">
+                <thead className=" border-gray-200">
+                  <tr className="border-b border-gray-100 transition-colors hover:bg-muted/50 data-[state=selected]:bg-muted">
+                    <th className="h-12 px-4 text-left align-middle font-medium text-muted-foreground [&:has([role=checkbox])]:pr-0">
+                      Sucursal
+                    </th>
+                    <th className="h-12 px-4 text-left align-middle font-medium text-muted-foreground [&:has([role=checkbox])]:pr-0">
+                      Mediciones
+                    </th>
+                    <th className="h-12 px-4 text-left align-middle font-medium text-muted-foreground [&:has([role=checkbox])]:pr-0">
+                      Email
+                    </th>
+                    <th className="h-12 px-4 text-left align-middle font-medium text-muted-foreground [&:has([role=checkbox])]:pr-0">
+                      Teléfono
+                    </th>
+                    <th className="h-12 px-4 text-right align-middle font-medium text-muted-foreground [&:has([role=checkbox])]:pr-0">
+                      Acciones
+                    </th>
+                  </tr>
+                </thead>
+                <tbody className="[&_tr:last-child]:border-0">
+                  {filteredSucursales.map((sucursal) => (
+                    <tr
+                      key={sucursal.id}
+                      className="border-b border-gray-100 transition-colors hover:bg-muted/50 data-[state=selected]:bg-muted"
+                    >
+                      <td className="p-4 align-middle font-medium">
+                        <div className="flex items-center gap-3">
+                          <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center">
+                            <span className="text-sm font-medium text-primary">
+                              {sucursal.nombre.charAt(0).toUpperCase()}
+                            </span>
                           </div>
-                          {sucursal.categorias && sucursal.categorias.length > 0 && (
-                            <div className="mt-2 flex flex-wrap gap-1">
-                              {sucursal.categorias.map((cat) => (
-                                <span key={cat} className="inline-flex items-center px-2 py-0.5 text-xs font-medium rounded-full bg-gray-100 text-gray-700 ring-1 ring-gray-200">
-                                  {cat}
-                                </span>
-                              ))}
+                          <div>
+                            <div className="font-medium">{sucursal.nombre}</div>
+                            <div className="text-sm text-muted-foreground">
+                              {sucursal.direccion || 'Sin dirección'}
                             </div>
-                          )}
+                            {sucursal.categorias && sucursal.categorias.length > 0 && (
+                              <div className="mt-1 flex flex-wrap gap-1">
+                                {sucursal.categorias.map((cat) => (
+                                  <span key={cat} className="inline-flex items-center px-1.5 py-0.5 text-xs font-medium rounded-full bg-muted text-muted-foreground">
+                                    {cat}
+                                  </span>
+                                ))}
+                              </div>
+                            )}
+                          </div>
                         </div>
-                      </div>
-                    </td>
-                    <td className="px-6 py-4">
-                      <div className="text-sm text-gray-900">
+                      </td>
+                      <td className="p-4 align-middle">
                         {loadingMediciones ? (
                           <div className="animate-pulse">
-                            <div className="h-4 bg-gray-200 rounded w-16 mb-1"></div>
-                            <div className="h-3 bg-gray-200 rounded w-12"></div>
+                            <div className="h-4 bg-muted rounded w-16 mb-1"></div>
+                            <div className="h-3 bg-muted rounded w-12"></div>
                           </div>
                         ) : (
-                          <>
-                            {medicionesEnNubePorSucursal[sucursal.id]?.length > 0 && (
-                              <div className="text-xs text-gray-500">Última: {medicionesEnNubePorSucursal[sucursal.id][0]?.fecha || 'N/A'}</div>
+                          <div className="text-sm">
+                            {medicionesEnNubePorSucursal[sucursal.id]?.length > 0 ? (
+                              <div className="text-xs text-muted-foreground">
+                                Última: {medicionesEnNubePorSucursal[sucursal.id][0]?.fecha || 'N/A'}
+                              </div>
+                            ) : (
+                              <span className="text-muted-foreground">Sin mediciones</span>
                             )}
-                          </>
+                          </div>
                         )}
-                    </div>
-                    </td>
-                    <td className="px-6 py-4">
-                      <div className="flex flex-col gap-1">
-                        <span className={`inline-flex items-center px-2 py-0.5 text-xs font-medium rounded-full ${sucursal.enNube ? 'bg-emerald-100 text-emerald-700 ring-1 ring-emerald-200' : 'bg-gray-100 text-gray-700 ring-1 ring-gray-200'}`}>
-                          {sucursal.enNube ? 'EN NUBE' : 'Local'}
-                        </span>
-                        <span className={`inline-flex items-center px-2 py-0.5 text-xs font-medium rounded-full ${
-                          sucursal.estado === 'activa' ? 'bg-green-100 text-green-800 ring-1 ring-green-200' : 'bg-red-100 text-red-800 ring-1 ring-red-200'
-                      }`}>
-                        {sucursal.estado === 'activa' ? 'Activa' : 'Inactiva'}
-                      </span>
-                      </div>
-                    </td>
-                    <td className="px-6 py-4 text-right">
+                      </td>
+                      <td className="p-4 align-middle">
+                        {sucursal.email || (
+                          <span className="text-muted-foreground">No disponible</span>
+                        )}
+                      </td>
+                      <td className="p-4 align-middle font-mono text-sm">
+                        {sucursal.telefono || (
+                          <span className="text-muted-foreground">No disponible</span>
+                        )}
+                      </td>
+                      <td className="p-4 align-middle text-right">
                         <Link
                           href={`/dashboard/empresas/${empresaId}/sucursales/${sucursal.id}`}
-                        className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-black hover:bg-gray-900 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500 shadow-sm"
-                      >
-                        ver detalle
+                          className={cn(
+                            "inline-flex items-center justify-center rounded-md text-sm font-medium transition-colors",
+                            "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
+                            "disabled:opacity-50 disabled:pointer-events-none ring-offset-background",
+                            "border border-input hover:bg-accent hover:text-accent-foreground",
+                            "h-9 px-3"
+                          )}
+                        >
+                          Ver detalle
                         </Link>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
         </div>
-      )}
       </div>
 
       {/* Modal de agregar/editar sucursal */}

@@ -9,6 +9,13 @@ import Breadcrumb from '@/components/Breadcrumb';
 // import { useSucursales } from '@/hooks/useSucursales';
 import { useSucursalesCount } from '@/hooks/useSucursalesCount';
 import { useMedicionesCounts } from '@/hooks/useArchivosCounts';
+import { cn } from '@/lib/utils';
+import { Bar, BarChart, CartesianGrid, XAxis, YAxis } from "recharts";
+import {
+  ChartContainer,
+  ChartTooltip,
+  ChartTooltipContent,
+} from "@/components/ui/chart";
 
 // Empresas de prueba para mostrar si no hay empresas en Firestore
 const empresasMock: Empresa[] = [
@@ -46,7 +53,7 @@ export default function EmpresasPage() {
   const [_usarMock, setUsarMock] = useState(false);
   const [empresasAMostrar, setEmpresasAMostrar] = useState<Empresa[]>([]);
   const { sucursalesCounts: sucursalesPorEmpresa, loading: loadingSucursales, totalSucursales } = useSucursalesCount();
-  const { medicionesCounts, loading: loadingMediciones } = useMedicionesCounts();
+  const { medicionesCounts, incumplimientosCounts, loading: loadingMediciones } = useMedicionesCounts();
 
   // Depuración adicional
   useEffect(() => {
@@ -188,153 +195,162 @@ export default function EmpresasPage() {
         <div className="bg-gradient-to-b from-black to-gray-700  rounded-3xl p-6 text-white border border-gray-800 shadow-sm">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-gray-300 text-sm">Incumplimiento gral</p>
-              <p className="text-3xl font-bold text-orange-400">32%</p>
-              <p className="text-red-400 text-sm">-0.03%</p>
-            </div>
-            <div className="text-gray-400">
-              <svg className="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 17h8m0 0V9m0 8l-8-8-4 4-6-6" />
-              </svg>
-            </div>
-          </div>
-        </div>
-
-        <div className="bg-gradient-to-b from-black to-gray-700  rounded-3xl p-6 text-white border border-gray-800 shadow-sm">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-gray-300 text-sm">Empresas que incumplen</p>
-              <p className="text-3xl font-bold">{Math.floor(filteredEmpresas.length * 0.6)}</p>
-              <p className="text-red-400 text-sm">-0.03%</p>
-            </div>
-            <div className="text-gray-400">
-              <svg className="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 17h8m0 0V9m0 8l-8-8-4 4-6-6" />
-              </svg>
-            </div>
-          </div>
-        </div>
-
-        <div className="bg-gradient-to-b from-black to-gray-700  rounded-3xl p-6 text-white border border-gray-800 shadow-sm">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-gray-300 text-sm">Sucursales que incumplen</p>
-              {loadingSucursales ? (
+              <p className="text-gray-300 text-sm">Incumplimiento de Estudios PAT</p>
+              {loadingMediciones ? (
                 <div className="animate-pulse">
                   <div className="h-8 bg-gray-300 rounded w-16"></div>
                 </div>
               ) : (
-                <p className="text-3xl font-bold">{Math.floor(totalSucursales * 0.63)}</p>
+                <p className="text-3xl font-bold text-white">{incumplimientosCounts.patNoCumple}</p>
               )}
-              <p className="text-green-400 text-sm">+6.08%</p>
             </div>
             <div className="text-gray-400">
               <svg className="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 17h8m0 0V9m0 8l-8-8-4 4-6-6" />
+              </svg>
+            </div>
+          </div>
+        </div>
+
+        <div className="bg-gradient-to-b from-black to-gray-700  rounded-3xl p-6 text-white border border-gray-800 shadow-sm">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-gray-300 text-sm">Incumplimiento de Estudios iluminación </p>
+              {loadingMediciones ? (
+                <div className="animate-pulse">
+                  <div className="h-8 bg-gray-300 rounded w-16"></div>
+                </div>
+              ) : (
+                <p className="text-3xl font-bold text-white">{incumplimientosCounts.iluNoCumple}</p>
+              )}
+            </div>
+            <div className="text-gray-400">
+              <svg className="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 17h8m0 0V9m0 8l-8-8-4 4-6-6" />
+              </svg>
+            </div>
+          </div>
+        </div>
+
+        <div className="bg-gradient-to-b from-black to-gray-700  rounded-3xl p-6 text-white border border-gray-800 shadow-sm">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-gray-300 text-sm">Incumplimiento de Estudios ruido</p>
+              {loadingMediciones ? (
+                <div className="animate-pulse">
+                  <div className="h-8 bg-gray-300 rounded w-16"></div>
+                </div>
+              ) : (
+                <p className="text-3xl font-bold text-white">{incumplimientosCounts.ruidoNoCumple}</p>
+              )}
+            </div>
+            <div className="text-gray-400">
+              <svg className="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 17h8m0 0V9m0 8l-8-8-4 4-6-6" />
               </svg>
             </div>
           </div>
         </div>
       </div>
 
-      {/* Gráficos lado a lado */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
-        {/* Gráfico 1: Análisis Global de Mediciones */}
-        <div className="bg-white rounded-2xl p-6 border border-gray-200 shadow-sm">
+      {/* Gráfico de Estados de Mediciones */}
+      <div className="mb-6">
+        <div className="bg-white rounded-2xl p-6 border border-gray-300 shadow-sm">
           <div className="flex items-center justify-between mb-4">
-            <h4 className="text-lg font-medium text-gray-900">Análisis Global de Mediciones</h4>
+            <h4 className="text-lg font-medium text-gray-900">Estados de Mediciones por Tipo de Estudio (Cantidad de Sucursales)</h4>
             <span className="text-xs text-gray-400">Todas las empresas</span>
           </div>
           
           {loadingSucursales || loadingMediciones ? (
             <div className="space-y-2 animate-pulse">
-              <div className="h-48 bg-gray-100 rounded" />
-            </div>
-          ) : (
-            <div className="flex items-end justify-center gap-4 h-48">
-              <div className="flex flex-col items-center">
-                <div className="text-xs text-gray-500 mb-1">{totalSucursales}</div>
-                <div className="w-12 h-36 bg-gray-100 rounded relative overflow-hidden">
-                  <div 
-                    className="absolute bottom-0 left-0 right-0 bg-gray-900 rounded" 
-                    style={{ height: `${totalSucursales > 0 ? Math.max(15, (totalSucursales / Math.max(totalSucursales, medicionesCounts.puestaTierra, medicionesCounts.ruido, medicionesCounts.iluminacion, 1)) * 100) : 0}%` }}
-                  />
-                </div>
-                <div className="mt-2 text-xs text-gray-600 text-center">Total Sucursales</div>
-              </div>
-              
-              <div className="flex flex-col items-center">
-                <div className="text-xs text-gray-500 mb-1">{medicionesCounts.puestaTierra}</div>
-                <div className="w-12 h-36 bg-gray-100 rounded relative overflow-hidden">
-                  <div 
-                    className="absolute bottom-0 left-0 right-0 bg-green-500 rounded" 
-                    style={{ height: `${medicionesCounts.puestaTierra > 0 ? Math.max(15, (medicionesCounts.puestaTierra / Math.max(totalSucursales, medicionesCounts.puestaTierra, medicionesCounts.ruido, medicionesCounts.iluminacion, 1)) * 100) : 0}%` }}
-                  />
-                </div>
-                <div className="mt-2 text-xs text-gray-600 text-center">PAT EN NUBE</div>
-              </div>
-              
-              <div className="flex flex-col items-center">
-                <div className="text-xs text-gray-500 mb-1">{medicionesCounts.iluminacion}</div>
-                <div className="w-12 h-36 bg-gray-100 rounded relative overflow-hidden">
-                  <div 
-                    className="absolute bottom-0 left-0 right-0 bg-yellow-500 rounded" 
-                    style={{ height: `${medicionesCounts.iluminacion > 0 ? Math.max(15, (medicionesCounts.iluminacion / Math.max(totalSucursales, medicionesCounts.puestaTierra, medicionesCounts.ruido, medicionesCounts.iluminacion, 1)) * 100) : 0}%` }}
-                  />
-                </div>
-                <div className="mt-2 text-xs text-gray-600 text-center">ILUMINACIÓN EN NUBE</div>
-              </div>
-              
-              <div className="flex flex-col items-center">
-                <div className="text-xs text-gray-500 mb-1">{medicionesCounts.ruido}</div>
-                <div className="w-12 h-36 bg-gray-100 rounded relative overflow-hidden">
-                  <div 
-                    className="absolute bottom-0 left-0 right-0 bg-red-500 rounded" 
-                    style={{ height: `${medicionesCounts.ruido > 0 ? Math.max(15, (medicionesCounts.ruido / Math.max(totalSucursales, medicionesCounts.puestaTierra, medicionesCounts.ruido, medicionesCounts.iluminacion, 1)) * 100) : 0}%` }}
-                  />
-                </div>
-                <div className="mt-2 text-xs text-gray-600 text-center">RUIDO EN NUBE</div>
-              </div>
-            </div>
-          )}
-        </div>
-
-        {/* Gráfico 2: Sucursales por empresa */}
-        <div className="bg-white rounded-2xl p-6 border border-gray-200 shadow-sm">
-          <div className="flex items-center justify-between mb-4">
-            <h4 className="text-lg font-medium text-gray-900">Sucursales por empresa</h4>
-            <span className="text-xs text-gray-400">Top 8</span>
-          </div>
-          {loadingSucursales ? (
-            <div className="space-y-2 animate-pulse">
-              <div className="h-48 bg-gray-100 rounded" />
+              <div className="h-[350px] bg-gray-100 rounded" />
             </div>
           ) : (
             (() => {
-              const base = (empresasAMostrar.length > 0 ? empresasAMostrar : [])
-                .map((e) => ({ id: e.id, label: e.nombre, value: sucursalesPorEmpresa[e.id] || 0 }))
-                .sort((a, b) => b.value - a.value)
-                .slice(0, 6);
-              const maxValue = Math.max(1, ...base.map((d) => d.value));
+              const chartData = [
+                {
+                  name: "PAT",
+                  "PENDIENTE": medicionesCounts.pat.pendienteVisita,
+                  "PEDIR A TEC": medicionesCounts.pat.pedirTecnico,
+                  "Procesar": medicionesCounts.pat.procesar,
+                  "En nube": medicionesCounts.pat.enNube
+                },
+                {
+                  name: "Iluminación",
+                  "PENDIENTE": medicionesCounts.iluminacion.pendienteVisita,
+                  "PEDIR A TEC": medicionesCounts.iluminacion.pedirTecnico,
+                  "Procesar": medicionesCounts.iluminacion.procesar,
+                  "En nube": medicionesCounts.iluminacion.enNube
+                },
+                {
+                  name: "Ruido",
+                  "PENDIENTE": medicionesCounts.ruido.pendienteVisita,
+                  "PEDIR A TEC": medicionesCounts.ruido.pedirTecnico,
+                  "Procesar": medicionesCounts.ruido.procesar,
+                  "En nube": medicionesCounts.ruido.enNube
+                },
+                {
+                  name: "Carga Térmica",
+                  "PENDIENTE": medicionesCounts.cargaTermica.pendienteVisita,
+                  "PEDIR A TEC": medicionesCounts.cargaTermica.pedirTecnico,
+                  "Procesar": medicionesCounts.cargaTermica.procesar,
+                  "En nube": medicionesCounts.cargaTermica.enNube
+                },
+                {
+                  name: "ESTUDIO TERMOGRAFÍA",
+                  "PENDIENTE": medicionesCounts.termografia.pendienteVisita,
+                  "PEDIR A TEC": medicionesCounts.termografia.pedirTecnico,
+                  "Procesar": medicionesCounts.termografia.procesar,
+                  "En nube": medicionesCounts.termografia.enNube
+                }
+              ];
+
+              const chartConfig = {
+                "PENDIENTE": {
+                  label: "PENDIENTE",
+                  color: "#ef4444"
+                },
+                "PEDIR A TEC": {
+                  label: "PEDIR A TEC",
+                  color: "#f59e0b"
+                },
+                "Procesar": {
+                  label: "PROCESAR",
+                  color: "#3b82f6"
+                },
+                "En nube": {
+                  label: "EN NUBE",
+                  color: "#22c55e"
+                }
+              };
+
               return (
-                <div className="space-y-4">
-                  <div className="text-xs text-gray-500 text-center">Cantidad de sucursales por empresa</div>
-                  {base.length === 0 ? (
-                    <div className="text-xs text-gray-500">Sin datos.</div>
-                  ) : (
-                    <div className="flex items-end justify-center gap-3 h-48">
-                      {base.map((d) => (
-                        <div key={d.id} className="flex flex-col items-center">
-                          <div className="text-[10px] text-gray-500 mb-1">{d.value}</div>
-                          <div className="w-8 h-36 bg-gray-100 rounded relative overflow-hidden">
-                            <div className="absolute bottom-0 left-0 right-0 bg-gray-900 rounded" style={{ height: `${(d.value / maxValue) * 100}%` }} />
-                          </div>
-                          <div className="mt-1 text-[10px] text-gray-600 text-center truncate w-12" title={d.label}>{d.label}</div>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                </div>
+                <ChartContainer config={chartConfig} className="h-[350px] text-black w-full">
+                  <BarChart data={chartData}>
+                    <CartesianGrid strokeDasharray="3 3" vertical={false} />
+                    <XAxis
+                      dataKey="name"
+                      tickLine={false}
+                      tickMargin={10}
+                      axisLine={false}
+                      tick={{ fontSize: 12 }}
+                    />
+                    <YAxis
+                      tickLine={false}
+                      axisLine={false}
+                      tick={{ fontSize: 12 }}
+                      label={{ value: 'Cantidad de Sucursales', angle: -90, position: 'insideLeft' }}
+                    />
+                    <ChartTooltip
+                      cursor={false}
+                      content={<ChartTooltipContent />}
+                    />
+                    <Bar dataKey="PENDIENTE" fill="#ef4444" radius={4} />
+                    <Bar dataKey="PEDIR A TEC" fill="#f59e0b" radius={4} />
+                    <Bar dataKey="Procesar" fill="#3b82f6" radius={4} />
+                    <Bar dataKey="En nube" fill="#22c55e" radius={4} />
+                  </BarChart>
+                </ChartContainer>
               );
             })()
           )}
@@ -380,93 +396,116 @@ export default function EmpresasPage() {
         </div>
       </div>
 
-      {/* Tabla de empresas */}
-      <div className="bg-gray-100 rounded-3xl shadow-sm border border-gray-100">
-        <div className="px-6 py-4 border-b border-gray-200 bg-gray-50/50">
-          <div className="flex items-center justify-between">
-            <h3 className="text-lg font-medium text-gray-900">Unidades de negocio</h3>
-            <button type="button" className="p-2 rounded hover:bg-gray-100">
-              <svg className="h-5 w-5 text-gray-500" viewBox="0 0 20 20" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
-                <path d="M6 10a2 2 0 11-4 0 2 2 0 014 0zm6 0a2 2 0 11-4 0 2 2 0 014 0zm6 0a2 2 0 11-4 0 2 2 0 014 0z" />
-              </svg>
-            </button>
+      {/* Tabla de empresas con estilos shadcn */}
+      <div className="w-full">
+        <div className="rounded-md border border-gray-200 shadow-md">
+          <div className="px-6 py-4 border-b bg-muted/50 border-gray-100 text-gray-500">
+            <div className="flex items-center justify-between">
+              <h3 className="text-lg font-semibold">Unidades de negocio</h3>
+              <div className="flex items-center gap-2">
+                <span className="text-sm text-muted-foreground">{filteredEmpresas.length} empresas</span>
+                <button type="button" className="p-2 rounded hover:bg-muted">
+                  <svg className="h-4 w-4 text-muted-foreground" viewBox="0 0 20 20" fill="currentColor">
+                    <path d="M6 10a2 2 0 11-4 0 2 2 0 014 0zm6 0a2 2 0 11-4 0 2 2 0 014 0zm6 0a2 2 0 11-4 0 2 2 0 014 0z" />
+                  </svg>
+                </button>
+              </div>
+            </div>
           </div>
-        </div>
-        
-        {filteredEmpresas.length === 0 ? (
-          <div className="p-6 text-center text-gray-500">
-            No se encontraron empresas.
-          </div>
-        ) : (
-          <div className="overflow-x-auto ">
-            <table className="min-w-full divide-y divide-gray-200">
-              <thead className="bg-gray-50 ">
-                <tr>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Manager
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Amount
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Status
-                  </th>
-                  <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Actions
-                  </th>
-                </tr>
-              </thead>
-              <tbody className="bg-white divide-y divide-gray-200">
-                {filteredEmpresas.map((empresa) => (
-                  <tr key={empresa.id} className="hover:bg-gray-50 transition-colors">
-                    <td className="px-6 py-4">
-                      <div className="flex items-center">
-                        <div className="flex-shrink-0 h-10 w-10 flex items-center justify-center bg-gray-100 rounded-full ring-1 ring-gray-200">
-                          <span className="text-gray-600 text-lg font-medium">
-                            {empresa.nombre.charAt(0)}
-                          </span>
-                        </div>
-                        <div className="ml-4">
-                          <div className="text-sm font-medium text-gray-900">{empresa.nombre}</div>
-                          <div className="text-sm text-gray-500">{empresa.email || 'No disponible'}</div>
-                          <div className="text-xs text-gray-400 mt-1">
-                            <div>Dirección: {empresa.direccion || 'No disponible'}</div>
-                            <div>Teléfono: {empresa.telefono || 'No disponible'}</div>
-                            <div>CUIT: {empresa.cuit || 'No disponible'}</div>
+
+          {filteredEmpresas.length === 0 ? (
+            <div className="h-32 flex items-center justify-center text-muted-foreground">
+              <div className="text-center">
+                <p className="text-lg font-medium">No se encontraron empresas</p>
+                <p className="text-sm">Las empresas aparecerán aquí una vez que se agreguen al sistema.</p>
+              </div>
+            </div>
+          ) : (
+            <div className="relative text-gray-500 overflow-x-auto">
+              <table className="w-full text-gray-500 caption-bottom text-sm">
+                <thead className=" border-gray-200">
+                  <tr className="border-b border-gray-100 transition-colors hover:bg-muted/50 data-[state=selected]:bg-muted">
+                    <th className="h-12 px-4 text-left align-middle font-medium text-muted-foreground [&:has([role=checkbox])]:pr-0">
+                      Nombre
+                    </th>
+                    <th className="h-12 px-4 text-left align-middle font-medium text-muted-foreground [&:has([role=checkbox])]:pr-0">
+                      Teléfono
+                    </th>
+                    <th className="h-12 px-4 text-left align-middle font-medium text-muted-foreground [&:has([role=checkbox])]:pr-0">
+                      CUIT
+                    </th>
+                    <th className="h-12 px-4 text-left align-middle font-medium text-muted-foreground [&:has([role=checkbox])]:pr-0">
+                      Sucursales
+                    </th>
+                    <th className="h-12 px-4 text-right align-middle font-medium text-muted-foreground [&:has([role=checkbox])]:pr-0">
+                      Acciones
+                    </th>
+                  </tr>
+                </thead>
+                <tbody className="[&_tr:last-child]:border-0">
+                  {filteredEmpresas.map((empresa) => (
+                    <tr
+                      key={empresa.id}
+                      className="border-b border-gray-100 transition-colors hover:bg-muted/50 data-[state=selected]:bg-muted"
+                    >
+                      <td className="p-4 align-middle font-medium">
+                        <div className="flex items-center gap-3">
+                          <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center">
+                            <span className="text-sm font-medium text-primary">
+                              {empresa.nombre.charAt(0).toUpperCase()}
+                            </span>
+                          </div>
+                          <div>
+                            <div className="font-medium">{empresa.nombre}</div>
+                            <div className="text-sm text-muted-foreground">
+                              {empresa.email || 'Sin email'}
+                            </div>
                           </div>
                         </div>
-                      </div>
-                    </td>
-                    <td className="px-6 py-4">
-                      <div className="text-sm text-gray-900">
+                      </td>
+                      <td className="p-4 align-middle">
+                        {empresa.telefono || (
+                          <span className="text-muted-foreground">No disponible</span>
+                        )}
+                      </td>
+                      <td className="p-4 align-middle font-mono text-sm">
+                        {empresa.cuit || (
+                          <span className="text-muted-foreground">No disponible</span>
+                        )}
+                      </td>
+                      <td className="p-4 align-middle">
                         {loadingSucursales ? (
                           <div className="animate-pulse">
-                            <div className="h-4 bg-gray-200 rounded w-20"></div>
+                            <div className="h-4 bg-muted rounded w-8"></div>
                           </div>
                         ) : (
-                          <div>Sucursales: {sucursalesPorEmpresa[empresa.id] || 0}</div>
+                          <div className="flex items-center gap-1">
+                            <span className="font-medium">{sucursalesPorEmpresa[empresa.id] || 0}</span>
+                            <span className="text-xs text-muted-foreground">sucursales</span>
+                          </div>
                         )}
-                      </div>
-                    </td>
-                    <td className="px-6 py-4">
-                      <span className="inline-flex items-center px-3 py-1 text-xs font-medium rounded-full bg-rose-100 text-rose-700 ring-1 ring-rose-200">
-                        {Math.floor(Math.random() * 30) + 10} Incumplimientos
-                      </span>
-                    </td>
-                    <td className="px-6 py-4 text-right">
-                      <Link
-                        href={`/dashboard/empresas/${empresa.id}/sucursales`}
-                        className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-black hover:bg-gray-900 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500 shadow-sm"
-                      >
-                        ver detalle
-                      </Link>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        )}
+                      </td>
+                      <td className="p-4 align-middle text-right">
+                        <Link
+                          href={`/dashboard/empresas/${empresa.id}/sucursales`}
+                          className={cn(
+                            "inline-flex items-center justify-center rounded-md text-sm font-medium transition-colors",
+                            "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
+                            "disabled:opacity-50 disabled:pointer-events-none ring-offset-background",
+                            "border border-input hover:bg-accent hover:text-accent-foreground",
+                            "h-9 px-3"
+                          )}
+                        >
+                          Ver detalle
+                        </Link>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </div>
       </div>
 
       {/* Modal de agregar/editar empresa */}

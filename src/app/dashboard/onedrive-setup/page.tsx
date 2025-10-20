@@ -37,7 +37,7 @@ export default function OneDriveSetupPage() {
     setLoading(true);
     setError(null);
     try {
-      const response = await fetch('/api/onedrive/helpers?action=list-root-folders');
+      const response = await fetch('/api/onedrive/folders?action=list-root-folders');
       const data = await response.json();
       
       if (!response.ok) {
@@ -63,7 +63,7 @@ export default function OneDriveSetupPage() {
     setError(null);
     try {
       const response = await fetch(
-        `/api/onedrive/helpers?action=search-folder&folderName=${encodeURIComponent(searchQuery)}`
+        `/api/onedrive/folders?action=search-folder&folderName=${encodeURIComponent(searchQuery)}`
       );
       const data = await response.json();
       

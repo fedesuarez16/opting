@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, use } from 'react';
+import { useState, use, useMemo } from 'react';
 import { useMediciones, Medicion } from '@/hooks/useMediciones';
 import { useSucursales } from '@/hooks/useSucursales';
 import { useEmpresas } from '@/hooks/useEmpresas';
@@ -8,6 +8,13 @@ import Link from 'next/link';
 import { storage, firestore } from '@/lib/firebase';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { collection, addDoc, doc, getDocs, query, orderBy } from 'firebase/firestore';
+import SucursalOneDriveFiles from '@/components/SucursalOneDriveFiles';
+import { Bar, BarChart, CartesianGrid, XAxis, YAxis } from "recharts";
+import {
+  ChartContainer,
+  ChartTooltip,
+  ChartTooltipContent,
+} from "@/components/ui/chart";
 
 interface SucursalDetailPageProps {
   params: Promise<{
@@ -128,6 +135,85 @@ export default function SucursalDetailPage({ params }: SucursalDetailPageProps) 
     return { puesta, informe, incumpl, extintores };
   })();
 
+  // Conteos de mediciones por tipo de estudio para esta sucursal específica
+  const medicionesCountsSucursal = useMemo(() => {
+    const counts = {
+      pat: {
+        pendienteVisita: 0,
+        pedirTecnico: 0,
+        procesar: 0,
+        enNube: 0
+      },
+      iluminacion: {
+        pendienteVisita: 0,
+        pedirTecnico: 0,
+        procesar: 0,
+        enNube: 0
+      },
+      ruido: {
+        pendienteVisita: 0,
+        pedirTecnico: 0,
+        procesar: 0,
+        enNube: 0
+      },
+      cargaTermica: {
+        pendienteVisita: 0,
+        pedirTecnico: 0,
+        procesar: 0,
+        enNube: 0
+      },
+      termografia: {
+        pendienteVisita: 0,
+        pedirTecnico: 0,
+        procesar: 0,
+        enNube: 0
+      }
+    };
+
+    mediciones.forEach((m) => {
+      const datos = m.datos as Record<string, unknown>;
+      const getValue = (k: string) => String((datos[k] ?? '') as any);
+      
+      // PAT (PUESTA A TIERRA)
+      const patValue = getValue('PUESTA A TIERRA');
+      if (patValue === 'PENDIENTE') counts.pat.pendienteVisita += 1;
+      else if (patValue === 'PEDIR A TEC') counts.pat.pedirTecnico += 1;
+      else if (patValue === 'PROCESAR') counts.pat.procesar += 1;
+      else if (patValue === 'EN NUBE') counts.pat.enNube += 1;
+      
+      // ILUMINACIÓN
+      const iluValue = getValue('ILUMINACIÓN');
+      if (iluValue === 'PENDIENTE') counts.iluminacion.pendienteVisita += 1;
+      else if (iluValue === 'PEDIR A TEC') counts.iluminacion.pedirTecnico += 1;
+      else if (iluValue === 'PROCESAR') counts.iluminacion.procesar += 1;
+      else if (iluValue === 'EN NUBE') counts.iluminacion.enNube += 1;
+      
+      // RUIDO
+      const ruidoValue = getValue('RUIDO');
+      if (ruidoValue === 'PENDIENTE') counts.ruido.pendienteVisita += 1;
+      else if (ruidoValue === 'PEDIR A TEC') counts.ruido.pedirTecnico += 1;
+      else if (ruidoValue === 'PROCESAR') counts.ruido.procesar += 1;
+      else if (ruidoValue === 'EN NUBE') counts.ruido.enNube += 1;
+      
+      // CARGA TÉRMICA
+      const cargaValue = getValue('CARGA TÉRMICA');
+      if (cargaValue === 'PENDIENTE') counts.cargaTermica.pendienteVisita += 1;
+      else if (cargaValue === 'PEDIR A TEC') counts.cargaTermica.pedirTecnico += 1;
+      else if (cargaValue === 'PROCESAR') counts.cargaTermica.procesar += 1;
+      else if (cargaValue === 'EN NUBE') counts.cargaTermica.enNube += 1;
+      
+      // ESTUDIO TERMOGRAFÍA
+      const termoValue = getValue('ESTUDIO TERMOGRAFÍA');
+      if (termoValue === 'PENDIENTE') counts.termografia.pendienteVisita += 1;
+      else if (termoValue === 'PEDIR A TEC') counts.termografia.pedirTecnico += 1;
+      else if (termoValue === 'PROCESAR') counts.termografia.procesar += 1;
+      else if (termoValue === 'EN NUBE') counts.termografia.enNube += 1;
+    });
+
+    console.log('Mediciones counts para sucursal:', sucursalId, counts);
+    return counts;
+  }, [mediciones, sucursalId]);
+
   if (loadingMediciones) {
     return (
       <div className="flex items-center justify-center h-64">
@@ -188,14 +274,7 @@ export default function SucursalDetailPage({ params }: SucursalDetailPageProps) 
             {empresa?.nombre || 'Empresa'} - {filteredMediciones.length} mediciones encontradas
           </p>
         </div>
-        <div className="mt-4 sm:mt-0">
-          <label className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-black hover:bg-gray-900 cursor-pointer">
-            {uploading ? 'Subiendo...' : 'Subir archivo'}
-            <input type="file" className="hidden" onChange={handleUpload} accept="*/*" />
-          </label>
-          {uploadError && <p className="text-xs text-red-600 mt-1">{uploadError}</p>}
-          {uploadedOk && <p className="text-xs text-emerald-600 mt-1">Archivo subido correctamente</p>}
-        </div>
+      
       </div>
 
 
@@ -232,6 +311,110 @@ export default function SucursalDetailPage({ params }: SucursalDetailPageProps) 
         </div>
       )}
 
+      {/* Gráfico de Estados de Mediciones por Tipo de Estudio */}
+      <div className="mb-6">
+        <div className="bg-white rounded-2xl p-6 border border-gray-200 shadow-sm">
+          <div className="flex items-center justify-between mb-4">
+            <h4 className="text-lg font-medium text-gray-900">Estados de Mediciones por Tipo de Estudio (Cantidad de Mediciones) - {sucursal?.nombre || 'Sucursal'}</h4>
+            <span className="text-xs text-gray-400">Esta sucursal</span>
+          </div>
+          
+          {loadingMediciones ? (
+            <div className="space-y-2 animate-pulse">
+              <div className="h-[350px] bg-gray-100 rounded" />
+            </div>
+          ) : (
+            (() => {
+              const chartData = [
+                {
+                  name: "PAT",
+                  "PENDIENTE": medicionesCountsSucursal.pat.pendienteVisita,
+                  "PEDIR A TEC": medicionesCountsSucursal.pat.pedirTecnico,
+                  "Procesar": medicionesCountsSucursal.pat.procesar,
+                  "En nube": medicionesCountsSucursal.pat.enNube
+                },
+                {
+                  name: "Iluminación",
+                  "PENDIENTE": medicionesCountsSucursal.iluminacion.pendienteVisita,
+                  "PEDIR A TEC": medicionesCountsSucursal.iluminacion.pedirTecnico,
+                  "Procesar": medicionesCountsSucursal.iluminacion.procesar,
+                  "En nube": medicionesCountsSucursal.iluminacion.enNube
+                },
+                {
+                  name: "Ruido",
+                  "PENDIENTE": medicionesCountsSucursal.ruido.pendienteVisita,
+                  "PEDIR A TEC": medicionesCountsSucursal.ruido.pedirTecnico,
+                  "Procesar": medicionesCountsSucursal.ruido.procesar,
+                  "En nube": medicionesCountsSucursal.ruido.enNube
+                },
+                {
+                  name: "Carga Térmica",
+                  "PENDIENTE": medicionesCountsSucursal.cargaTermica.pendienteVisita,
+                  "PEDIR A TEC": medicionesCountsSucursal.cargaTermica.pedirTecnico,
+                  "Procesar": medicionesCountsSucursal.cargaTermica.procesar,
+                  "En nube": medicionesCountsSucursal.cargaTermica.enNube
+                },
+                {
+                  name: "ESTUDIO TERMOGRAFÍA",
+                  "PENDIENTE": medicionesCountsSucursal.termografia.pendienteVisita,
+                  "PEDIR A TEC": medicionesCountsSucursal.termografia.pedirTecnico,
+                  "Procesar": medicionesCountsSucursal.termografia.procesar,
+                  "En nube": medicionesCountsSucursal.termografia.enNube
+                }
+              ];
+
+              const chartConfig = {
+                "PENDIENTE": {
+                  label: "PENDIENTE",
+                  color: "#ef4444"
+                },
+                "PEDIR A TEC": {
+                  label: "PEDIR A TEC",
+                  color: "#f59e0b"
+                },
+                "Procesar": {
+                  label: "PROCESAR",
+                  color: "#3b82f6"
+                },
+                "En nube": {
+                  label: "EN NUBE",
+                  color: "#22c55e"
+                }
+              };
+
+              return (
+                <ChartContainer config={chartConfig} className="h-[350px] text-black w-full">
+                  <BarChart data={chartData}>
+                    <CartesianGrid strokeDasharray="3 3" vertical={false} />
+                    <XAxis
+                      dataKey="name"
+                      tickLine={false}
+                      tickMargin={10}
+                      axisLine={false}
+                      tick={{ fontSize: 12 }}
+                    />
+                    <YAxis
+                      tickLine={false}
+                      axisLine={false}
+                      tick={{ fontSize: 12 }}
+                      label={{ value: 'Cantidad de Mediciones', angle: -90, position: 'insideLeft' }}
+                    />
+                    <ChartTooltip
+                      cursor={false}
+                      content={<ChartTooltipContent />}
+                    />
+                    <Bar dataKey="PENDIENTE" fill="#ef4444" radius={4} />
+                    <Bar dataKey="PEDIR A TEC" fill="#f59e0b" radius={4} />
+                    <Bar dataKey="Procesar" fill="#3b82f6" radius={4} />
+                    <Bar dataKey="En nube" fill="#22c55e" radius={4} />
+                  </BarChart>
+                </ChartContainer>
+              );
+            })()
+          )}
+        </div>
+      </div>
+
       {/* Buscador */}
       <div className="mb-6">
         <div className="mt-1 relative rounded-md shadow-sm">
@@ -261,108 +444,133 @@ export default function SucursalDetailPage({ params }: SucursalDetailPageProps) 
         </div>
       </div>
 
-      {/* Tabla de mediciones */}
+      {/* Lista de mediciones mejorada */}
       {filteredMediciones.length === 0 ? (
         <div className="bg-gray-100 rounded-3xl shadow-sm border border-gray-100 p-6 text-center text-gray-500">
           <p className="text-lg mb-2">No se encontraron mediciones para esta sucursal.</p>
           <p className="text-sm">Las mediciones se encuentran en la subcolección de esta sucursal en Firestore.</p>
         </div>
       ) : (
-        <div className="bg-gray-100 rounded-3xl shadow-sm border border-gray-100">
-          <div className="px-6 py-4 border-b border-gray-200 bg-gray-50/50">
+        <div className="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden">
+          <div className="px-6 py-4 border-b border-gray-200 bg-gray-50">
             <div className="flex items-center justify-between">
               <h3 className="text-lg font-medium text-gray-900">Mediciones</h3>
+              <span className="text-sm text-gray-500">{filteredMediciones.length} mediciones</span>
             </div>
           </div>
-          <table className="min-w-full divide-y divide-gray-200">
-            <thead className="bg-gray-50">
-              <tr>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Fecha
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Técnico
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Servicio
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Estado
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Acciones
-                </th>
-              </tr>
-            </thead>
-            <tbody className="bg-white divide-y divide-gray-200">
-              {filteredMediciones.map((medicion) => (
-                <tr key={medicion.id} className="hover:bg-gray-50">
-                  <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                    {medicion.fecha}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                    {medicion.datos.TÉCNICOS || medicion.datos.tecnico || 'No especificado'}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                    {medicion.datos.SERVICIO || medicion.datos.servicio || 'No especificado'}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <span className="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-gray-100 text-gray-800">
-                      Registrada
-                    </span>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                    <button
-                      onClick={() => setSelectedMedicion(medicion)}
-                      className="inline-flex items-center px-3 py-1 border border-transparent text-sm leading-4 font-medium rounded-md text-white bg-black hover:bg-gray-900 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500"
-                    >
-                      Ver detalles
-                    </button>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+          
+          <div className="divide-y divide-gray-200">
+            {filteredMediciones.map((medicion) => {
+              const datos = medicion.datos as Record<string, unknown>;
+              
+              // Convertir valores a string de forma segura
+              const cuit = datos.CUIT ? String(datos.CUIT).trim() : '';
+              const telefono = datos.TELÉFONO ? String(datos.TELÉFONO).trim() : '';
+              const email = datos.EMAIL ? String(datos.EMAIL).trim() : '';
+              const puestaTierra = datos['PUESTA A TIERRA'] ? String(datos['PUESTA A TIERRA']).trim() : '';
+              
+              return (
+                <div key={medicion.id} className="p-6 hover:bg-gray-50 transition-colors">
+                  <div className="flex items-start justify-between">
+                    {/* Información principal */}
+                    <div className="flex-1">
+                      <div className="flex items-center gap-4 mb-3">
+                        <div className="flex-shrink-0">
+                          <div className="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center">
+                            <svg className="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                            </svg>
+                          </div>
+                        </div>
+                        
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-3 mb-2">
+                            <h4 className="text-lg font-semibold text-gray-900 truncate">
+                              Medición del {medicion.fecha}
+                            </h4>
+                          </div>
+                          
+                          {/* Información clave en filas */}
+                          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 text-sm">
+                            <div className="flex items-center gap-2">
+                              <span className="text-gray-500 font-medium min-w-[80px]">Técnico:</span>
+                              <span className="text-gray-900">{String(datos.TÉCNICOS || datos.tecnico || 'No especificado')}</span>
+                            </div>
+                            
+                            <div className="flex items-center gap-2">
+                              <span className="text-gray-500 font-medium min-w-[80px]">Servicio:</span>
+                              <span className="text-gray-900">{String(datos.SERVICIO || datos.servicio || 'No especificado')}</span>
+                            </div>
+
+                            {cuit && (
+                              <div className="flex items-center gap-2">
+                                <span className="text-gray-500 font-medium min-w-[80px]">CUIT:</span>
+                                <span className="text-gray-900">{cuit}</span>
+                              </div>
+                            )}
+
+                            {telefono && (
+                              <div className="flex items-center gap-2">
+                                <span className="text-gray-500 font-medium min-w-[80px]">Teléfono:</span>
+                                <span className="text-gray-900">{telefono}</span>
+                              </div>
+                            )}
+
+                            {email && (
+                              <div className="flex items-center gap-2">
+                                <span className="text-gray-500 font-medium min-w-[80px]">Email:</span>
+                                <span className="text-gray-900">{email}</span>
+                              </div>
+                            )}
+
+                            {puestaTierra && (
+                              <div className="flex items-center gap-2">
+                                <span className="text-gray-500 font-medium min-w-[80px]">Puesta a Tierra:</span>
+                                <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                                  puestaTierra.toUpperCase() === 'EN NUBE' 
+                                    ? 'bg-green-100 text-green-800'
+                                    : puestaTierra.toUpperCase() === 'PENDIENTE'
+                                    ? 'bg-yellow-100 text-yellow-800'
+                                    : 'bg-gray-100 text-gray-800'
+                                }`}>
+                                  {puestaTierra}
+                                </span>
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Botón de acción */}
+                    <div className="ml-4 flex-shrink-0">
+                      <button
+                        onClick={() => setSelectedMedicion(medicion)}
+                        className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-lg text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors"
+                      >
+                        <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                        </svg>
+                        Ver detalles
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
         </div>
       )}
 
-       {/* Archivos subidos */}
-       <div className="bg-gray-100 mt-4 rounded-3xl shadow-sm border border-gray-100 mb-6">
-        <div className="px-6 py-4 border-b border-gray-200 bg-gray-50/50 flex items-center justify-between">
-          <h3 className="text-lg font-medium text-gray-900">Archivos</h3>
-          <button onClick={fetchArchivos} className="text-xs text-gray-600 hover:text-gray-900">Actualizar</button>
-        </div>
-        {loadingArchivos ? (
-          <div className="p-6 text-gray-500">Cargando archivos...</div>
-        ) : archivos.length === 0 ? (
-          <div className="p-6 text-gray-500">Aún no hay archivos subidos.</div>
-        ) : (
-          <div className="overflow-x-auto">
-            <table className="min-w-full divide-y divide-gray-200">
-              <thead className="bg-gray-50">
-                <tr>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Nombre</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Tipo</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Tamaño</th>
-                  <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Acciones</th>
-                </tr>
-              </thead>
-              <tbody className="bg-white divide-y divide-gray-200">
-                {archivos.map((a) => (
-                  <tr key={a.id} className="hover:bg-gray-50">
-                    <td className="px-6 py-4 text-sm text-gray-900 truncate max-w-[24rem]" title={a.nombre}>{a.nombre}</td>
-                    <td className="px-6 py-4 text-sm text-gray-500">{a.tipo || '-'}</td>
-                    <td className="px-6 py-4 text-sm text-gray-500">{a.tamano ? `${(a.tamano/1024).toFixed(1)} KB` : '-'}</td>
-                    <td className="px-6 py-4 text-right">
-                      <a href={a.url} target="_blank" rel="noreferrer" className="inline-flex items-center px-3 py-1 border border-transparent text-sm leading-4 font-medium rounded-md text-white bg-black hover:bg-gray-900 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500">Ver / Descargar</a>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        )}
-      </div>
+      
+              
+
+      {/* Archivos de OneDrive */}
+      <SucursalOneDriveFiles 
+        empresaId={empresaId} 
+        sucursalId={sucursalId} 
+      />
 
       {/* Modal de detalles de medición */}
       {selectedMedicion && (

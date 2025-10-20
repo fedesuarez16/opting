@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { collection, getDocs, doc, getDoc } from 'firebase/firestore';
+import { collection, getDocs, doc, addDoc, updateDoc, deleteDoc } from 'firebase/firestore';
 import { firestore } from '@/lib/firebase';
 
 export interface Sucursal {
@@ -184,7 +184,8 @@ export function useSucursales(empresaId?: string) {
   // Cargar sucursales al montar el componente o cuando cambia el empresaId
   useEffect(() => {
     fetchSucursales();
-  }, [empresaId, fetchSucursales]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [empresaId]);
 
   return {
     sucursales,
