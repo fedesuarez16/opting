@@ -9,7 +9,6 @@ import Breadcrumb from '@/components/Breadcrumb';
 // import { useSucursales } from '@/hooks/useSucursales';
 import { useSucursalesCount } from '@/hooks/useSucursalesCount';
 import { useMedicionesCounts } from '@/hooks/useArchivosCounts';
-import { cn } from '@/lib/utils';
 import { Bar, BarChart, CartesianGrid, XAxis, YAxis } from "recharts";
 import {
   ChartContainer,
@@ -399,13 +398,13 @@ export default function EmpresasPage() {
       {/* Tabla de empresas con estilos shadcn */}
       <div className="w-full">
         <div className="rounded-md border border-gray-200 shadow-md">
-          <div className="px-6 py-4 border-b bg-muted/50 border-gray-100 text-gray-500">
+          <div className="px-6 py-4 border-b bg-gray-50 border-gray-100 text-gray-500">
             <div className="flex items-center justify-between">
               <h3 className="text-lg font-semibold">Unidades de negocio</h3>
               <div className="flex items-center gap-2">
-                <span className="text-sm text-muted-foreground">{filteredEmpresas.length} empresas</span>
-                <button type="button" className="p-2 rounded hover:bg-muted">
-                  <svg className="h-4 w-4 text-muted-foreground" viewBox="0 0 20 20" fill="currentColor">
+                <span className="text-sm text-gray-600">{filteredEmpresas.length} empresas</span>
+                <button type="button" className="p-2 rounded hover:bg-gray-100">
+                  <svg className="h-4 w-4 text-gray-600" viewBox="0 0 20 20" fill="currentColor">
                     <path d="M6 10a2 2 0 11-4 0 2 2 0 014 0zm6 0a2 2 0 11-4 0 2 2 0 014 0zm6 0a2 2 0 11-4 0 2 2 0 014 0z" />
                   </svg>
                 </button>
@@ -414,7 +413,7 @@ export default function EmpresasPage() {
           </div>
 
           {filteredEmpresas.length === 0 ? (
-            <div className="h-32 flex items-center justify-center text-muted-foreground">
+            <div className="h-32 flex items-center justify-center text-gray-600">
               <div className="text-center">
                 <p className="text-lg font-medium">No se encontraron empresas</p>
                 <p className="text-sm">Las empresas aparecerán aquí una vez que se agreguen al sistema.</p>
@@ -424,20 +423,20 @@ export default function EmpresasPage() {
             <div className="relative text-gray-500 overflow-x-auto">
               <table className="w-full text-gray-500 caption-bottom text-sm">
                 <thead className=" border-gray-200">
-                  <tr className="border-b border-gray-100 transition-colors hover:bg-muted/50 data-[state=selected]:bg-muted">
-                    <th className="h-12 px-4 text-left align-middle font-medium text-muted-foreground [&:has([role=checkbox])]:pr-0">
+                  <tr className="border-b border-gray-100 transition-colors hover:bg-gray-50">
+                    <th className="h-12 px-4 text-left align-middle font-medium text-gray-600 [&:has([role=checkbox])]:pr-0">
                       Nombre
                     </th>
-                    <th className="h-12 px-4 text-left align-middle font-medium text-muted-foreground [&:has([role=checkbox])]:pr-0">
+                    <th className="h-12 px-4 text-left align-middle font-medium text-gray-600 [&:has([role=checkbox])]:pr-0">
                       Teléfono
                     </th>
-                    <th className="h-12 px-4 text-left align-middle font-medium text-muted-foreground [&:has([role=checkbox])]:pr-0">
+                    <th className="h-12 px-4 text-left align-middle font-medium text-gray-600 [&:has([role=checkbox])]:pr-0">
                       CUIT
                     </th>
-                    <th className="h-12 px-4 text-left align-middle font-medium text-muted-foreground [&:has([role=checkbox])]:pr-0">
+                    <th className="h-12 px-4 text-left align-middle font-medium text-gray-600 [&:has([role=checkbox])]:pr-0">
                       Sucursales
                     </th>
-                    <th className="h-12 px-4 text-right align-middle font-medium text-muted-foreground [&:has([role=checkbox])]:pr-0">
+                    <th className="h-12 px-4 text-right align-middle font-medium text-gray-600 [&:has([role=checkbox])]:pr-0">
                       Acciones
                     </th>
                   </tr>
@@ -446,18 +445,18 @@ export default function EmpresasPage() {
                   {filteredEmpresas.map((empresa) => (
                     <tr
                       key={empresa.id}
-                      className="border-b border-gray-100 transition-colors hover:bg-muted/50 data-[state=selected]:bg-muted"
+                      className="border-b border-gray-100 transition-colors hover:bg-gray-50"
                     >
                       <td className="p-4 align-middle font-medium">
                         <div className="flex items-center gap-3">
-                          <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center">
-                            <span className="text-sm font-medium text-primary">
+                          <div className="h-8 w-8 rounded-full bg-blue-100 flex items-center justify-center">
+                            <span className="text-sm font-medium text-blue-600">
                               {empresa.nombre.charAt(0).toUpperCase()}
                             </span>
                           </div>
                           <div>
                             <div className="font-medium">{empresa.nombre}</div>
-                            <div className="text-sm text-muted-foreground">
+                            <div className="text-sm text-gray-600">
                               {empresa.email || 'Sin email'}
                             </div>
                           </div>
@@ -465,36 +464,30 @@ export default function EmpresasPage() {
                       </td>
                       <td className="p-4 align-middle">
                         {empresa.telefono || (
-                          <span className="text-muted-foreground">No disponible</span>
+                          <span className="text-gray-600">No disponible</span>
                         )}
                       </td>
                       <td className="p-4 align-middle font-mono text-sm">
                         {empresa.cuit || (
-                          <span className="text-muted-foreground">No disponible</span>
+                          <span className="text-gray-600">No disponible</span>
                         )}
                       </td>
                       <td className="p-4 align-middle">
                         {loadingSucursales ? (
                           <div className="animate-pulse">
-                            <div className="h-4 bg-muted rounded w-8"></div>
+                            <div className="h-4 bg-gray-200 rounded w-8"></div>
                           </div>
                         ) : (
                           <div className="flex items-center gap-1">
                             <span className="font-medium">{sucursalesPorEmpresa[empresa.id] || 0}</span>
-                            <span className="text-xs text-muted-foreground">sucursales</span>
+                            <span className="text-xs text-gray-600">sucursales</span>
                           </div>
                         )}
                       </td>
                       <td className="p-4 align-middle text-right">
                         <Link
                           href={`/dashboard/empresas/${empresa.id}/sucursales`}
-                          className={cn(
-                            "inline-flex items-center justify-center rounded-md text-sm font-medium transition-colors",
-                            "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
-                            "disabled:opacity-50 disabled:pointer-events-none ring-offset-background",
-                            "border border-input hover:bg-accent hover:text-accent-foreground",
-                            "h-9 px-3"
-                          )}
+                          className="inline-flex items-center justify-center rounded-md text-sm font-medium transition-colors border border-gray-300 hover:bg-gray-50 hover:text-gray-900 h-9 px-3"
                         >
                           Ver detalle
                         </Link>

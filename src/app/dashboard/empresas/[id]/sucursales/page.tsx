@@ -6,7 +6,6 @@ import { useEmpresas } from '@/hooks/useEmpresas';
 import Link from 'next/link';
 import Breadcrumb from '@/components/Breadcrumb';
 import { useMediciones } from '@/hooks/useMediciones';
-import { cn } from '@/lib/utils';
 import { Bar, BarChart, CartesianGrid, XAxis, YAxis } from "recharts";
 import {
   ChartContainer,
@@ -518,13 +517,13 @@ export default function SucursalesPage({ params }: SucursalesPageProps) {
       {/* Tabla de sucursales con estilos shadcn */}
       <div className="w-full">
         <div className="rounded-md border border-gray-200 shadow-md">
-          <div className="px-6 py-4 border-b bg-muted/50 border-gray-100 text-gray-500">
+          <div className="px-6 py-4 border-b bg-gray-50 border-gray-100 text-gray-500">
             <div className="flex items-center justify-between">
               <h3 className="text-lg font-semibold">Sucursales</h3>
               <div className="flex items-center gap-2">
-                <span className="text-sm text-muted-foreground">{filteredSucursales.length} sucursales</span>
-                <button type="button" className="p-2 rounded hover:bg-muted">
-                  <svg className="h-4 w-4 text-muted-foreground" viewBox="0 0 20 20" fill="currentColor">
+                <span className="text-sm text-gray-600">{filteredSucursales.length} sucursales</span>
+                <button type="button" className="p-2 rounded hover:bg-gray-100">
+                  <svg className="h-4 w-4 text-gray-600" viewBox="0 0 20 20" fill="currentColor">
                     <path d="M6 10a2 2 0 11-4 0 2 2 0 014 0zm6 0a2 2 0 11-4 0 2 2 0 014 0zm6 0a2 2 0 11-4 0 2 2 0 014 0z" />
                   </svg>
                 </button>
@@ -533,7 +532,7 @@ export default function SucursalesPage({ params }: SucursalesPageProps) {
           </div>
 
           {filteredSucursales.length === 0 ? (
-            <div className="h-32 flex items-center justify-center text-muted-foreground">
+            <div className="h-32 flex items-center justify-center text-gray-600">
               <div className="text-center">
                 <p className="text-lg font-medium">No se encontraron sucursales</p>
                 <p className="text-sm">Las sucursales aparecerán aquí una vez que se agreguen al sistema.</p>
@@ -543,20 +542,20 @@ export default function SucursalesPage({ params }: SucursalesPageProps) {
             <div className="relative text-gray-500 overflow-x-auto">
               <table className="w-full text-gray-500 caption-bottom text-sm">
                 <thead className=" border-gray-200">
-                  <tr className="border-b border-gray-100 transition-colors hover:bg-muted/50 data-[state=selected]:bg-muted">
-                    <th className="h-12 px-4 text-left align-middle font-medium text-muted-foreground [&:has([role=checkbox])]:pr-0">
+                  <tr className="border-b border-gray-100 transition-colors hover:bg-gray-50">
+                    <th className="h-12 px-4 text-left align-middle font-medium text-gray-600 [&:has([role=checkbox])]:pr-0">
                       Sucursal
                     </th>
-                    <th className="h-12 px-4 text-left align-middle font-medium text-muted-foreground [&:has([role=checkbox])]:pr-0">
+                    <th className="h-12 px-4 text-left align-middle font-medium text-gray-600 [&:has([role=checkbox])]:pr-0">
                       Mediciones
                     </th>
-                    <th className="h-12 px-4 text-left align-middle font-medium text-muted-foreground [&:has([role=checkbox])]:pr-0">
+                    <th className="h-12 px-4 text-left align-middle font-medium text-gray-600 [&:has([role=checkbox])]:pr-0">
                       Email
                     </th>
-                    <th className="h-12 px-4 text-left align-middle font-medium text-muted-foreground [&:has([role=checkbox])]:pr-0">
+                    <th className="h-12 px-4 text-left align-middle font-medium text-gray-600 [&:has([role=checkbox])]:pr-0">
                       Teléfono
                     </th>
-                    <th className="h-12 px-4 text-right align-middle font-medium text-muted-foreground [&:has([role=checkbox])]:pr-0">
+                    <th className="h-12 px-4 text-right align-middle font-medium text-gray-600 [&:has([role=checkbox])]:pr-0">
                       Acciones
                     </th>
                   </tr>
@@ -565,24 +564,24 @@ export default function SucursalesPage({ params }: SucursalesPageProps) {
                   {filteredSucursales.map((sucursal) => (
                     <tr
                       key={sucursal.id}
-                      className="border-b border-gray-100 transition-colors hover:bg-muted/50 data-[state=selected]:bg-muted"
+                      className="border-b border-gray-100 transition-colors hover:bg-gray-50"
                     >
                       <td className="p-4 align-middle font-medium">
                         <div className="flex items-center gap-3">
-                          <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center">
-                            <span className="text-sm font-medium text-primary">
+                          <div className="h-8 w-8 rounded-full bg-blue-100 flex items-center justify-center">
+                            <span className="text-sm font-medium text-blue-600">
                               {sucursal.nombre.charAt(0).toUpperCase()}
                             </span>
                           </div>
                           <div>
                             <div className="font-medium">{sucursal.nombre}</div>
-                            <div className="text-sm text-muted-foreground">
+                            <div className="text-sm text-gray-600">
                               {sucursal.direccion || 'Sin dirección'}
                             </div>
                             {sucursal.categorias && sucursal.categorias.length > 0 && (
                               <div className="mt-1 flex flex-wrap gap-1">
                                 {sucursal.categorias.map((cat) => (
-                                  <span key={cat} className="inline-flex items-center px-1.5 py-0.5 text-xs font-medium rounded-full bg-muted text-muted-foreground">
+                                  <span key={cat} className="inline-flex items-center px-1.5 py-0.5 text-xs font-medium rounded-full bg-gray-100 text-gray-600">
                                     {cat}
                                   </span>
                                 ))}
@@ -594,41 +593,35 @@ export default function SucursalesPage({ params }: SucursalesPageProps) {
                       <td className="p-4 align-middle">
                         {loadingMediciones ? (
                           <div className="animate-pulse">
-                            <div className="h-4 bg-muted rounded w-16 mb-1"></div>
-                            <div className="h-3 bg-muted rounded w-12"></div>
+                            <div className="h-4 bg-gray-200 rounded w-16 mb-1"></div>
+                            <div className="h-3 bg-gray-200 rounded w-12"></div>
                           </div>
                         ) : (
                           <div className="text-sm">
                             {medicionesEnNubePorSucursal[sucursal.id]?.length > 0 ? (
-                              <div className="text-xs text-muted-foreground">
+                              <div className="text-xs text-gray-600">
                                 Última: {medicionesEnNubePorSucursal[sucursal.id][0]?.fecha || 'N/A'}
                               </div>
                             ) : (
-                              <span className="text-muted-foreground">Sin mediciones</span>
+                              <span className="text-gray-600">Sin mediciones</span>
                             )}
                           </div>
                         )}
                       </td>
                       <td className="p-4 align-middle">
                         {sucursal.email || (
-                          <span className="text-muted-foreground">No disponible</span>
+                          <span className="text-gray-600">No disponible</span>
                         )}
                       </td>
                       <td className="p-4 align-middle font-mono text-sm">
                         {sucursal.telefono || (
-                          <span className="text-muted-foreground">No disponible</span>
+                          <span className="text-gray-600">No disponible</span>
                         )}
                       </td>
                       <td className="p-4 align-middle text-right">
                         <Link
                           href={`/dashboard/empresas/${empresaId}/sucursales/${sucursal.id}`}
-                          className={cn(
-                            "inline-flex items-center justify-center rounded-md text-sm font-medium transition-colors",
-                            "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
-                            "disabled:opacity-50 disabled:pointer-events-none ring-offset-background",
-                            "border border-input hover:bg-accent hover:text-accent-foreground",
-                            "h-9 px-3"
-                          )}
+                          className="inline-flex items-center justify-center rounded-md text-sm font-medium transition-colors border border-gray-300 hover:bg-gray-50 hover:text-gray-900 h-9 px-3"
                         >
                           Ver detalle
                         </Link>
