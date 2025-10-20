@@ -450,7 +450,7 @@ export default function EmpresasPage() {
                       <td className="p-4 align-middle font-medium">
                         <div className="flex items-center gap-3">
                           <div className="h-8 w-8 rounded-full bg-blue-100 flex items-center justify-center">
-                            <span className="text-sm font-medium text-blue-600">
+                            <span className="text-sm font-medium text-blue-500">
                               {empresa.nombre.charAt(0).toUpperCase()}
                             </span>
                           </div>
