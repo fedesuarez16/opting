@@ -2,7 +2,8 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Fragment } from 'react';
+import { Fragment, useMemo } from 'react';
+import { useEmpresas } from '@/hooks/useEmpresas';
 
 interface BreadcrumbProps {
   customLabels?: Record<string, string>;
@@ -10,9 +11,10 @@ interface BreadcrumbProps {
 
 export default function Breadcrumb({ customLabels = {} }: BreadcrumbProps) {
   const pathname = usePathname();
+  const { empresas } = useEmpresas();
   
-  // Skip the first empty segment after splitting
-  const segments = pathname.split('/').filter(Boolean);
+  // Skip the first empty segment after splitting - memoize to prevent unnecessary re-renders
+  const segments = useMemo(() => pathname.split('/').filter(Boolean), [pathname]);
   
   // Custom mapping for segment labels
   const defaultLabels: Record<string, string> = {
@@ -23,12 +25,33 @@ export default function Breadcrumb({ customLabels = {} }: BreadcrumbProps) {
     'reports': 'Reportes',
     'documents': 'Documentos',
   };
+
+  // Auto-resolve dynamic labels based on URL structure - use useMemo instead of useEffect to avoid infinite loops
+  const dynamicLabels = useMemo(() => {
+    const newDynamicLabels: Record<string, string> = {};
+    
+    segments.forEach((segment, index) => {
+      // If we're at empresas/[id]/sucursales, try to resolve the empresa ID
+      if (segments[index - 1] === 'empresas' && segments[index + 1] === 'sucursales') {
+        const empresa = empresas.find(e => e.id === segment);
+        if (empresa) {
+          newDynamicLabels[segment] = empresa.nombre;
+        }
+      }
+    });
+
+    return newDynamicLabels;
+  }, [segments, empresas]);
   
-  // Merge default labels with custom labels
-  const labels = { ...defaultLabels, ...customLabels };
+  // Merge default labels with custom labels and dynamic labels
+  const labels = useMemo(() => ({ 
+    ...defaultLabels, 
+    ...dynamicLabels, 
+    ...customLabels 
+  }), [dynamicLabels, customLabels]);
 
   return (
-    <nav className="flex mb-4 p-4 bg-white shadow-sm rounded-md" aria-label="Breadcrumb">
+    <nav className="flex" aria-label="Breadcrumb">
       <ol className="flex items-center space-x-2">
         <li>
           <Link 
@@ -51,7 +74,10 @@ export default function Breadcrumb({ customLabels = {} }: BreadcrumbProps) {
           // Check if this is a dynamic segment (starts with '[' and ends with ']')
           const isDynamicSegment = segment.startsWith('[') && segment.endsWith(']');
           
-          // If it's the last segment or a dynamic segment, don't make it a link
+          // Check if this looks like a dynamic ID (UUID or long string that's not a known route)
+          const looksLikeId = segment.length > 10 && !labels[segment];
+          
+          // If it's the last segment, don't make it a link
           const isLastSegment = index === segments.length - 1;
           
           // Get the display label for this segment
@@ -60,7 +86,7 @@ export default function Breadcrumb({ customLabels = {} }: BreadcrumbProps) {
           // If it's a dynamic segment, remove the brackets and use the custom label if provided
           if (isDynamicSegment) {
             const paramName = segment.slice(1, -1); // Remove the brackets
-            displayLabel = customLabels[paramName] || paramName;
+            displayLabel = labels[paramName] || customLabels[paramName] || paramName;
           } else {
             displayLabel = labels[segment] || segment;
           }
@@ -73,7 +99,7 @@ export default function Breadcrumb({ customLabels = {} }: BreadcrumbProps) {
                 </svg>
               </li>
               <li>
-                {isLastSegment || isDynamicSegment ? (
+                {isLastSegment ? (
                   <span className="text-gray-700 font-medium">{displayLabel}</span>
                 ) : (
                   <Link 

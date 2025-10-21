@@ -9,13 +9,18 @@ import { useState } from 'react';
 interface SidebarProps {
   isMobile?: boolean;
   onCloseMobileMenu?: () => void;
+  collapsed?: boolean;
+  onToggle?: () => void;
 }
 
-export default function Sidebar({ isMobile = false, onCloseMobileMenu }: SidebarProps) {
+export default function Sidebar({ isMobile = false, onCloseMobileMenu, collapsed: externalCollapsed, onToggle }: SidebarProps) {
   const { user, logout } = useAuth();
   const pathname = usePathname();
   const router = useRouter();
-  const [collapsed, setCollapsed] = useState(false);
+  const [internalCollapsed, setInternalCollapsed] = useState(false);
+  
+  // Use external collapsed state if provided, otherwise use internal state
+  const collapsed = externalCollapsed !== undefined ? externalCollapsed : internalCollapsed;
 
   const handleLogout = async () => {
     await logout();
@@ -23,7 +28,11 @@ export default function Sidebar({ isMobile = false, onCloseMobileMenu }: Sidebar
   };
 
   const toggleSidebar = () => {
-    setCollapsed(!collapsed);
+    if (onToggle) {
+      onToggle();
+    } else {
+      setInternalCollapsed(!internalCollapsed);
+    }
   };
 
   return (
@@ -40,22 +49,25 @@ export default function Sidebar({ isMobile = false, onCloseMobileMenu }: Sidebar
               className="object-contain"
             />
           </div>
-          <button 
-            onClick={toggleSidebar}
-            aria-label={collapsed ? 'Expandir sidebar' : 'Colapsar sidebar'}
-            className="absolute right-3 top-1/2 -translate-y-1/2 inline-flex h-8 w-8 items-center justify-center bg-white text-gray-600 hover:bg-gray-50 hover:text-gray-800 focus:outline-none focus:ring-2 focus:ring-gray-300 transition"
-          >
-            <Image src="/Button.png" alt="Toggle sidebar" width={16} height={16} />
-          </button>
+          {/* Only show toggle button on mobile or when external toggle is not provided */}
+          {(isMobile || !onToggle) && (
+            <button 
+              onClick={toggleSidebar}
+              aria-label={collapsed ? 'Expandir sidebar' : 'Colapsar sidebar'}
+              className="absolute right-3 top-1/2 -translate-y-1/2 inline-flex h-8 w-8 items-center justify-center bg-white text-gray-600 hover:bg-gray-50 hover:text-gray-800 focus:outline-none focus:ring-2 focus:ring-gray-300 transition"
+            >
+              <Image src="/Button.png" alt="Toggle sidebar" width={16} height={16} />
+            </button>
+          )}
         </div>
 
         {/* Navigation */}
         {!collapsed && <div className="px-4 text-sm text-gray-500"></div>}
         <nav className="mt-2 flex-1 px-2 bg-white space-y-1">
           <Link
-            href="/dashboard"
+            href="/dashboard/empresas"
             className={`group flex items-center px-2 py-2 text-sm font-medium rounded-md ${
-              pathname === '/dashboard' 
+              pathname === '/dashboard/empresas' 
                 ? 'bg-gray-100 text-gray-900' 
                 : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
             } ${collapsed ? 'justify-center' : ''}`}
@@ -63,7 +75,7 @@ export default function Sidebar({ isMobile = false, onCloseMobileMenu }: Sidebar
             title="Dashboard"
           >
             <span className={`${collapsed ? '' : 'mr-3'} h-6 w-6 ${
-              pathname === '/dashboard' ? 'text-gray-900' : 'text-gray-400'
+              pathname === '/dashboard/empresas' ? 'text-gray-900' : 'text-gray-400'
             }`}>
               {/* Dashboard icon */}
               <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5">
@@ -96,7 +108,7 @@ export default function Sidebar({ isMobile = false, onCloseMobileMenu }: Sidebar
           </Link>
 
           <Link
-            href="/dashboard/sucursales"
+            href="/dashboard/empresas"
             className={`group flex items-center px-2 py-2 text-sm font-medium rounded-md ${
               pathname.startsWith('/dashboard/sucursales') 
                 ? 'bg-gray-100 text-gray-900' 
@@ -106,7 +118,7 @@ export default function Sidebar({ isMobile = false, onCloseMobileMenu }: Sidebar
             title="Sucursales"
           >
             <span className={`${collapsed ? '' : 'mr-3'} h-6 w-6 ${
-              pathname.startsWith('/dashboard/sucursales') ? 'text-gray-900' : 'text-gray-400'
+              pathname.startsWith('/dashboard/empresas') ? 'text-gray-900' : 'text-gray-400'
             }`}>
               {/* Sucursales icon */}
               <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5">
@@ -119,9 +131,9 @@ export default function Sidebar({ isMobile = false, onCloseMobileMenu }: Sidebar
           {/* Keep the rest of the links but hidden for now since they're not in the image */}
           <div className="hidden">
             <Link
-              href="/dashboard/documents"
+              href="/dashboard/empresas"
               className={`group flex items-center px-2 py-2 text-sm font-medium rounded-md ${
-                pathname === '/dashboard/documents' 
+                pathname === '/dashboard/empresas' 
                   ? 'bg-gray-100 text-gray-900' 
                   : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
               }`}

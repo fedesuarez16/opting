@@ -5,7 +5,6 @@ import { useEmpresas, Empresa } from '@/hooks/useEmpresas';
 import Link from 'next/link';
 import { collection, getDocs, addDoc } from 'firebase/firestore';
 import { firestore } from '@/lib/firebase';
-import Breadcrumb from '@/components/Breadcrumb';
 // import { useSucursales } from '@/hooks/useSucursales';
 import { useSucursalesCount } from '@/hooks/useSucursalesCount';
 import { useMedicionesCounts } from '@/hooks/useArchivosCounts';
@@ -159,13 +158,7 @@ export default function EmpresasPage() {
   }
 
   return (
-    <div className='p-8 bg-white'>
-      {/* Add the breadcrumb at the top */}
-      <Breadcrumb />
-      
-      
-      
-      
+    <div className='p-8 bg-gray-50 min-h-full'>
       {/* Cards de métricas */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
       

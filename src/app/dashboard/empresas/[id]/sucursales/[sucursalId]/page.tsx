@@ -233,36 +233,7 @@ export default function SucursalDetailPage({ params }: SucursalDetailPageProps) 
 
   return (
     <div className='p-8 bg-white'>
-      {/* Breadcrumb */}
-      <div className="mb-6">
-        <nav className="flex shadow-sm h-12 rounded-lg px-2" aria-label="Breadcrumb">
-          <ol className="inline-flex items-center space-x-1 md:space-x-3">
-            <li className="inline-flex items-center">
-              <Link href="/dashboard/empresas" className="text-gray-700 hover:text-gray-600">
-                Empresas
-              </Link>
-            </li>
-            <li>
-              <div className="flex items-center">
-                <svg className="w-6 h-6 text-gray-400" fill="currentColor" viewBox="0 0 20 20">
-                  <path fillRule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clipRule="evenodd"></path>
-                </svg>
-                <Link href={`/dashboard/empresas/${empresaId}/sucursales`} className="ml-1 text-gray-700 hover:text-gray-600 md:ml-2">
-                  {empresa?.nombre || 'Empresa'}
-                </Link>
-              </div>
-            </li>
-            <li aria-current="page">
-              <div className="flex items-center">
-                <svg className="w-6 h-6 text-gray-400" fill="currentColor" viewBox="0 0 20 20">
-                  <path fillRule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clipRule="evenodd"></path>
-                </svg>
-                <span className="ml-1 text-gray-500 md:ml-2">{sucursal?.nombre || 'Sucursal'}</span>
-              </div>
-            </li>
-          </ol>
-        </nav>
-      </div>
+     
 
       {/* Header */}
       <div className="sm:flex sm:items-center sm:justify-between mb-6">
@@ -415,34 +386,7 @@ export default function SucursalDetailPage({ params }: SucursalDetailPageProps) 
         </div>
       </div>
 
-      {/* Buscador */}
-      <div className="mb-6">
-        <div className="mt-1 relative rounded-md shadow-sm">
-          <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-            <svg
-              className="h-5 w-5 text-gray-400"
-              xmlns="http://www.w3.org/2000/svg"
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke="currentColor"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
-              />
-            </svg>
-          </div>
-          <input
-            type="text"
-            value={search}
-            onChange={e => setSearch(e.target.value)}
-            className="bg-white h-10 block w-full pl-10 sm:text-sm rounded-md border-gray-300 ring-1 ring-gray-200 focus:ring-2 focus:ring-gray-500 focus:border-gray-500 placeholder-gray-400"
-            placeholder="Buscar mediciones por fecha, técnico o servicio..."
-          />
-        </div>
-      </div>
+     
 
       {/* Lista de mediciones mejorada */}
       {filteredMediciones.length === 0 ? (
@@ -476,8 +420,8 @@ export default function SucursalDetailPage({ params }: SucursalDetailPageProps) 
                     <div className="flex-1">
                       <div className="flex items-center gap-4 mb-3">
                         <div className="flex-shrink-0">
-                          <div className="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center">
-                            <svg className="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <div className="w-12 h-12 bg-gray-100 rounded-lg flex items-center justify-center">
+                            <svg className="w-6 h-6 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                             </svg>
                           </div>
@@ -546,7 +490,7 @@ export default function SucursalDetailPage({ params }: SucursalDetailPageProps) 
                     <div className="ml-4 flex-shrink-0">
                       <button
                         onClick={() => setSelectedMedicion(medicion)}
-                        className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-lg text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors"
+                        className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-lg text-white bg-gray-600 hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500 transition-colors"
                       >
                         <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
@@ -562,6 +506,36 @@ export default function SucursalDetailPage({ params }: SucursalDetailPageProps) 
           </div>
         </div>
       )}
+
+
+       {/* Buscador */}
+       <div className="mb-6 mt-6">
+        <div className="mt-1 relative rounded-md shadow-sm">
+          <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+            <svg
+              className="h-5 w-5 text-gray-400"
+              xmlns="http://www.w3.org/2000/svg"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
+              />
+            </svg>
+          </div>
+          <input
+            type="text"
+            value={search}
+            onChange={e => setSearch(e.target.value)}
+            className="bg-white h-10 block w-full pl-10 sm:text-sm rounded-md border-gray-300 ring-1 ring-gray-200 focus:ring-2 focus:ring-gray-500 focus:border-gray-500 placeholder-gray-400"
+            placeholder="Buscar mediciones por fecha, técnico o servicio..."
+          />
+        </div>
+      </div>
 
       
               

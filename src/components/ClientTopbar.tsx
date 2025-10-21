@@ -50,8 +50,8 @@ export default function ClientTopbar({ onOpenMobileMenu }: ClientTopbarProps) {
         <div className="ml-4 flex items-center md:ml-6">
           <div className="flex items-center">
             <div className="flex-shrink-0">
-              <div className="h-8 w-8 rounded-full bg-blue-100 flex items-center justify-center">
-                <span className="text-sm font-medium text-blue-600">
+              <div className="h-8 w-8 rounded-full bg-gray-100 flex items-center justify-center">
+                <span className="text-sm font-medium text-gray-600">
                   {user?.email?.charAt(0).toUpperCase() || 'U'}
                 </span>
               </div>

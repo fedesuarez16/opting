@@ -184,7 +184,7 @@ export default function SucursalOneDriveFiles({ empresaId, sucursalId }: Sucursa
     <div className="bg-white rounded-2xl p-6 border border-gray-200 shadow-sm mb-6">
       <div className="flex items-center justify-between mb-6">
         <div>
-          <h3 className="text-lg font-medium text-gray-900">Archivos de OneDrive</h3>
+          <h3 className="text-lg font-medium text-gray-900">Archivos de sucursal</h3>
           {empresaNombre && (
             <p className="text-sm text-gray-500">
               {empresaNombre} - {sucursalId}

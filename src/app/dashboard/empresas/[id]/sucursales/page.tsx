@@ -4,7 +4,6 @@ import { useState, use, useEffect, useMemo } from 'react';
 import { useSucursales, Sucursal } from '@/hooks/useSucursales';
 import { useEmpresas } from '@/hooks/useEmpresas';
 import Link from 'next/link';
-import Breadcrumb from '@/components/Breadcrumb';
 import { useMediciones } from '@/hooks/useMediciones';
 import { Bar, BarChart, CartesianGrid, XAxis, YAxis } from "recharts";
 import {
@@ -281,9 +280,6 @@ export default function SucursalesPage({ params }: SucursalesPageProps) {
 
   return (
     <div className='p-8 bg-white' >
-      {/* Custom breadcrumb at the top */}
-      <Breadcrumb customLabels={customLabels} />
-      
       <div className='mb-4'>
           <div className="flex items-center">
             <Link href="/dashboard/empresas" className="mr-2 text-gray-600 hover:text-gray-900">
@@ -620,7 +616,7 @@ export default function SucursalesPage({ params }: SucursalesPageProps) {
                       </td>
                       <td className="p-4 align-middle text-right">
                         <Link
-                          href={`/dashboard/empresas/${empresaId}/sucursales/${sucursal.id}`}
+                          href={`/dashboard/empresas/${resolvedParams.id}/sucursales/${encodeURIComponent(sucursal.id)}`}
                           className="inline-flex items-center justify-center rounded-md text-sm font-medium transition-colors border border-gray-300 hover:bg-gray-50 hover:text-gray-900 h-9 px-3"
                         >
                           Ver detalle
