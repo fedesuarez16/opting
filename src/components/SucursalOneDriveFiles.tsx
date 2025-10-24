@@ -5,11 +5,13 @@ import { useState, useEffect, useRef, useCallback } from 'react';
 interface OneDriveFile {
   id: string;
   name: string;
+  type: 'file' | 'folder';
   url: string | null;
   size?: number;
   lastModified?: string;
   created?: string;
   webUrl?: string;
+  childCount?: number;
 }
 
 interface SucursalOneDriveApiResponse {
@@ -36,10 +38,12 @@ export default function SucursalOneDriveFiles({ empresaId, sucursalId }: Sucursa
   const [error, setError] = useState<string | null>(null);
   const [empresaNombre, setEmpresaNombre] = useState<string>('');
   const [folderPath, setFolderPath] = useState<string>('');
+  const [currentFolderId, setCurrentFolderId] = useState<string | null>(null);
+  const [folderHistory, setFolderHistory] = useState<Array<{ id: string; name: string }>>([]);
   const isFetchingRef = useRef(false);
   const hasFetchedRef = useRef(false);
 
-  const fetchFiles = useCallback(async () => {
+  const fetchFiles = useCallback(async (folderId?: string) => {
     // Evitar múltiples llamadas simultáneas
     if (isFetchingRef.current || !empresaId || !sucursalId) {
       return;
@@ -50,9 +54,17 @@ export default function SucursalOneDriveFiles({ empresaId, sucursalId }: Sucursa
       setLoading(true);
       setError(null);
 
-      console.log('🔍 [OneDrive] Fetching files for:', empresaId, sucursalId);
+      console.log('🔍 [OneDrive] Fetching files for:', empresaId, sucursalId, folderId ? `in folder ${folderId}` : '');
 
-      const response = await fetch(`/api/onedrive/sucursal-files?empresaId=${encodeURIComponent(empresaId)}&sucursalId=${encodeURIComponent(sucursalId)}`);
+      let response;
+      if (folderId) {
+        // Fetch folder contents
+        response = await fetch(`/api/onedrive/folder-contents?folderId=${encodeURIComponent(folderId)}&empresaId=${encodeURIComponent(empresaId)}&sucursalId=${encodeURIComponent(sucursalId)}`);
+      } else {
+        // Fetch initial sucursal files
+        response = await fetch(`/api/onedrive/sucursal-files?empresaId=${encodeURIComponent(empresaId)}&sucursalId=${encodeURIComponent(sucursalId)}`);
+      }
+
       const data: SucursalOneDriveApiResponse = await response.json();
 
       if (!response.ok) {
@@ -61,8 +73,13 @@ export default function SucursalOneDriveFiles({ empresaId, sucursalId }: Sucursa
 
       if (data.success) {
         setFiles(data.files);
-        setEmpresaNombre(data.empresaNombre);
-        setFolderPath(data.folderPath);
+        setCurrentFolderId(folderId || null);
+        
+        if (!folderId) {
+          // Solo actualizar estos valores en la carga inicial
+          setEmpresaNombre(data.empresaNombre);
+          setFolderPath(data.folderPath);
+        }
         
         if (data.message) {
           console.log('ℹ️ [OneDrive]', data.message);
@@ -81,6 +98,31 @@ export default function SucursalOneDriveFiles({ empresaId, sucursalId }: Sucursa
       isFetchingRef.current = false;
     }
   }, [empresaId, sucursalId]);
+
+  const navigateToFolder = useCallback((folderId: string, folderName: string) => {
+    setFolderHistory(prev => [...prev, { id: folderId, name: folderName }]);
+    fetchFiles(folderId);
+  }, [fetchFiles]);
+
+  const navigateBack = useCallback(() => {
+    if (folderHistory.length > 0) {
+      const newHistory = [...folderHistory];
+      newHistory.pop();
+      setFolderHistory(newHistory);
+      
+      if (newHistory.length === 0) {
+        // Volver a la carpeta inicial
+        fetchFiles();
+      } else {
+        // Navegar a la carpeta anterior
+        const previousFolder = newHistory[newHistory.length - 1];
+        fetchFiles(previousFolder.id);
+      }
+    } else {
+      // Volver a la carpeta inicial
+      fetchFiles();
+    }
+  }, [folderHistory, fetchFiles]);
 
   useEffect(() => {
     // Solo fetch una vez cuando el componente se monta
@@ -115,8 +157,12 @@ export default function SucursalOneDriveFiles({ empresaId, sucursalId }: Sucursa
     });
   };
 
-  const getFileIcon = (fileName: string): string => {
-    const extension = fileName.split('.').pop()?.toLowerCase() || '';
+  const getFileIcon = (file: OneDriveFile): string => {
+    if (file.type === 'folder') {
+      return '📁';
+    }
+    
+    const extension = file.name.split('.').pop()?.toLowerCase() || '';
     
     switch (extension) {
       case 'pdf':
@@ -141,7 +187,7 @@ export default function SucursalOneDriveFiles({ empresaId, sucursalId }: Sucursa
       case 'txt':
         return '📃';
       default:
-        return '📁';
+        return '📄';
     }
   };
 
@@ -184,7 +230,18 @@ export default function SucursalOneDriveFiles({ empresaId, sucursalId }: Sucursa
     <div className="bg-white rounded-2xl p-6 border border-gray-200 shadow-sm mb-6">
       <div className="flex items-center justify-between mb-6">
         <div>
-          <h3 className="text-lg font-medium text-gray-900">Archivos de sucursal</h3>
+          <div className="flex items-center space-x-2 mb-2">
+            <h3 className="text-lg font-medium text-gray-900">Archivos de sucursal</h3>
+            {folderHistory.length > 0 && (
+              <button
+                onClick={navigateBack}
+                className="px-2 py-1 text-sm bg-gray-100 text-gray-600 rounded-md hover:bg-gray-200 transition-colors"
+                title="Volver"
+              >
+                ← Volver
+              </button>
+            )}
+          </div>
           {empresaNombre && (
             <p className="text-sm text-gray-500">
               {empresaNombre} - {sucursalId}
@@ -195,10 +252,21 @@ export default function SucursalOneDriveFiles({ empresaId, sucursalId }: Sucursa
               Ruta: {folderPath}
             </p>
           )}
+          {folderHistory.length > 0 && (
+            <div className="flex items-center space-x-1 mt-1">
+              <span className="text-xs text-gray-400">Ubicación actual:</span>
+              {folderHistory.map((folder, index) => (
+                <span key={folder.id} className="text-xs text-gray-600">
+                  {folder.name}
+                  {index < folderHistory.length - 1 && <span className="mx-1">/</span>}
+                </span>
+              ))}
+            </div>
+          )}
         </div>
         <div className="flex items-center space-x-3">
           <div className="text-sm text-gray-500">
-            {files.length} archivo{files.length !== 1 ? 's' : ''}
+            {files.length} elemento{files.length !== 1 ? 's' : ''}
           </div>
           <button
             onClick={handleRefresh}
@@ -227,18 +295,27 @@ export default function SucursalOneDriveFiles({ empresaId, sucursalId }: Sucursa
           {files.map((file) => (
             <div
               key={file.id}
-              className="flex items-center justify-between p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors"
+              className={`flex items-center justify-between p-4 rounded-lg transition-colors ${
+                file.type === 'folder' 
+                  ? 'bg-gray-100 hover:bg-gray-200 cursor-pointer border border-gray-300' 
+                  : 'bg-gray-50 hover:bg-gray-100'
+              }`}
+              onClick={file.type === 'folder' ? () => navigateToFolder(file.id, file.name) : undefined}
             >
               <div className="flex items-center space-x-3 flex-1 min-w-0">
                 <span className="text-2xl flex-shrink-0">
-                  {getFileIcon(file.name)}
+                  {getFileIcon(file)}
                 </span>
                 <div className="flex-1 min-w-0">
                   <p className="text-sm font-medium text-gray-900 truncate">
                     {file.name}
                   </p>
                   <div className="flex items-center space-x-4 text-xs text-gray-500">
-                    <span>{formatFileSize(file.size)}</span>
+                    {file.type === 'folder' ? (
+                      <span>{file.childCount || 0} elemento{(file.childCount || 0) !== 1 ? 's' : ''}</span>
+                    ) : (
+                      <span>{formatFileSize(file.size)}</span>
+                    )}
                     {file.lastModified && (
                       <span>Modificado: {formatDate(file.lastModified)}</span>
                     )}
@@ -247,15 +324,23 @@ export default function SucursalOneDriveFiles({ empresaId, sucursalId }: Sucursa
               </div>
               
               <div className="flex items-center space-x-2 flex-shrink-0">
-                {file.url ? (
-                  <a
-                    href={file.url}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="px-3 py-1 bg-blue-500 text-white text-sm rounded-md hover:bg-blue-600 transition-colors"
-                  >
-                    Descargar
-                  </a>
+                {file.type === 'folder' ? (
+                  <span className="px-3 py-1 bg-gray-200 text-gray-700 text-sm rounded-md">
+                    Abrir carpeta
+                  </span>
+                ) : file.url ? (
+                  <>
+                    
+                    <a
+                      href={file.url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="px-3 py-1 bg-gray-500 text-white text-sm rounded-md hover:bg-gray-600 transition-colors"
+                      onClick={(e) => e.stopPropagation()}
+                    >
+                      Descargar
+                    </a>
+                  </>
                 ) : (
                   <span className="px-3 py-1 bg-gray-300 text-gray-500 text-sm rounded-md cursor-not-allowed">
                     No disponible

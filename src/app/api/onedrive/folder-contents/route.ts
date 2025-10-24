@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { adminFirestore } from '@/lib/firebaseAdmin';
-import { OneDriveAuth, searchOneDriveFolders, getOneDriveFilesWithToken } from '@/lib/onedrive-auth';
+import { OneDriveAuth, getOneDriveFilesWithToken } from '@/lib/onedrive-auth';
 
 interface OneDriveItem {
   id: string;
@@ -60,79 +60,24 @@ async function getValidAccessToken(): Promise<string> {
 export async function GET(req: NextRequest) {
   try {
     const searchParams = req.nextUrl.searchParams;
+    const folderId = searchParams.get('folderId');
     const empresaId = searchParams.get('empresaId');
     const sucursalId = searchParams.get('sucursalId');
 
-    if (!empresaId || !sucursalId) {
+    if (!folderId) {
       return NextResponse.json(
-        { error: 'empresaId and sucursalId are required' },
+        { error: 'folderId is required' },
         { status: 400 }
       );
     }
 
-    // 1. Obtener información de la empresa desde Firestore
-    const empresaDoc = await adminFirestore
-      .collection('empresas')
-      .doc(empresaId)
-      .get();
-
-    if (!empresaDoc.exists) {
-      return NextResponse.json(
-        { error: 'Empresa not found' },
-        { status: 404 }
-      );
-    }
-
-    const empresaData = empresaDoc.data();
-    const empresaNombre = empresaData?.nombre || empresaId;
-
-    console.log('🏢 Empresa encontrada:', empresaNombre);
-
-    // 2. Obtener token válido
+    // 1. Obtener token válido
     const accessToken = await getValidAccessToken();
 
-    // 3. Buscar la carpeta de la sucursal en OneDrive
-    // Estructura: ARCOS DORADOS/2- Seguridad & Higiene/CABA/AB3
-    const folderPath = `${empresaNombre}/2- Seguridad & Higiene/CABA/${sucursalId}`;
-    
-    console.log('🔍 Buscando carpeta:', folderPath);
+    // 2. Obtener contenido de la carpeta
+    const files = await getOneDriveFilesWithToken(accessToken, folderId);
 
-    // Buscar por nombre de la sucursal primero
-    const folders = await searchOneDriveFolders(accessToken, sucursalId);
-    
-    // Filtrar para encontrar la carpeta correcta
-    let targetFolder = null;
-    
-    for (const folder of folders) {
-      // Verificar si esta carpeta está en la estructura correcta
-      // Por ahora, vamos a buscar por nombre exacto de sucursal
-      if (folder.name === sucursalId) {
-        // Verificar si está dentro de la estructura esperada
-        // TODO: Implementar búsqueda recursiva para verificar la ruta completa
-        targetFolder = folder;
-        break;
-      }
-    }
-
-    if (!targetFolder) {
-      return NextResponse.json({
-        success: true,
-        empresaId,
-        sucursalId,
-        empresaNombre,
-        folderPath,
-        files: [],
-        totalFiles: 0,
-        message: `No se encontró la carpeta para la sucursal ${sucursalId} en la estructura esperada`
-      });
-    }
-
-    console.log('📁 Carpeta encontrada:', targetFolder.name, 'ID:', targetFolder.id);
-
-    // 4. Obtener archivos de la carpeta
-    const files = await getOneDriveFilesWithToken(accessToken, targetFolder.id);
-
-    // 5. Formatear respuesta
+    // 3. Formatear respuesta
     const formattedFiles = files.map((file: OneDriveItem) => ({
       id: file.id,
       name: file.name,
@@ -147,17 +92,15 @@ export async function GET(req: NextRequest) {
 
     return NextResponse.json({
       success: true,
+      folderId,
       empresaId,
       sucursalId,
-      empresaNombre,
-      folderPath,
-      folderId: targetFolder.id,
       files: formattedFiles,
       totalFiles: formattedFiles.length
     });
 
   } catch (error: any) {
-    console.error('Error getting sucursal files:', error);
+    console.error('Error getting folder contents:', error);
     
     if (error.message.includes('No tokens found')) {
       return NextResponse.json(
