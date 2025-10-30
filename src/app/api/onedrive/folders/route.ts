@@ -12,6 +12,8 @@ interface OneDriveItem {
     path: string;
   };
   webUrl?: string;
+  '@microsoft.graph.downloadUrl'?: string;
+  size?: number;
 }
 
 async function getValidAccessToken(): Promise<string> {
@@ -137,7 +139,9 @@ export async function GET(req: NextRequest) {
         name: item.name,
         type: item.folder ? 'folder' : 'file',
         childCount: item.folder?.childCount,
-        webUrl: item.webUrl
+        webUrl: item.webUrl,
+        size: item.size,
+        downloadUrl: item['@microsoft.graph.downloadUrl']
       }));
 
       return NextResponse.json({

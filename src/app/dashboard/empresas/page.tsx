@@ -349,7 +349,7 @@ export default function EmpresasPage() {
         </div>
       </div>
 
-
+    
       {/* Search bar + Add button */}
       <div className="mb-6">
         <div className="flex items-center justify-between">

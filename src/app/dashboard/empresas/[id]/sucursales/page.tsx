@@ -11,6 +11,7 @@ import {
   ChartTooltip,
   ChartTooltipContent,
 } from "@/components/ui/chart";
+import OneDriveFolders from '@/components/OneDriveFolders';
 
 interface SucursalesPageProps {
   params: Promise<{
@@ -510,7 +511,14 @@ export default function SucursalesPage({ params }: SucursalesPageProps) {
         </div>
       </div>
 
-      {/* Tabla de sucursales con estilos shadcn */}
+      {/* OneDrive Folders */}
+      {empresa?.nombre && (
+        <OneDriveFolders empresaId={empresaId} empresaNombre={empresa.nombre} filterByEmpresa={true} />
+      )}
+
+     
+
+      {/* Tabla de sucursales con estilos shadcn
       <div className="w-full">
         <div className="rounded-md border border-gray-200 shadow-md">
           <div className="px-6 py-4 border-b bg-gray-50 border-gray-100 text-gray-500">
@@ -629,32 +637,12 @@ export default function SucursalesPage({ params }: SucursalesPageProps) {
             </div>
           )}
         </div>
-      </div>
+      </div> 
 
-      {/* Modal de agregar/editar sucursal */}
-      {showModal && (
-        <SucursalFormModal
-          sucursal={currentSucursal}
-          empresaId={empresaId}
-          onClose={() => setShowModal(false)}
-          onSave={async (data) => {
-            try {
-              if (currentSucursal) {
-                await updateSucursal(empresaId, currentSucursal.id, data);
-              } else {
-                await addSucursal({
-                  ...data,
-                  empresaId,
-                } as Omit<Sucursal, 'id'>);
-              }
-              setShowModal(false);
-            } catch (error) {
-              console.error('Error al guardar sucursal:', error);
-              alert('Error al guardar la sucursal');
-            }
-          }}
-        />
-      )}
+       */}
+
+    
+       
     </div>
   );
 }
