@@ -20,14 +20,15 @@ import Breadcrumb from '@/components/Breadcrumb';
 export default function EmpresaGerentePage() {
   const { user, loading: authLoading } = useAuth();
   const router = useRouter();
-  const [empresaAsignadaNombre, setEmpresaAsignadaNombre] = useState<string | null>(null);
+  const [empresaIdFromUser, setEmpresaIdFromUser] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isDesktopSidebarCollapsed, setIsDesktopSidebarCollapsed] = useState(false);
   
   const { empresas } = useEmpresas();
-  const empresa = empresas.find(e => e.nombre === empresaAsignadaNombre);
-  const empresaId = empresa?.id;
+  const empresa = empresas.find(e => e.id === empresaIdFromUser);
+  const empresaId = empresa?.id || empresaIdFromUser || undefined;
+  const empresaAsignadaNombre = empresa?.nombre;
   const { mediciones, loading: loadingMediciones } = useMediciones(empresaId);
 
   useEffect(() => {
@@ -45,7 +46,16 @@ export default function EmpresaGerentePage() {
         
         if (snapshot.exists()) {
           const userData = snapshot.val();
-          setEmpresaAsignadaNombre(userData.empresaId || userData.empresaNombre);
+          // Primero intentar obtener empresaId, si no existe, usar empresaNombre
+          if (userData.empresaId) {
+            setEmpresaIdFromUser(userData.empresaId);
+          } else if (userData.empresaNombre) {
+            // Si solo hay empresaNombre, buscar el ID en la lista de empresas
+            const foundEmpresa = empresas.find(e => e.nombre === userData.empresaNombre);
+            if (foundEmpresa) {
+              setEmpresaIdFromUser(foundEmpresa.id);
+            }
+          }
         }
       } catch (error) {
         console.error('Error fetching empresa asignada:', error);
@@ -55,7 +65,7 @@ export default function EmpresaGerentePage() {
     };
 
     fetchEmpresaAsignada();
-  }, [user, authLoading, router]);
+  }, [user, authLoading, router, empresas]);
 
   // Conteos de incumplimientos específicos para esta empresa
   const incumplimientosCountsEmpresa = useMemo(() => {

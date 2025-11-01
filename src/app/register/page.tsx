@@ -6,6 +6,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import Link from 'next/link';
 import { ref, set } from 'firebase/database';
 import { database } from '@/lib/firebase';
+import { useEmpresas } from '@/hooks/useEmpresas';
 
 type UserRole = 'admin' | 'general_manager' | 'branch_manager';
 
@@ -14,11 +15,12 @@ export default function RegisterPage() {
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [role, setRole] = useState<UserRole>('branch_manager');
-  const [empresaNombre, setEmpresaNombre] = useState('');
+  const [empresaId, setEmpresaId] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const { signUp } = useAuth();
   const router = useRouter();
+  const { empresas } = useEmpresas();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -27,8 +29,8 @@ export default function RegisterPage() {
       return setError('Passwords do not match');
     }
 
-    if (role === 'general_manager' && !empresaNombre.trim()) {
-      return setError('Debe especificar el nombre de la empresa para un gerente general');
+    if (role === 'general_manager' && !empresaId) {
+      return setError('Debe seleccionar una empresa para un gerente general');
     }
 
     try {
@@ -43,9 +45,14 @@ export default function RegisterPage() {
         createdAt: new Date().toISOString(),
       };
 
-      // Si es gerente general, agregar empresaNombre
+      // Si es gerente general, agregar empresaId
       if (role === 'general_manager') {
-        userData.empresaNombre = empresaNombre;
+        userData.empresaId = empresaId;
+        // También guardar el nombre de la empresa para fácil acceso
+        const empresa = empresas.find(e => e.id === empresaId);
+        if (empresa) {
+          userData.empresaNombre = empresa.nombre;
+        }
       }
 
       await set(ref(database, `users/${userCredential.user.uid}`), userData);
@@ -141,19 +148,24 @@ export default function RegisterPage() {
 
           {role === 'general_manager' && (
             <div>
-              <label htmlFor="empresa-nombre" className="block text-sm font-medium text-gray-700">
-                Nombre de la Empresa
+              <label htmlFor="empresa-id" className="block text-sm font-medium text-gray-700">
+                Empresa
               </label>
-              <input
-                id="empresa-nombre"
-                name="empresa-nombre"
-                type="text"
+              <select
+                id="empresa-id"
+                name="empresa-id"
                 required
-                className="mt-1 block w-full px-3 py-2 border border-gray-300 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm rounded-md"
-                placeholder="Ej: Fravega, PRODALSA, etc."
-                value={empresaNombre}
-                onChange={(e) => setEmpresaNombre(e.target.value)}
-              />
+                className="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm rounded-md"
+                value={empresaId}
+                onChange={(e) => setEmpresaId(e.target.value)}
+              >
+                <option value="">Seleccione una empresa</option>
+                {empresas.map((empresa) => (
+                  <option key={empresa.id} value={empresa.id}>
+                    {empresa.nombre}
+                  </option>
+                ))}
+              </select>
             </div>
           )}
 
