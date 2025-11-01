@@ -24,6 +24,7 @@ export default function Breadcrumb({ customLabels = {} }: BreadcrumbProps) {
     'mediciones': 'Mediciones',
     'reports': 'Reportes',
     'documents': 'Documentos',
+    'empresagte': 'Mi Empresa',
   };
 
   // Auto-resolve dynamic labels based on URL structure - use useMemo instead of useEffect to avoid infinite loops

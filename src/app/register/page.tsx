@@ -14,6 +14,7 @@ export default function RegisterPage() {
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [role, setRole] = useState<UserRole>('branch_manager');
+  const [empresaNombre, setEmpresaNombre] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const { signUp } = useAuth();
@@ -26,17 +27,28 @@ export default function RegisterPage() {
       return setError('Passwords do not match');
     }
 
+    if (role === 'general_manager' && !empresaNombre.trim()) {
+      return setError('Debe especificar el nombre de la empresa para un gerente general');
+    }
+
     try {
       setError('');
       setLoading(true);
       const userCredential = await signUp(email, password);
       
       // Store additional user data in Firebase Realtime Database
-      await set(ref(database, `users/${userCredential.user.uid}`), {
+      const userData: any = {
         email: email,
         role: role,
         createdAt: new Date().toISOString(),
-      });
+      };
+
+      // Si es gerente general, agregar empresaNombre
+      if (role === 'general_manager') {
+        userData.empresaNombre = empresaNombre;
+      }
+
+      await set(ref(database, `users/${userCredential.user.uid}`), userData);
 
       router.push('/dashboard');
     } catch {
@@ -126,6 +138,24 @@ export default function RegisterPage() {
               <option value="branch_manager">Branch Manager</option>
             </select>
           </div>
+
+          {role === 'general_manager' && (
+            <div>
+              <label htmlFor="empresa-nombre" className="block text-sm font-medium text-gray-700">
+                Nombre de la Empresa
+              </label>
+              <input
+                id="empresa-nombre"
+                name="empresa-nombre"
+                type="text"
+                required
+                className="mt-1 block w-full px-3 py-2 border border-gray-300 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm rounded-md"
+                placeholder="Ej: Fravega, PRODALSA, etc."
+                value={empresaNombre}
+                onChange={(e) => setEmpresaNombre(e.target.value)}
+              />
+            </div>
+          )}
 
           <div>
             <button

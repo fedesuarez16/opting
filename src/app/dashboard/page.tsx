@@ -102,6 +102,13 @@ export default function DashboardPage() {
         console.log('User data:', userData);
         setUserRole(userData.role);
 
+        // Redirigir gerente general a su página específica
+        if (userData.role === 'general_manager') {
+          console.log('Redirecting general_manager to /empresagte');
+          router.push('/empresagte');
+          return;
+        }
+
         // Fetch dashboard stats based on role
         if (userData.role === 'admin') {
           console.log('Fetching admin stats');
