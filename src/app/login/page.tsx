@@ -19,7 +19,7 @@ export default function LoginPage() {
       setError('');
       setLoading(true);
       await signIn(email, password);
-      router.push('/dashboard/empresas');
+      router.push('/dashboard');
     } catch {
       setError('Failed to sign in');
     }

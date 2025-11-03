@@ -127,36 +127,6 @@ export default function DashboardPage() {
             totalBranches: Object.keys(branchesSnapshot.val() || {}).length,
             totalDocuments: Object.keys(documentsSnapshot.val() || {}).length,
           });
-        } else if (userData.role === 'general_manager') {
-          console.log('Fetching general manager stats');
-          const branchesRef = ref(database, 'branches');
-          const branchesSnapshot = await get(branchesRef);
-          
-          const branchStats = [];
-          if (branchesSnapshot.exists()) {
-            const branchesData = branchesSnapshot.val() as Record<string, BranchData>;
-            for (const [branchId, branchData] of Object.entries(branchesData)) {
-              const branchDocsRef = ref(database, `documents/${branchId}`);
-              const branchUsersRef = ref(database, `users`);
-              
-              const [docsSnapshot, usersSnapshot] = await Promise.all([
-                get(branchDocsRef),
-                get(branchUsersRef),
-              ]);
-
-              const branchUsers = (Object.values(usersSnapshot.val() || {}) as BranchUser[]).filter(
-                (user) => user.branchId === branchId
-              );
-
-              branchStats.push({
-                name: branchData.name,
-                documents: Object.keys(docsSnapshot.val() || {}).length,
-                users: branchUsers.length,
-              });
-            }
-          }
-
-          setStats({ branchStats });
         } else if (userData.role === 'branch_manager' && userData.branchId) {
           console.log('Fetching branch manager stats for branch:', userData.branchId);
           const branchDocsRef = ref(database, `documents/${userData.branchId}`);
