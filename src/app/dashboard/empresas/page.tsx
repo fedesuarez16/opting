@@ -142,8 +142,15 @@ export default function EmpresasPage() {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center h-64">
-        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-indigo-500"></div>
+      <div className='p-8 bg-white min-h-full'>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+          {[1, 2, 3, 4].map((i) => (
+            <div key={i} className="bg-gray-200 rounded-3xl p-6 h-32 animate-pulse" />
+          ))}
+        </div>
+        <div className="bg-white rounded-2xl p-10 border border-gray-300 shadow-sm">
+          <div className="h-[315px] bg-gray-100 rounded animate-pulse" />
+        </div>
       </div>
     );
   }
@@ -158,19 +165,17 @@ export default function EmpresasPage() {
   }
 
   return (
-    <div className='p-8 bg-gray-50 min-h-full'>
+    <div className='p-8 bg-white min-h-full'>
       {/* Cards de métricas */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+      <div className="grid  grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
       
 
-        <div className="bg-gradient-to-b from-black to-gray-700 rounded-3xl p-6 text-white border border-gray-800 shadow-sm">
+        <div className="bg-gradient-to-b from-stone-900 to-gray-700 bg-transparent border border-gray-800 shadow-sm rounded-3xl p-6 text-white">
           <div className="flex items-center justify-between">
             <div>
               <p className="text-gray-300 text-sm">Total sucursales</p>
               {loadingSucursales ? (
-                <div className="animate-pulse">
-                  <div className="h-8 bg-gray-300 rounded w-16"></div>
-                </div>
+                <div className="h-8 bg-gray-300 rounded w-16 animate-pulse"></div>
               ) : (
                 <p className="text-3xl font-bold tracking-tight">{totalSucursales}</p>
               )}
@@ -184,14 +189,12 @@ export default function EmpresasPage() {
           </div>
         </div>
 
-        <div className="bg-gradient-to-b from-black to-gray-700  rounded-3xl p-6 text-white border border-gray-800 shadow-sm">
+        <div className="bg-gradient-to-b from-stone-900 to-gray-700  rounded-3xl p-6 text-white border border-gray-800 shadow-sm">
           <div className="flex items-center justify-between">
             <div>
               <p className="text-gray-300 text-sm">Incumplimiento de Estudios PAT</p>
               {loadingMediciones ? (
-                <div className="animate-pulse">
-                  <div className="h-8 bg-gray-300 rounded w-16"></div>
-                </div>
+                <div className="h-8 bg-gray-300 rounded w-16 animate-pulse"></div>
               ) : (
                 <p className="text-3xl font-bold text-white">{incumplimientosCounts.patNoCumple}</p>
               )}
@@ -204,14 +207,12 @@ export default function EmpresasPage() {
           </div>
         </div>
 
-        <div className="bg-gradient-to-b from-black to-gray-700  rounded-3xl p-6 text-white border border-gray-800 shadow-sm">
+        <div className="bg-gradient-to-b from-stone-900 to-gray-700  rounded-3xl p-6 text-white border border-gray-800 shadow-sm">
           <div className="flex items-center justify-between">
             <div>
               <p className="text-gray-300 text-sm">Incumplimiento de Estudios iluminación </p>
               {loadingMediciones ? (
-                <div className="animate-pulse">
-                  <div className="h-8 bg-gray-300 rounded w-16"></div>
-                </div>
+                <div className="h-8 bg-gray-300 rounded w-16 animate-pulse"></div>
               ) : (
                 <p className="text-3xl font-bold text-white">{incumplimientosCounts.iluNoCumple}</p>
               )}
@@ -224,14 +225,12 @@ export default function EmpresasPage() {
           </div>
         </div>
 
-        <div className="bg-gradient-to-b from-black to-gray-700  rounded-3xl p-6 text-white border border-gray-800 shadow-sm">
+        <div className="bg-gradient-to-b from-stone-900 to-gray-700  rounded-3xl p-6 text-white border border-gray-800 shadow-sm">
           <div className="flex items-center justify-between">
             <div>
               <p className="text-gray-300 text-sm">Incumplimiento de Estudios ruido</p>
               {loadingMediciones ? (
-                <div className="animate-pulse">
-                  <div className="h-8 bg-gray-300 rounded w-16"></div>
-                </div>
+                <div className="h-8 bg-gray-300 rounded w-16 animate-pulse"></div>
               ) : (
                 <p className="text-3xl font-bold text-white">{incumplimientosCounts.ruidoNoCumple}</p>
               )}
@@ -247,77 +246,75 @@ export default function EmpresasPage() {
 
       {/* Gráfico de Estados de Mediciones */}
       <div className="mb-6">
-        <div className="bg-white rounded-2xl p-6 border border-gray-300 shadow-sm">
+        <div className="bg-white rounded-2xl p-10 border border-gray-300 shadow-sm">
           <div className="flex items-center justify-between mb-4">
             <h4 className="text-lg font-medium text-gray-900">Estados de Mediciones por Tipo de Estudio (Cantidad de Sucursales)</h4>
             <span className="text-xs text-gray-400">Todas las empresas</span>
           </div>
           
           {loadingSucursales || loadingMediciones ? (
-            <div className="space-y-2 animate-pulse">
-              <div className="h-[350px] bg-gray-100 rounded" />
-            </div>
+            <div className="h-[315px] bg-gray-100 rounded animate-pulse" />
           ) : (
             (() => {
               const chartData = [
                 {
                   name: "PAT",
-                  "PENDIENTE": medicionesCounts.pat.pendienteVisita,
-                  "PEDIR A TEC": medicionesCounts.pat.pedirTecnico,
+                  "En nube": medicionesCounts.pat.enNube,
                   "Procesar": medicionesCounts.pat.procesar,
-                  "En nube": medicionesCounts.pat.enNube
+                  "PEDIR A TEC": medicionesCounts.pat.pedirTecnico,
+                  "PENDIENTE": medicionesCounts.pat.pendienteVisita
                 },
                 {
                   name: "Iluminación",
-                  "PENDIENTE": medicionesCounts.iluminacion.pendienteVisita,
-                  "PEDIR A TEC": medicionesCounts.iluminacion.pedirTecnico,
+                  "En nube": medicionesCounts.iluminacion.enNube,
                   "Procesar": medicionesCounts.iluminacion.procesar,
-                  "En nube": medicionesCounts.iluminacion.enNube
+                  "PEDIR A TEC": medicionesCounts.iluminacion.pedirTecnico,
+                  "PENDIENTE": medicionesCounts.iluminacion.pendienteVisita
                 },
                 {
                   name: "Ruido",
-                  "PENDIENTE": medicionesCounts.ruido.pendienteVisita,
-                  "PEDIR A TEC": medicionesCounts.ruido.pedirTecnico,
+                  "En nube": medicionesCounts.ruido.enNube,
                   "Procesar": medicionesCounts.ruido.procesar,
-                  "En nube": medicionesCounts.ruido.enNube
+                  "PEDIR A TEC": medicionesCounts.ruido.pedirTecnico,
+                  "PENDIENTE": medicionesCounts.ruido.pendienteVisita
                 },
                 {
                   name: "Carga Térmica",
-                  "PENDIENTE": medicionesCounts.cargaTermica.pendienteVisita,
-                  "PEDIR A TEC": medicionesCounts.cargaTermica.pedirTecnico,
+                  "En nube": medicionesCounts.cargaTermica.enNube,
                   "Procesar": medicionesCounts.cargaTermica.procesar,
-                  "En nube": medicionesCounts.cargaTermica.enNube
+                  "PEDIR A TEC": medicionesCounts.cargaTermica.pedirTecnico,
+                  "PENDIENTE": medicionesCounts.cargaTermica.pendienteVisita
                 },
                 {
                   name: "ESTUDIO TERMOGRAFÍA",
-                  "PENDIENTE": medicionesCounts.termografia.pendienteVisita,
-                  "PEDIR A TEC": medicionesCounts.termografia.pedirTecnico,
+                  "En nube": medicionesCounts.termografia.enNube,
                   "Procesar": medicionesCounts.termografia.procesar,
-                  "En nube": medicionesCounts.termografia.enNube
+                  "PEDIR A TEC": medicionesCounts.termografia.pedirTecnico,
+                  "PENDIENTE": medicionesCounts.termografia.pendienteVisita
                 }
               ];
 
               const chartConfig = {
-                "PENDIENTE": {
-                  label: "PENDIENTE",
-                  color: "#ef4444"
-                },
-                "PEDIR A TEC": {
-                  label: "PEDIR A TEC",
-                  color: "#f59e0b"
+                "En nube": {
+                  label: "EN NUBE",
+                  color: "rgba(34, 197, 94, 0.4)"
                 },
                 "Procesar": {
                   label: "PROCESAR",
-                  color: "#3b82f6"
+                  color: "rgba(59, 130, 246, 0.4)"
                 },
-                "En nube": {
-                  label: "EN NUBE",
-                  color: "#22c55e"
+                "PEDIR A TEC": {
+                  label: "PEDIR A TEC",
+                  color: "rgba(245, 158, 11, 0.4)"
+                },
+                "PENDIENTE": {
+                  label: "PENDIENTE",
+                  color: "rgba(239, 68, 68, 0.4)"
                 }
               };
 
               return (
-                <ChartContainer config={chartConfig} className="h-[350px] text-black w-full">
+                <ChartContainer config={chartConfig} className="h-[315px] text-black w-full">
                   <BarChart data={chartData}>
                     <CartesianGrid strokeDasharray="3 3" vertical={false} />
                     <XAxis
@@ -337,10 +334,10 @@ export default function EmpresasPage() {
                       cursor={false}
                       content={<ChartTooltipContent />}
                     />
-                    <Bar dataKey="PENDIENTE" fill="#ef4444" radius={4} />
-                    <Bar dataKey="PEDIR A TEC" fill="#f59e0b" radius={4} />
-                    <Bar dataKey="Procesar" fill="#3b82f6" radius={4} />
-                    <Bar dataKey="En nube" fill="#22c55e" radius={4} />
+                    <Bar dataKey="En nube" fill="rgba(3, 160, 61, 0.67)" radius={4} />
+                    <Bar dataKey="Procesar" fill="rgba(4, 68, 171, 0.67)" radius={4} />
+                    <Bar dataKey="PEDIR A TEC" fill="rgba(152, 97, 3, 0.67)" radius={4} />
+                    <Bar dataKey="PENDIENTE" fill="rgba(151, 5, 5, 0.67)" radius={4} />
                   </BarChart>
                 </ChartContainer>
               );
@@ -378,20 +375,14 @@ export default function EmpresasPage() {
               placeholder="Buscar empresas..."
             />
           </div>
-          <button
-            type="button"
-            onClick={() => handleAddEdit(null)}
-            className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-gray-900 hover:bg-black focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500 shadow-sm"
-          >
-            + Agregar empresa
-          </button>
+        
         </div>
       </div>
 
       {/* Tabla de empresas con estilos shadcn */}
       <div className="w-full">
         <div className="rounded-md border border-gray-200 shadow-md">
-          <div className="px-6 py-4 border-b bg-gray-50 border-gray-100 text-gray-500">
+          <div className="px-6 py-4 border-b bg-white border-gray-100 text-gray-500">
             <div className="flex items-center justify-between">
               <h3 className="text-lg font-semibold">Unidades de negocio</h3>
               <div className="flex items-center gap-2">
@@ -467,9 +458,7 @@ export default function EmpresasPage() {
                       </td>
                       <td className="p-4 align-middle">
                         {loadingSucursales ? (
-                          <div className="animate-pulse">
-                            <div className="h-4 bg-gray-200 rounded w-8"></div>
-                          </div>
+                          <div className="h-4 bg-gray-200 rounded w-8 animate-pulse"></div>
                         ) : (
                           <div className="flex items-center gap-1">
                             <span className="font-medium">{sucursalesPorEmpresa[empresa.id] || 0}</span>

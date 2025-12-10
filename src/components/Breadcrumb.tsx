@@ -105,7 +105,7 @@ export default function Breadcrumb({ customLabels = {} }: BreadcrumbProps) {
                 ) : (
                   <Link 
                     href={href} 
-                    className="text-indigo-600 hover:text-gray-800"
+                    className="text-black hover:text-gray-800"
                   >
                     {displayLabel}
                   </Link>

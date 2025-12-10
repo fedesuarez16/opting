@@ -130,7 +130,9 @@ export default function SucursalesPage({ params }: SucursalesPageProps) {
 
   // Conteos de mediciones por tipo de estudio para esta empresa específica
   const medicionesCountsEmpresa = useMemo(() => {
-    const counts = {
+    const isArcosDorados = empresaId === 'ARCOS DORADOS' || empresa?.nombre === 'ARCOS DORADOS';
+    
+    const counts: any = {
       pat: {
         pendienteVisita: 0,
         pedirTecnico: 0,
@@ -162,6 +164,22 @@ export default function SucursalesPage({ params }: SucursalesPageProps) {
         enNube: 0
       }
     };
+
+    // Agregar estudios adicionales solo para ARCOS DORADOS
+    if (isArcosDorados) {
+      counts.pruebaDinamicaDisyuntores = {
+        pendienteVisita: 0,
+        pedirTecnico: 0,
+        procesar: 0,
+        enNube: 0
+      };
+      counts.termografiaTableros = {
+        pendienteVisita: 0,
+        pedirTecnico: 0,
+        procesar: 0,
+        enNube: 0
+      };
+    }
 
     mediciones.forEach((m) => {
       const datos = m.datos as Record<string, unknown>;
@@ -201,11 +219,29 @@ export default function SucursalesPage({ params }: SucursalesPageProps) {
       else if (termoValue === 'PEDIR A TEC') counts.termografia.pedirTecnico += 1;
       else if (termoValue === 'PROCESAR') counts.termografia.procesar += 1;
       else if (termoValue === 'EN NUBE') counts.termografia.enNube += 1;
+      
+      // PRUEBA DINAMICA DE DISYUNTORES (solo para ARCOS DORADOS)
+      if (isArcosDorados && counts.pruebaDinamicaDisyuntores) {
+        const pruebaDinamicaValue = getValue('PRUEBA DINAMICA DE DISYUNTORES');
+        if (pruebaDinamicaValue === 'PENDIENTE') counts.pruebaDinamicaDisyuntores.pendienteVisita += 1;
+        else if (pruebaDinamicaValue === 'PEDIR A TEC') counts.pruebaDinamicaDisyuntores.pedirTecnico += 1;
+        else if (pruebaDinamicaValue === 'PROCESAR') counts.pruebaDinamicaDisyuntores.procesar += 1;
+        else if (pruebaDinamicaValue === 'EN NUBE') counts.pruebaDinamicaDisyuntores.enNube += 1;
+      }
+      
+      // TERMOGRAFIA EN TABLEROS (solo para ARCOS DORADOS)
+      if (isArcosDorados && counts.termografiaTableros) {
+        const termografiaTablerosValue = getValue('TERMOGRAFIA EN TABLEROS');
+        if (termografiaTablerosValue === 'PENDIENTE') counts.termografiaTableros.pendienteVisita += 1;
+        else if (termografiaTablerosValue === 'PEDIR A TEC') counts.termografiaTableros.pedirTecnico += 1;
+        else if (termografiaTablerosValue === 'PROCESAR') counts.termografiaTableros.procesar += 1;
+        else if (termografiaTablerosValue === 'EN NUBE') counts.termografiaTableros.enNube += 1;
+      }
     });
 
     console.log('Mediciones counts para empresa:', empresaId, counts);
     return counts;
-  }, [mediciones, empresaId]);
+  }, [mediciones, empresaId, empresa]);
 
   // Conteos de incumplimientos específicos para esta empresa
   const incumplimientosCountsEmpresa = useMemo(() => {
@@ -264,8 +300,15 @@ export default function SucursalesPage({ params }: SucursalesPageProps) {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center h-64">
-        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-gray-500"></div>
+      <div className='p-8 bg-white'>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+          {[1, 2, 3, 4].map((i) => (
+            <div key={i} className="bg-gray-200 rounded-3xl p-6 h-32 animate-pulse" />
+          ))}
+        </div>
+        <div className="bg-white rounded-2xl p-6 border border-gray-200 shadow-sm">
+          <div className="h-[350px] bg-gray-100 rounded animate-pulse" />
+        </div>
       </div>
     );
   }
@@ -321,9 +364,7 @@ export default function SucursalesPage({ params }: SucursalesPageProps) {
           <div>
             <p className="text-gray-300 text-sm">Incumplimiento de Estudios PAT</p>
             {loadingMediciones ? (
-              <div className="animate-pulse">
-                <div className="h-8 bg-gray-300 rounded w-16"></div>
-              </div>
+              <div className="h-8 bg-gray-300 rounded w-16 animate-pulse"></div>
             ) : (
               <p className="text-3xl font-bold text-white">{incumplimientosCountsEmpresa.patNoCumple}</p>
             )}
@@ -341,9 +382,7 @@ export default function SucursalesPage({ params }: SucursalesPageProps) {
           <div>
             <p className="text-gray-300 text-sm">Incumplimiento de Estudios iluminación</p>
             {loadingMediciones ? (
-              <div className="animate-pulse">
-                <div className="h-8 bg-gray-300 rounded w-16"></div>
-              </div>
+              <div className="h-8 bg-gray-300 rounded w-16 animate-pulse"></div>
             ) : (
               <p className="text-3xl font-bold text-white">{incumplimientosCountsEmpresa.iluNoCumple}</p>
             )}
@@ -361,9 +400,7 @@ export default function SucursalesPage({ params }: SucursalesPageProps) {
           <div>
             <p className="text-gray-300 text-sm">Incumplimiento de Estudios ruido</p>
             {loadingMediciones ? (
-              <div className="animate-pulse">
-                <div className="h-8 bg-gray-300 rounded w-16"></div>
-              </div>
+              <div className="h-8 bg-gray-300 rounded w-16 animate-pulse"></div>
             ) : (
               <p className="text-3xl font-bold text-white">{incumplimientosCountsEmpresa.ruidoNoCumple}</p>
             )}
@@ -387,66 +424,87 @@ export default function SucursalesPage({ params }: SucursalesPageProps) {
             <span className="text-xs text-gray-400">Esta empresa</span>
         </div>
         
-        {loadingMediciones ? (
-          <div className="space-y-2 animate-pulse">
-              <div className="h-[350px] bg-gray-100 rounded" />
-          </div>
-        ) : (
+          {loadingMediciones ? (
+            <div className="h-[350px] bg-gray-100 rounded animate-pulse" />
+          ) : (
             (() => {
+              const isArcosDorados = empresaId === 'ARCOS DORADOS' || empresa?.nombre === 'ARCOS DORADOS';
+              
               const chartData = [
                 {
                   name: "PAT",
-                  "PENDIENTE": medicionesCountsEmpresa.pat.pendienteVisita,
-                  "PEDIR A TEC": medicionesCountsEmpresa.pat.pedirTecnico,
+                  "En nube": medicionesCountsEmpresa.pat.enNube,
                   "Procesar": medicionesCountsEmpresa.pat.procesar,
-                  "En nube": medicionesCountsEmpresa.pat.enNube
+                  "PEDIR A TEC": medicionesCountsEmpresa.pat.pedirTecnico,
+                  "PENDIENTE": medicionesCountsEmpresa.pat.pendienteVisita
                 },
                 {
                   name: "Iluminación",
-                  "PENDIENTE": medicionesCountsEmpresa.iluminacion.pendienteVisita,
-                  "PEDIR A TEC": medicionesCountsEmpresa.iluminacion.pedirTecnico,
+                  "En nube": medicionesCountsEmpresa.iluminacion.enNube,
                   "Procesar": medicionesCountsEmpresa.iluminacion.procesar,
-                  "En nube": medicionesCountsEmpresa.iluminacion.enNube
+                  "PEDIR A TEC": medicionesCountsEmpresa.iluminacion.pedirTecnico,
+                  "PENDIENTE": medicionesCountsEmpresa.iluminacion.pendienteVisita
                 },
                 {
                   name: "Ruido",
-                  "PENDIENTE": medicionesCountsEmpresa.ruido.pendienteVisita,
-                  "PEDIR A TEC": medicionesCountsEmpresa.ruido.pedirTecnico,
+                  "En nube": medicionesCountsEmpresa.ruido.enNube,
                   "Procesar": medicionesCountsEmpresa.ruido.procesar,
-                  "En nube": medicionesCountsEmpresa.ruido.enNube
+                  "PEDIR A TEC": medicionesCountsEmpresa.ruido.pedirTecnico,
+                  "PENDIENTE": medicionesCountsEmpresa.ruido.pendienteVisita
                 },
                 {
                   name: "Carga Térmica",
-                  "PENDIENTE": medicionesCountsEmpresa.cargaTermica.pendienteVisita,
-                  "PEDIR A TEC": medicionesCountsEmpresa.cargaTermica.pedirTecnico,
+                  "En nube": medicionesCountsEmpresa.cargaTermica.enNube,
                   "Procesar": medicionesCountsEmpresa.cargaTermica.procesar,
-                  "En nube": medicionesCountsEmpresa.cargaTermica.enNube
+                  "PEDIR A TEC": medicionesCountsEmpresa.cargaTermica.pedirTecnico,
+                  "PENDIENTE": medicionesCountsEmpresa.cargaTermica.pendienteVisita
                 },
                 {
                   name: "ESTUDIO TERMOGRAFÍA",
-                  "PENDIENTE": medicionesCountsEmpresa.termografia.pendienteVisita,
-                  "PEDIR A TEC": medicionesCountsEmpresa.termografia.pedirTecnico,
+                  "En nube": medicionesCountsEmpresa.termografia.enNube,
                   "Procesar": medicionesCountsEmpresa.termografia.procesar,
-                  "En nube": medicionesCountsEmpresa.termografia.enNube
+                  "PEDIR A TEC": medicionesCountsEmpresa.termografia.pedirTecnico,
+                  "PENDIENTE": medicionesCountsEmpresa.termografia.pendienteVisita
                 }
               ];
 
+              // Agregar estudios adicionales solo para ARCOS DORADOS
+              if (isArcosDorados && (medicionesCountsEmpresa as any).pruebaDinamicaDisyuntores) {
+                chartData.push({
+                  name: "PRUEBA  DISYUNTORES",
+                  "En nube": (medicionesCountsEmpresa as any).pruebaDinamicaDisyuntores.enNube,
+                  "Procesar": (medicionesCountsEmpresa as any).pruebaDinamicaDisyuntores.procesar,
+                  "PEDIR A TEC": (medicionesCountsEmpresa as any).pruebaDinamicaDisyuntores.pedirTecnico,
+                  "PENDIENTE": (medicionesCountsEmpresa as any).pruebaDinamicaDisyuntores.pendienteVisita
+                });
+              }
+
+              if (isArcosDorados && (medicionesCountsEmpresa as any).termografiaTableros) {
+                chartData.push({
+                  name: "TERMOGRAFIA ",
+                  "En nube": (medicionesCountsEmpresa as any).termografiaTableros.enNube,
+                  "Procesar": (medicionesCountsEmpresa as any).termografiaTableros.procesar,
+                  "PEDIR A TEC": (medicionesCountsEmpresa as any).termografiaTableros.pedirTecnico,
+                  "PENDIENTE": (medicionesCountsEmpresa as any).termografiaTableros.pendienteVisita
+                });
+              }
+
               const chartConfig = {
-                "PENDIENTE": {
-                  label: "PENDIENTE",
-                  color: "#ef4444"
-                },
-                "PEDIR A TEC": {
-                  label: "PEDIR A TEC",
-                  color: "#f59e0b"
+                "En nube": {
+                  label: "EN NUBE",
+                  color: "rgba(34, 197, 94, 0.4)"
                 },
                 "Procesar": {
                   label: "PROCESAR",
-                  color: "#3b82f6"
+                  color: "rgba(59, 130, 246, 0.4)"
                 },
-                "En nube": {
-                  label: "EN NUBE",
-                  color: "#22c55e"
+                "PEDIR A TEC": {
+                  label: "PEDIR A TEC",
+                  color: "rgba(245, 158, 11, 0.4)"
+                },
+                "PENDIENTE": {
+                  label: "PENDIENTE",
+                  color: "rgba(239, 68, 68, 0.4)"
                 }
               };
 
@@ -471,10 +529,10 @@ export default function SucursalesPage({ params }: SucursalesPageProps) {
                       cursor={false}
                       content={<ChartTooltipContent />}
                     />
-                    <Bar dataKey="PENDIENTE" fill="#ef4444" radius={4} />
-                    <Bar dataKey="PEDIR A TEC" fill="#f59e0b" radius={4} />
-                    <Bar dataKey="Procesar" fill="#3b82f6" radius={4} />
-                    <Bar dataKey="En nube" fill="#22c55e" radius={4} />
+                   <Bar dataKey="En nube" fill="rgba(3, 160, 61, 0.67)" radius={4} />
+                    <Bar dataKey="Procesar" fill="rgba(4, 68, 171, 0.67)" radius={4} />
+                    <Bar dataKey="PEDIR A TEC" fill="rgba(152, 97, 3, 0.67)" radius={4} />
+                    <Bar dataKey="PENDIENTE" fill="rgba(151, 5, 5, 0.67)" radius={4} />
                   </BarChart>
                 </ChartContainer>
               );

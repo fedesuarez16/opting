@@ -1,6 +1,8 @@
 'use client';
 
 import { useState, useEffect, useCallback, useRef } from 'react';
+import { useRouter } from 'next/navigation';
+import { useSucursales } from '@/hooks/useSucursales';
 
 interface OneDriveFolder {
   id: string;
@@ -37,7 +39,12 @@ export default function OneDriveFolders({ empresaId, sucursalId, sucursalNombre,
   const [error, setError] = useState<string | null>(null);
   const [currentFolderId, setCurrentFolderId] = useState<string | null>(null);
   const [folderHistory, setFolderHistory] = useState<Array<{ id: string; name: string }>>([]);
+  const [searchTerm, setSearchTerm] = useState<string>('');
   const isFetchingRef = useRef(false);
+  const router = useRouter();
+  
+  // Obtener sucursales si estamos filtrando por empresa
+  const { sucursales } = useSucursales(filterByEmpresa && empresaId ? empresaId : undefined);
 
   const fetchFolders = useCallback(async (folderId?: string, isNavigation: boolean = false) => {
     if (isFetchingRef.current) {
@@ -56,29 +63,109 @@ export default function OneDriveFolders({ empresaId, sucursalId, sucursalNombre,
         console.log('🔍 [OneDrive] Navigating to folder:', folderId);
         response = await fetch(`/api/onedrive/folders?action=list-folder-contents&folderId=${folderId}`);
       } else if (filterByEmpresa && empresaNombre) {
-        // Buscar la carpeta de la empresa primero
+        // Buscar la carpeta de la empresa - primero en la raíz (más confiable)
         console.log('🔍 [OneDrive] Fetching folders for empresa:', empresaNombre);
-        const searchResponse = await fetch(`/api/onedrive/folders?action=search-folder&folderName=${encodeURIComponent(empresaNombre)}`);
-        const searchData = await searchResponse.json();
+        console.log('📂 [OneDrive] Step 1: Searching in root folders first...');
         
-        if (searchData.success && searchData.folders.length > 0) {
-          // Encontrar la carpeta exacta de la empresa
-          const empresaFolder = searchData.folders.find((f: OneDriveFolder) => 
-            f.name.toLowerCase() === empresaNombre.toLowerCase()
-          );
+        const empresaNombreLower = empresaNombre.toLowerCase().trim();
+        let empresaFolder: OneDriveFolder | null = null;
+        
+        // Primero buscar directamente en la raíz (más confiable)
+        const rootResponse = await fetch('/api/onedrive/folders?action=list-root-folders');
+        const rootData = await rootResponse.json();
+        
+        console.log('📥 [OneDrive] Root folders response:', rootData);
+        
+        // Verificar si hay error de autenticación
+        if (!rootResponse.ok && (rootResponse.status === 401 || rootData.error?.includes('Not authenticated') || rootData.error?.includes('No tokens found'))) {
+          console.log('🔒 [OneDrive] Authentication required');
+          setError('Not authenticated');
+          setItems([]);
+          return;
+        }
+        
+        if (rootResponse.ok && rootData.success && rootData.folders && rootData.folders.length > 0) {
+          console.log('✅ [OneDrive] Root folders found:', rootData.folders.length);
+          console.log('📋 [OneDrive] Root folder names:', rootData.folders.map((f: OneDriveFolder) => f.name));
+          
+          // Buscar la carpeta exacta (comparación case-insensitive)
+          empresaFolder = rootData.folders.find((f: OneDriveFolder) => 
+            f.name.toLowerCase().trim() === empresaNombreLower
+          ) || null;
+          
+          // Si no se encuentra exacta, buscar la que contiene el nombre
+          if (!empresaFolder) {
+            empresaFolder = rootData.folders.find((f: OneDriveFolder) => 
+              f.name.toLowerCase().trim().includes(empresaNombreLower) ||
+              empresaNombreLower.includes(f.name.toLowerCase().trim())
+            ) || null;
+          }
           
           if (empresaFolder) {
-            // Listar contenido dentro de la carpeta de la empresa
-            console.log('📁 [OneDrive] Found empresa folder, fetching contents:', empresaFolder.id);
-            response = await fetch(`/api/onedrive/folders?action=list-folder-contents&folderId=${empresaFolder.id}`);
+            console.log('✅ [OneDrive] Found empresa folder in root:', empresaFolder.name, 'ID:', empresaFolder.id);
           } else {
-            // Si no se encuentra la carpeta exacta, usar la primera que se encontró
-            const firstFolder = searchData.folders[0];
-            console.log('📁 [OneDrive] Using first match, fetching contents:', firstFolder.id);
-            response = await fetch(`/api/onedrive/folders?action=list-folder-contents&folderId=${firstFolder.id}`);
+            console.log('⚠️ [OneDrive] Empresa folder not found in root, trying search API...');
           }
         } else {
-          // No se encontró la carpeta de la empresa, devolver vacío
+          console.log('⚠️ [OneDrive] Failed to get root folders, trying search API...');
+        }
+        
+        // Si no se encontró en la raíz, intentar con la búsqueda
+        if (!empresaFolder) {
+          console.log('🔍 [OneDrive] Step 2: Trying search API...');
+          const searchResponse = await fetch(`/api/onedrive/folders?action=search-folder&folderName=${encodeURIComponent(empresaNombre)}`);
+          const searchData = await searchResponse.json();
+          
+          console.log('📥 [OneDrive] Search response:', searchData);
+          
+          // Verificar si hay error de autenticación en la búsqueda
+          if (!searchResponse.ok && (searchResponse.status === 401 || searchData.error?.includes('Not authenticated') || searchData.error?.includes('No tokens found'))) {
+            console.log('🔒 [OneDrive] Authentication required in search');
+            setError('Not authenticated');
+            setItems([]);
+            return;
+          }
+          
+          if (searchResponse.ok && searchData.success && searchData.folders && searchData.folders.length > 0) {
+            console.log('✅ [OneDrive] Search found folders:', searchData.folders.length, 'matches');
+            console.log('📋 [OneDrive] Search folder names:', searchData.folders.map((f: OneDriveFolder) => f.name));
+            
+            // Buscar la carpeta exacta
+            empresaFolder = searchData.folders.find((f: OneDriveFolder) => 
+              f.name.toLowerCase().trim() === empresaNombreLower
+            ) || null;
+            
+            // Si no se encuentra exacta, buscar la que contiene el nombre
+            if (!empresaFolder) {
+              empresaFolder = searchData.folders.find((f: OneDriveFolder) => 
+                f.name.toLowerCase().trim().includes(empresaNombreLower) ||
+                empresaNombreLower.includes(f.name.toLowerCase().trim())
+              ) || null;
+            }
+            
+            if (empresaFolder) {
+              console.log('✅ [OneDrive] Found empresa folder via search:', empresaFolder.name, 'ID:', empresaFolder.id);
+            }
+          }
+        }
+        
+        // Si encontramos la carpeta, listar su contenido
+        if (empresaFolder) {
+          console.log('📁 [OneDrive] Listing contents of empresa folder:', empresaFolder.name);
+          response = await fetch(`/api/onedrive/folders?action=list-folder-contents&folderId=${empresaFolder.id}`);
+        } else {
+          // Verificar si el error fue por falta de autenticación antes de reportar carpeta no encontrada
+          if (rootResponse.status === 401 || rootData.error?.includes('Not authenticated') || rootData.error?.includes('No tokens found')) {
+            console.log('🔒 [OneDrive] Authentication required - root folders request failed');
+            setError('Not authenticated');
+            setItems([]);
+            return;
+          }
+          
+          // No se encontró la carpeta
+          console.log('❌ [OneDrive] Empresa folder not found:', empresaNombre);
+          console.log('📋 [OneDrive] Available root folders:', rootData.folders?.map((f: OneDriveFolder) => f.name) || 'none');
+          setError(`No se encontró la carpeta "${empresaNombre}" en OneDrive. Por favor verifique que la carpeta existe con ese nombre exacto en la raíz.`);
           setItems([]);
           return;
         }
@@ -94,27 +181,50 @@ export default function OneDriveFolders({ empresaId, sucursalId, sucursalNombre,
       }
 
       const data = await response.json();
+      
+      console.log('📥 [OneDrive] API Response status:', response.status, response.ok);
+      console.log('📥 [OneDrive] API Response data:', data);
 
       if (!response.ok) {
-        throw new Error(data.error || 'Failed to fetch folders');
+        const errorMsg = data.error || 'Failed to fetch folders';
+        console.error('❌ [OneDrive] API Error:', errorMsg);
+        
+        // Si es un error de autenticación, guardar información adicional
+        if (response.status === 401 || errorMsg.includes('Not authenticated') || errorMsg.includes('No tokens found')) {
+          setError('Not authenticated');
+          setItems([]);
+          return;
+        }
+        
+        throw new Error(errorMsg);
       }
 
       if (data.success) {
         let processedItems = data.folders || data.items || [];
         
+        console.log('🔄 [OneDrive] Processing items:', processedItems.length, 'raw items');
+        console.log('🔄 [OneDrive] Data structure:', {
+          hasFolders: !!data.folders,
+          hasItems: !!data.items,
+          foldersLength: data.folders?.length || 0,
+          itemsLength: data.items?.length || 0
+        });
+        
         // Si es contenido de carpeta (navigation o filterByEmpresa), convertir items al formato correcto
         if ((isNavigation || filterByEmpresa) && data.items) {
+          console.log('🔄 [OneDrive] Processing folder contents (items)');
           // NO filtrar archivos, mostrar ambos (carpetas y archivos)
-          processedItems = processedItems.map((item: any) => ({
+          processedItems = data.items.map((item: any) => ({
             id: item.id,
             name: item.name,
-            type: item.type,
-            childCount: item.type === 'folder' ? (item.childCount || 0) : undefined,
+            type: item.type || (item.folder ? 'folder' : 'file'),
+            childCount: item.type === 'folder' || item.folder ? (item.childCount || 0) : undefined,
             webUrl: item.webUrl,
-            size: item.type === 'file' ? item.size : undefined,
-            downloadUrl: item.type === 'file' ? (item.downloadUrl || item.url) : undefined
+            size: item.type === 'file' && !item.folder ? item.size : undefined,
+            downloadUrl: item.type === 'file' && !item.folder ? (item.downloadUrl || item.url) : undefined
           }));
         } else if (data.folders) {
+          console.log('🔄 [OneDrive] Processing folders list');
           // Si viene como folders, asegurarse de que tengan el tipo correcto
           processedItems = processedItems.map((folder: any) => ({
             ...folder,
@@ -141,9 +251,17 @@ export default function OneDriveFolders({ empresaId, sucursalId, sucursalNombre,
         
         setItems(processedItems);
         setCurrentFolderId(folderId || null);
+        // Limpiar error si la búsqueda fue exitosa
+        setError(null);
         console.log('✅ [OneDrive] Items loaded:', processedItems.length, '(folders:', processedItems.filter((i: OneDriveItem) => i.type === 'folder').length, ', files:', processedItems.filter((i: OneDriveItem) => i.type === 'file').length, ')');
+        
+        if (processedItems.length === 0 && filterByEmpresa) {
+          console.warn('⚠️ [OneDrive] No items found in empresa folder. This might be normal if the folder is empty.');
+        }
       } else {
-        throw new Error(data.error || 'Unknown error occurred');
+        const errorMsg = data.error || 'Unknown error occurred';
+        console.error('❌ [OneDrive] API returned success=false:', errorMsg);
+        throw new Error(errorMsg);
       }
     } catch (err: any) {
       console.error('❌ [OneDrive] Error fetching folders:', err);
@@ -161,6 +279,8 @@ export default function OneDriveFolders({ empresaId, sucursalId, sucursalNombre,
   }, [empresaNombre, empresaId, sucursalNombre, sucursalId, fetchFolders]);
 
   const navigateToFolder = useCallback((folderId: string, folderName: string) => {
+    // Siempre navegar dentro de la carpeta normalmente, sin importar si es una sucursal o no
+    console.log('📁 [OneDrive] Navegando dentro de carpeta:', folderName);
     setFolderHistory(prev => [...prev, { id: folderId, name: folderName }]);
     fetchFolders(folderId, true);
   }, [fetchFolders]);
@@ -192,9 +312,37 @@ export default function OneDriveFolders({ empresaId, sucursalId, sucursalNombre,
   if (loading && items.length === 0) {
     return (
       <div className="bg-white rounded-2xl p-6 border border-gray-200 shadow-sm mb-6">
-        <div className="flex items-center justify-center h-32">
-          <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-gray-500"></div>
-          <span className="ml-2 text-gray-600">Cargando carpetas de OneDrive...</span>
+        <div className="flex items-center justify-between mb-6">
+          <div>
+            <div className="h-6 bg-gray-200 rounded w-64 mb-2 animate-pulse"></div>
+            <div className="h-4 bg-gray-200 rounded w-48 animate-pulse"></div>
+          </div>
+          <div className="h-4 bg-gray-200 rounded w-24 animate-pulse"></div>
+        </div>
+        
+        {/* Skeleton de barra de búsqueda */}
+        <div className="mb-6">
+          <div className="h-10 bg-gray-200 rounded-lg w-full animate-pulse"></div>
+        </div>
+
+        {/* Skeleton de tabla */}
+        <div className="rounded-md border border-gray-200 shadow-md">
+          <div className="px-6 py-4 border-b bg-gray-50 border-gray-100">
+            <div className="h-6 bg-gray-200 rounded w-40 animate-pulse"></div>
+          </div>
+          <div className="p-4 space-y-3">
+            {[1, 2, 3, 4, 5].map((i) => (
+              <div key={i} className="flex items-center gap-3 py-3 border-b border-gray-100">
+                <div className="h-10 w-10 bg-gray-200 rounded-full animate-pulse"></div>
+                <div className="flex-1">
+                  <div className="h-4 bg-gray-200 rounded w-48 mb-2 animate-pulse"></div>
+                  <div className="h-3 bg-gray-200 rounded w-32 animate-pulse"></div>
+                </div>
+                <div className="h-4 bg-gray-200 rounded w-20 animate-pulse"></div>
+                <div className="h-8 bg-gray-200 rounded w-24 animate-pulse"></div>
+              </div>
+            ))}
+          </div>
         </div>
       </div>
     );
@@ -223,6 +371,13 @@ export default function OneDriveFolders({ empresaId, sucursalId, sucursalNombre,
       </div>
     );
   }
+
+  // Filtrar items basado en el término de búsqueda
+  const filteredItems = searchTerm.trim() === '' 
+    ? items 
+    : items.filter(item => 
+        item.name.toLowerCase().includes(searchTerm.toLowerCase().trim())
+      );
 
   return (
     <div className="bg-white rounded-2xl p-6 border border-gray-200 shadow-sm mb-6">
@@ -267,7 +422,15 @@ export default function OneDriveFolders({ empresaId, sucursalId, sucursalNombre,
         </div>
         <div className="flex items-center space-x-3">
           <div className="text-sm text-gray-500">
-            {items.length} elemento{items.length !== 1 ? 's' : ''}
+            {searchTerm.trim() ? (
+              <span>
+                {filteredItems.length} de {items.length} elemento{items.length !== 1 ? 's' : ''}
+              </span>
+            ) : (
+              <span>
+                {items.length} elemento{items.length !== 1 ? 's' : ''}
+              </span>
+            )}
           </div>
           <button
             onClick={handleRefresh}
@@ -279,19 +442,139 @@ export default function OneDriveFolders({ empresaId, sucursalId, sucursalNombre,
         </div>
       </div>
 
-      {items.length === 0 ? (
+      {/* Barra de búsqueda */}
+      <div className="mb-6">
+        <div className="relative">
+          <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+            <svg
+              className="h-5 w-5 text-gray-400"
+              xmlns="http://www.w3.org/2000/svg"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
+              />
+            </svg>
+          </div>
+          <input
+            type="text"
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg leading-5 bg-white placeholder-gray-500 focus:outline-none focus:placeholder-gray-400 focus:ring-1 focus:ring-gray-500 focus:border-gray-500 sm:text-sm"
+            placeholder="Buscar archivos y carpetas..."
+          />
+          {searchTerm && (
+            <button
+              onClick={() => setSearchTerm('')}
+              className="absolute inset-y-0 right-0 pr-3 flex items-center"
+              title="Limpiar búsqueda"
+            >
+              <svg
+                className="h-5 w-5 text-gray-400 hover:text-gray-600"
+                xmlns="http://www.w3.org/2000/svg"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M6 18L18 6M6 6l12 12"
+                />
+              </svg>
+            </button>
+          )}
+        </div>
+      </div>
+
+      {(items.length === 0 && !loading) || (searchTerm.trim() && filteredItems.length === 0 && items.length > 0) ? (
         <div className="text-center py-8">
           <div className="text-gray-400 mb-4">
             <svg className="mx-auto h-12 w-12" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
             </svg>
           </div>
-          <h4 className="text-lg font-medium text-gray-900 mb-2">No hay carpetas disponibles</h4>
+          <h4 className="text-lg font-medium text-gray-900 mb-2">
+            {searchTerm.trim() && filteredItems.length === 0 && items.length > 0
+              ? 'No se encontraron resultados'
+              : error 
+              ? 'Error al cargar carpetas' 
+              : 'No hay carpetas disponibles'}
+          </h4>
           <p className="text-gray-500">
-            No se encontraron carpetas en el nivel raíz de OneDrive
+            {searchTerm.trim() && filteredItems.length === 0 && items.length > 0
+              ? `No se encontraron archivos o carpetas que coincidan con "${searchTerm}"`
+              : error || (filterByEmpresa && empresaNombre 
+                ? `No se encontraron carpetas en "${empresaNombre}"`
+                : filterBySucursal && sucursalNombre
+                ? `No se encontraron carpetas relacionadas con "${sucursalNombre}"`
+                : 'No se encontraron carpetas en el nivel raíz de OneDrive')}
           </p>
+          {error && filterByEmpresa && empresaNombre && (
+            <div className="mt-4 p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
+              <p className="text-sm text-yellow-800">
+                <strong>Sugerencia:</strong> Asegúrese de que existe una carpeta con el nombre exacto "{empresaNombre}" en OneDrive.
+              </p>
+            </div>
+          )}
         </div>
-      ) : (
+      ) : null}
+
+      {items.length === 0 && !loading && !searchTerm.trim() && (
+        <div className="text-center py-8">
+          <div className="text-gray-400 mb-4">
+            <svg className="mx-auto h-12 w-12" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+            </svg>
+          </div>
+          <h4 className="text-lg font-medium text-gray-900 mb-2">
+            {error ? 'Error al cargar carpetas' : 'No hay carpetas disponibles'}
+          </h4>
+          <p className="text-gray-500">
+            {error || (filterByEmpresa && empresaNombre 
+              ? `No se encontraron carpetas en "${empresaNombre}"`
+              : filterBySucursal && sucursalNombre
+              ? `No se encontraron carpetas relacionadas con "${sucursalNombre}"`
+              : 'No se encontraron carpetas en el nivel raíz de OneDrive')}
+          </p>
+          {error && filterByEmpresa && empresaNombre && (
+            <div className="mt-4 p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
+              <p className="text-sm text-yellow-800">
+                <strong>Sugerencia:</strong> Asegúrese de que existe una carpeta con el nombre exacto "{empresaNombre}" en OneDrive.
+              </p>
+            </div>
+          )}
+        </div>
+      )}
+      {/* Skeleton cuando está cargando pero ya hay items (navegación entre carpetas) */}
+      {loading && items.length > 0 ? (
+        <div className="w-full">
+          <div className="rounded-md border border-gray-200 shadow-md">
+            <div className="px-6 py-4 border-b bg-gray-50 border-gray-100">
+              <div className="h-6 bg-gray-200 rounded w-40 animate-pulse"></div>
+            </div>
+            <div className="p-4 space-y-3">
+              {[1, 2, 3, 4, 5].map((i) => (
+                <div key={i} className="flex items-center gap-3 py-3 border-b border-gray-100">
+                  <div className="h-10 w-10 bg-gray-200 rounded-full animate-pulse"></div>
+                  <div className="flex-1">
+                    <div className="h-4 bg-gray-200 rounded w-48 mb-2 animate-pulse"></div>
+                    <div className="h-3 bg-gray-200 rounded w-32 animate-pulse"></div>
+                  </div>
+                  <div className="h-4 bg-gray-200 rounded w-20 animate-pulse"></div>
+                  <div className="h-8 bg-gray-200 rounded w-24 animate-pulse"></div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      ) : filteredItems.length > 0 ? (
         <div className="w-full">
           <div className="rounded-md border border-gray-200 shadow-md">
             <div className="px-6 py-4 border-b bg-gray-50 border-gray-100 text-gray-500">
@@ -300,7 +583,12 @@ export default function OneDriveFolders({ empresaId, sucursalId, sucursalNombre,
                   {currentFolderId || filterByEmpresa ? 'Archivos y Carpetas' : 'Carpetas'}
                 </h3>
                 <div className="flex items-center gap-2">
-                  <span className="text-sm text-gray-600">{items.length} elementos</span>
+                  <span className="text-sm text-gray-600">
+                    {searchTerm.trim() 
+                      ? `${filteredItems.length} de ${items.length} elementos`
+                      : `${items.length} elementos`
+                    }
+                  </span>
                 </div>
               </div>
             </div>
@@ -321,7 +609,7 @@ export default function OneDriveFolders({ empresaId, sucursalId, sucursalNombre,
                   </tr>
                 </thead>
                 <tbody className="[&_tr:last-child]:border-0">
-                  {items.map((item) => {
+                  {filteredItems.map((item) => {
                     const getFileIcon = (fileName: string): string => {
                       const extension = fileName.split('.').pop()?.toLowerCase() || '';
                       switch (extension) {
@@ -350,12 +638,54 @@ export default function OneDriveFolders({ empresaId, sucursalId, sucursalNombre,
                       return Math.round(bytes / Math.pow(1024, i) * 100) / 100 + ' ' + sizes[i];
                     };
 
+                    // Verificar si esta carpeta es una sucursal (funciona en cualquier nivel de navegación)
+                    const itemNameLower = item.name.toLowerCase().trim();
+                    const isSucursal = filterByEmpresa && empresaId && item.type === 'folder' && sucursales.some(s => {
+                      const sucursalNombreLower = s.nombre.toLowerCase().trim();
+                      const sucursalIdLower = s.id.toLowerCase().trim();
+                      
+                      // Comparaciones exactas
+                      if (sucursalNombreLower === itemNameLower || sucursalIdLower === itemNameLower) {
+                        return true;
+                      }
+                      
+                      // Verificar si contiene o empieza con el ID/nombre de la sucursal
+                      if (itemNameLower.includes(sucursalIdLower) || sucursalIdLower.includes(itemNameLower)) {
+                        return true;
+                      }
+                      
+                      if (itemNameLower.startsWith(sucursalIdLower) || sucursalIdLower.startsWith(itemNameLower)) {
+                        return true;
+                      }
+                      
+                      return false;
+                    });
+                    
+                    const sucursal = isSucursal ? sucursales.find(s => {
+                      const sucursalNombreLower = s.nombre.toLowerCase().trim();
+                      const sucursalIdLower = s.id.toLowerCase().trim();
+                      
+                      if (sucursalNombreLower === itemNameLower || sucursalIdLower === itemNameLower) {
+                        return true;
+                      }
+                      
+                      if (itemNameLower.includes(sucursalIdLower) || sucursalIdLower.includes(itemNameLower)) {
+                        return true;
+                      }
+                      
+                      if (itemNameLower.startsWith(sucursalIdLower) || sucursalIdLower.startsWith(itemNameLower)) {
+                        return true;
+                      }
+                      
+                      return false;
+                    }) : null;
+
                     return (
                       <tr
                         key={item.id}
                         className={`border-b border-gray-100 transition-colors ${
                           item.type === 'folder' 
-                            ? 'hover:bg-gray-100 cursor-pointer bg-gray-50' 
+                            ? 'hover:bg-gray-100 cursor-pointer bg-white'
                             : 'hover:bg-gray-50 bg-white'
                         }`}
                         onClick={item.type === 'folder' ? () => navigateToFolder(item.id, item.name) : undefined}
@@ -363,13 +693,15 @@ export default function OneDriveFolders({ empresaId, sucursalId, sucursalNombre,
                         <td className="p-4 align-middle font-medium">
                           <div className="flex items-center gap-3">
                             <div className={`h-8 w-8 rounded-full flex items-center justify-center ${
-                              item.type === 'folder' ? 'bg-gray-200' : 'bg-gray-100'
+                              item.type === 'folder' 
+                                ? 'bg-gray-200'
+                                : 'bg-gray-100'
                             }`}>
                               <span className="text-lg">
                                 {item.type === 'folder' ? '📁' : getFileIcon(item.name)}
                               </span>
                             </div>
-                            <div>
+                            <div className="flex-1">
                               <div className="font-medium">{item.name}</div>
                             </div>
                           </div>
@@ -388,27 +720,33 @@ export default function OneDriveFolders({ empresaId, sucursalId, sucursalNombre,
                         </td>
                         <td className="p-4 align-middle text-right">
                           <div className="flex items-center justify-end gap-2">
-                            {item.type === 'file' && item.downloadUrl ? (
+                            {item.type === 'file' ? (
                               <>
-                                <a
-                                  href={item.downloadUrl}
-                                  target="_blank"
-                                  rel="noopener noreferrer"
-                                  className="inline-flex items-center justify-center rounded-md text-sm font-medium transition-colors border border-gray-300 hover:bg-gray-50 hover:text-gray-900 h-9 px-3"
-                                  onClick={(e) => e.stopPropagation()}
-                                >
-                                  Ver
-                                </a>
-                                <a
-                                  href={item.downloadUrl}
-                                  target="_blank"
-                                  rel="noopener noreferrer"
-                                  download
-                                  className="inline-flex items-center justify-center rounded-md text-sm font-medium transition-colors bg-gray-500 text-white hover:bg-gray-600 h-9 px-3"
-                                  onClick={(e) => e.stopPropagation()}
-                                >
-                                  Descargar
-                                </a>
+                                {item.webUrl && (
+                                  <a
+                                    href={item.webUrl}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="inline-flex items-center justify-center rounded-md text-sm font-medium transition-colors border border-gray-300 hover:bg-gray-50 hover:text-gray-900 h-9 px-3"
+                                    onClick={(e) => e.stopPropagation()}
+                                    title="Previsualizar archivo en OneDrive"
+                                  >
+                                    Ver
+                                  </a>
+                                )}
+                                {item.downloadUrl && (
+                                  <a
+                                    href={item.downloadUrl}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    download
+                                    className="inline-flex items-center justify-center rounded-md text-sm font-medium transition-colors bg-gray-500 text-white hover:bg-gray-600 h-9 px-3"
+                                    onClick={(e) => e.stopPropagation()}
+                                    title="Descargar archivo"
+                                  >
+                                    Descargar
+                                  </a>
+                                )}
                               </>
                             ) : null}
                           </div>
@@ -421,7 +759,7 @@ export default function OneDriveFolders({ empresaId, sucursalId, sucursalNombre,
             </div>
           </div>
         </div>
-      )}
+      ) : null}
     </div>
   );
 }

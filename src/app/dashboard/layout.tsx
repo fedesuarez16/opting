@@ -37,7 +37,7 @@ export default function DashboardLayout({
   return (
     <div className="h-screen flex overflow-hidden bg-gray-100">
       {/* Desktop Sidebar */}
-      <div className={`hidden md:flex md:flex-shrink-0 transition-all duration-300 ${isDesktopSidebarCollapsed ? 'w-20' : 'w-64'}`}>
+      <div className={`hidden md:flex md:flex-shrink-0 transition-all duration-300 ${isDesktopSidebarCollapsed ? 'w-20' : 'w-52'}`}>
         <div className="flex flex-col w-full">
           <Sidebar 
             collapsed={isDesktopSidebarCollapsed}
