@@ -98,7 +98,7 @@ export default function DashboardPage() {
           return;
         }
 
-        const userData = userSnapshot.val() as UserData;
+        const userData = userSnapshot.val() as UserData & { empresaId?: string; sucursalId?: string };
         console.log('User data:', userData);
         setUserRole(userData.role);
 
@@ -106,6 +106,13 @@ export default function DashboardPage() {
         if (userData.role === 'general_manager') {
           console.log('Redirecting general_manager to /empresagte');
           router.push('/empresagte');
+          return;
+        }
+
+        // Redirigir gerente de sucursal a su página de sucursal específica
+        if (userData.role === 'branch_manager' && userData.empresaId && userData.sucursalId) {
+          console.log('Redirecting branch_manager to sucursal page:', userData.empresaId, userData.sucursalId);
+          router.push(`/dashboard/empresas/${encodeURIComponent(userData.empresaId)}/sucursales/${encodeURIComponent(userData.sucursalId)}`);
           return;
         }
 
