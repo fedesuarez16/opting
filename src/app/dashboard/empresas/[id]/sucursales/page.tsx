@@ -300,34 +300,33 @@ export default function SucursalesPage({ params }: SucursalesPageProps) {
   }, [mediciones, empresaId]);
 
   // Conteos de incumplimientos por tipo para el gráfico (para gerentes)
-  // Muestra los mismos estados (PENDIENTE, EN NUBE, PEDIR A TEC, PROCESAR) pero de los campos de incumplimiento
   const incumplimientosCountsForChart = useMemo(() => {
     const isArcosDorados = empresaId === 'ARCOS DORADOS' || empresa?.nombre === 'ARCOS DORADOS';
     
     const counts: any = {
       pat: {
-        pendienteVisita: 0,
-        pedirTecnico: 0,
-        procesar: 0,
-        enNube: 0
+        cumple: 0,
+        noCumple: 0,
+        noAplica: 0,
+        pendiente: 0
       },
       iluminacion: {
-        pendienteVisita: 0,
-        pedirTecnico: 0,
-        procesar: 0,
-        enNube: 0
+        cumple: 0,
+        noCumple: 0,
+        noAplica: 0,
+        pendiente: 0
       },
       ruido: {
-        pendienteVisita: 0,
-        pedirTecnico: 0,
-        procesar: 0,
-        enNube: 0
+        cumple: 0,
+        noCumple: 0,
+        noAplica: 0,
+        pendiente: 0
       },
       termografia: {
-        pendienteVisita: 0,
-        pedirTecnico: 0,
-        procesar: 0,
-        enNube: 0
+        cumple: 0,
+        noCumple: 0,
+        noAplica: 0,
+        pendiente: 0
       }
     };
 
@@ -335,33 +334,33 @@ export default function SucursalesPage({ params }: SucursalesPageProps) {
       const datos = m.datos as Record<string, unknown>;
       const getValue = (k: string) => String((datos[k] ?? '') as any);
       
-      // INCUMPLIMIENTO PAT - buscar estados
+      // INCUMPLIMIENTO PAT
       const incumplimientoPAT = getValue('INCUMPLIMIENTO PAT');
-      if (incumplimientoPAT === 'PENDIENTE') counts.pat.pendienteVisita += 1;
-      else if (incumplimientoPAT === 'PEDIR A TEC') counts.pat.pedirTecnico += 1;
-      else if (incumplimientoPAT === 'PROCESAR') counts.pat.procesar += 1;
-      else if (incumplimientoPAT === 'EN NUBE') counts.pat.enNube += 1;
+      if (incumplimientoPAT === 'CUMPLE') counts.pat.cumple += 1;
+      else if (incumplimientoPAT === 'NO CUMPLE') counts.pat.noCumple += 1;
+      else if (incumplimientoPAT === 'NO APLICA') counts.pat.noAplica += 1;
+      else if (incumplimientoPAT === 'PENDIENTE') counts.pat.pendiente += 1;
       
-      // INCUMPLIMIENTO ILU - buscar estados
+      // INCUMPLIMIENTO ILU
       const incumplimientoILU = getValue('INCUMPLIMIENTO ILU');
-      if (incumplimientoILU === 'PENDIENTE') counts.iluminacion.pendienteVisita += 1;
-      else if (incumplimientoILU === 'PEDIR A TEC') counts.iluminacion.pedirTecnico += 1;
-      else if (incumplimientoILU === 'PROCESAR') counts.iluminacion.procesar += 1;
-      else if (incumplimientoILU === 'EN NUBE') counts.iluminacion.enNube += 1;
+      if (incumplimientoILU === 'CUMPLE') counts.iluminacion.cumple += 1;
+      else if (incumplimientoILU === 'NO CUMPLE') counts.iluminacion.noCumple += 1;
+      else if (incumplimientoILU === 'NO APLICA') counts.iluminacion.noAplica += 1;
+      else if (incumplimientoILU === 'PENDIENTE') counts.iluminacion.pendiente += 1;
       
-      // INCUMPLIMIENTO RUIDO - buscar estados
+      // INCUMPLIMIENTO RUIDO
       const incumplimientoRUIDO = getValue('INCUMPLIMIENTO RUIDO');
-      if (incumplimientoRUIDO === 'PENDIENTE') counts.ruido.pendienteVisita += 1;
-      else if (incumplimientoRUIDO === 'PEDIR A TEC') counts.ruido.pedirTecnico += 1;
-      else if (incumplimientoRUIDO === 'PROCESAR') counts.ruido.procesar += 1;
-      else if (incumplimientoRUIDO === 'EN NUBE') counts.ruido.enNube += 1;
+      if (incumplimientoRUIDO === 'CUMPLE') counts.ruido.cumple += 1;
+      else if (incumplimientoRUIDO === 'NO CUMPLE') counts.ruido.noCumple += 1;
+      else if (incumplimientoRUIDO === 'NO APLICA') counts.ruido.noAplica += 1;
+      else if (incumplimientoRUIDO === 'PENDIENTE') counts.ruido.pendiente += 1;
       
-      // INCUMPLIMIENTO TERMOGRAFÍA - buscar estados
+      // INCUMPLIMIENTO TERMOGRAFÍA (si existe el campo)
       const incumplimientoTERMO = getValue('INCUMPLIMIENTO TERMOGRAFÍA') || getValue('INCUMPLIMIENTO TERMOGRAFIA');
-      if (incumplimientoTERMO === 'PENDIENTE') counts.termografia.pendienteVisita += 1;
-      else if (incumplimientoTERMO === 'PEDIR A TEC') counts.termografia.pedirTecnico += 1;
-      else if (incumplimientoTERMO === 'PROCESAR') counts.termografia.procesar += 1;
-      else if (incumplimientoTERMO === 'EN NUBE') counts.termografia.enNube += 1;
+      if (incumplimientoTERMO === 'CUMPLE') counts.termografia.cumple += 1;
+      else if (incumplimientoTERMO === 'NO CUMPLE') counts.termografia.noCumple += 1;
+      else if (incumplimientoTERMO === 'NO APLICA') counts.termografia.noAplica += 1;
+      else if (incumplimientoTERMO === 'PENDIENTE') counts.termografia.pendiente += 1;
     });
 
     console.log('Incumplimientos counts para gráfico:', empresaId, counts);
@@ -538,55 +537,55 @@ export default function SucursalesPage({ params }: SucursalesPageProps) {
               const isArcosDorados = empresaId === 'ARCOS DORADOS' || empresa?.nombre === 'ARCOS DORADOS';
               const isManager = userRole === 'general_manager' || userRole === 'branch_manager';
               
-              // Si es gerente, mostrar incumplimientos con los mismos estados
+              // Si es gerente, mostrar incumplimientos
               if (isManager) {
                 const chartData = [
                   {
                     name: "INCUMPLIMIENTO PAT",
-                    "EN NUBE": incumplimientosCountsForChart.pat.enNube,
-                    "Procesar": incumplimientosCountsForChart.pat.procesar,
-                    "PEDIR A TEC": incumplimientosCountsForChart.pat.pedirTecnico,
-                    "PENDIENTE": incumplimientosCountsForChart.pat.pendienteVisita
+                    "CUMPLE": incumplimientosCountsForChart.pat.cumple,
+                    "NO CUMPLE": incumplimientosCountsForChart.pat.noCumple,
+                    "NO APLICA": incumplimientosCountsForChart.pat.noAplica,
+                    "PENDIENTE": incumplimientosCountsForChart.pat.pendiente
                   },
                   {
                     name: "INCUMPLIMIENTO ILU",
-                    "EN NUBE": incumplimientosCountsForChart.iluminacion.enNube,
-                    "Procesar": incumplimientosCountsForChart.iluminacion.procesar,
-                    "PEDIR A TEC": incumplimientosCountsForChart.iluminacion.pedirTecnico,
-                    "PENDIENTE": incumplimientosCountsForChart.iluminacion.pendienteVisita
+                    "CUMPLE": incumplimientosCountsForChart.iluminacion.cumple,
+                    "NO CUMPLE": incumplimientosCountsForChart.iluminacion.noCumple,
+                    "NO APLICA": incumplimientosCountsForChart.iluminacion.noAplica,
+                    "PENDIENTE": incumplimientosCountsForChart.iluminacion.pendiente
                   },
                   {
                     name: "INCUMPLIMIENTO RUIDO",
-                    "EN NUBE": incumplimientosCountsForChart.ruido.enNube,
-                    "Procesar": incumplimientosCountsForChart.ruido.procesar,
-                    "PEDIR A TEC": incumplimientosCountsForChart.ruido.pedirTecnico,
-                    "PENDIENTE": incumplimientosCountsForChart.ruido.pendienteVisita
+                    "CUMPLE": incumplimientosCountsForChart.ruido.cumple,
+                    "NO CUMPLE": incumplimientosCountsForChart.ruido.noCumple,
+                    "NO APLICA": incumplimientosCountsForChart.ruido.noAplica,
+                    "PENDIENTE": incumplimientosCountsForChart.ruido.pendiente
                   },
                   {
                     name: "INCUMPLIMIENTO TERMOGRAFÍA",
-                    "EN NUBE": incumplimientosCountsForChart.termografia.enNube,
-                    "Procesar": incumplimientosCountsForChart.termografia.procesar,
-                    "PEDIR A TEC": incumplimientosCountsForChart.termografia.pedirTecnico,
-                    "PENDIENTE": incumplimientosCountsForChart.termografia.pendienteVisita
+                    "CUMPLE": incumplimientosCountsForChart.termografia.cumple,
+                    "NO CUMPLE": incumplimientosCountsForChart.termografia.noCumple,
+                    "NO APLICA": incumplimientosCountsForChart.termografia.noAplica,
+                    "PENDIENTE": incumplimientosCountsForChart.termografia.pendiente
                   }
                 ];
 
                 const chartConfig = {
-                  "EN NUBE": {
-                    label: "EN NUBE",
+                  "CUMPLE": {
+                    label: "CUMPLE",
                     color: "rgba(34, 197, 94, 0.4)"
                   },
-                  "Procesar": {
-                    label: "PROCESAR",
-                    color: "rgba(59, 130, 246, 0.4)"
+                  "NO CUMPLE": {
+                    label: "NO CUMPLE",
+                    color: "rgba(239, 68, 68, 0.4)"
                   },
-                  "PEDIR A TEC": {
-                    label: "PEDIR A TEC",
-                    color: "rgba(245, 158, 11, 0.4)"
+                  "NO APLICA": {
+                    label: "NO APLICA",
+                    color: "rgba(156, 163, 175, 0.4)"
                   },
                   "PENDIENTE": {
                     label: "PENDIENTE",
-                    color: "rgba(239, 68, 68, 0.4)"
+                    color: "rgba(245, 158, 11, 0.4)"
                   }
                 };
 
@@ -611,10 +610,10 @@ export default function SucursalesPage({ params }: SucursalesPageProps) {
                         cursor={false}
                         content={<ChartTooltipContent />}
                       />
-                      <Bar dataKey="EN NUBE" fill="rgba(3, 160, 61, 0.67)" radius={4} />
-                      <Bar dataKey="Procesar" fill="rgba(4, 68, 171, 0.67)" radius={4} />
-                      <Bar dataKey="PEDIR A TEC" fill="rgba(152, 97, 3, 0.67)" radius={4} />
-                      <Bar dataKey="PENDIENTE" fill="rgba(151, 5, 5, 0.67)" radius={4} />
+                      <Bar dataKey="CUMPLE" fill="rgba(3, 160, 61, 0.67)" radius={4} />
+                      <Bar dataKey="NO CUMPLE" fill="rgba(151, 5, 5, 0.67)" radius={4} />
+                      <Bar dataKey="NO APLICA" fill="rgba(107, 114, 128, 0.67)" radius={4} />
+                      <Bar dataKey="PENDIENTE" fill="rgba(152, 97, 3, 0.67)" radius={4} />
                     </BarChart>
                   </ChartContainer>
                 );
