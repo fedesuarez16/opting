@@ -371,7 +371,7 @@ export default function EmpresasPage() {
               type="text"
               value={search}
               onChange={e => setSearch(e.target.value)}
-              className="bg-white h-10 block w-full pl-10 sm:text-sm rounded-md border-gray-300 ring-1 ring-gray-200 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 placeholder-gray-400"
+              className="bg-white h-10 block w-full pl-10 sm:text-sm rounded-md border-gray-300 ring-1 ring-gray-200 focus:ring-2 focus:ring-gray-500 focus:border-gray-500 placeholder-gray-400"
               placeholder="Buscar empresas..."
             />
           </div>
@@ -433,8 +433,8 @@ export default function EmpresasPage() {
                     >
                       <td className="p-4 align-middle font-medium">
                         <div className="flex items-center gap-3">
-                          <div className="h-8 w-8 rounded-full bg-blue-100 flex items-center justify-center">
-                            <span className="text-sm font-medium text-blue-500">
+                          <div className="h-8 w-8 rounded-full bg-gray-700 flex items-center justify-center">
+                            <span className="text-sm font-medium text-gray-100">
                               {empresa.nombre.charAt(0).toUpperCase()}
                             </span>
                           </div>
@@ -557,7 +557,7 @@ function EmpresaFormModal({ empresa, onClose, onSave }: EmpresaFormModalProps) {
                   value={formData.nombre || ''}
                   onChange={handleChange}
                   required
-                  className="mt-1 focus:ring-indigo-500 focus:border-indigo-500 block w-full shadow-sm sm:text-sm border-gray-300 rounded-md"
+                  className="mt-1 focus:ring-gray-500 focus:border-gray-500 block w-full shadow-sm sm:text-sm border-gray-300 rounded-md"
                 />
               </div>
               
@@ -569,7 +569,7 @@ function EmpresaFormModal({ empresa, onClose, onSave }: EmpresaFormModalProps) {
                   id="direccion"
                   value={formData.direccion || ''}
                   onChange={handleChange}
-                  className="mt-1 focus:ring-indigo-500 focus:border-indigo-500 block w-full shadow-sm sm:text-sm border-gray-300 rounded-md"
+                  className="mt-1 focus:ring-gray-500 focus:border-gray-500 block w-full shadow-sm sm:text-sm border-gray-300 rounded-md"
                 />
               </div>
               
@@ -582,7 +582,7 @@ function EmpresaFormModal({ empresa, onClose, onSave }: EmpresaFormModalProps) {
                     id="telefono"
                     value={formData.telefono || ''}
                     onChange={handleChange}
-                    className="mt-1 focus:ring-indigo-500 focus:border-indigo-500 block w-full shadow-sm sm:text-sm border-gray-300 rounded-md"
+                    className="mt-1 focus:ring-gray-500 focus:border-gray-500 block w-full shadow-sm sm:text-sm border-gray-300 rounded-md"
                   />
                 </div>
                 <div>
@@ -593,7 +593,7 @@ function EmpresaFormModal({ empresa, onClose, onSave }: EmpresaFormModalProps) {
                     id="email"
                     value={formData.email || ''}
                     onChange={handleChange}
-                    className="mt-1 focus:ring-indigo-500 focus:border-indigo-500 block w-full shadow-sm sm:text-sm border-gray-300 rounded-md"
+                    className="mt-1 focus:ring-gray-500 focus:border-gray-500 block w-full shadow-sm sm:text-sm border-gray-300 rounded-md"
                   />
                 </div>
               </div>
@@ -605,7 +605,7 @@ function EmpresaFormModal({ empresa, onClose, onSave }: EmpresaFormModalProps) {
                   id="estado"
                   value={formData.estado || 'activa'}
                   onChange={handleChange}
-                  className="mt-1 block w-full py-2 px-3 border border-gray-300 bg-white rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+                  className="mt-1 block w-full py-2 px-3 border border-gray-300 bg-white rounded-md shadow-sm focus:outline-none focus:ring-gray-500 focus:border-gray-500 sm:text-sm"
                 >
                   <option value="activa">Activa</option>
                   <option value="inactiva">Inactiva</option>
@@ -616,14 +616,14 @@ function EmpresaFormModal({ empresa, onClose, onSave }: EmpresaFormModalProps) {
             <div className="bg-gray-50 px-4 py-3 sm:px-6 sm:flex sm:flex-row-reverse">
               <button
                 type="submit"
-                className="w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-indigo-600 text-base font-medium text-white hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 sm:ml-3 sm:w-auto sm:text-sm"
+                className="w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-gray-600 text-base font-medium text-white hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500 sm:ml-3 sm:w-auto sm:text-sm"
               >
                 Guardar
               </button>
               <button
                 type="button"
                 onClick={onClose}
-                className="mt-3 w-full inline-flex justify-center rounded-md border border-gray-300 shadow-sm px-4 py-2 bg-white text-base font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 sm:mt-0 sm:ml-3 sm:w-auto sm:text-sm"
+                className="mt-3 w-full inline-flex justify-center rounded-md border border-gray-300 shadow-sm px-4 py-2 bg-white text-base font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500 sm:mt-0 sm:ml-3 sm:w-auto sm:text-sm"
               >
                 Cancelar
               </button>

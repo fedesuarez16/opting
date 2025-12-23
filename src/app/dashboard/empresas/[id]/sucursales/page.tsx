@@ -157,6 +157,43 @@ export default function SucursalesPage({ params }: SucursalesPageProps) {
     return { puesta, informe, incumpl, extintores };
   }, [mediciones]);
 
+  // Obtener la fecha más reciente de extintores
+  const fechaExtintores = useMemo(() => {
+    let fechaMasReciente: string | null = null;
+    let fechaMasRecienteDate: Date | null = null;
+
+    mediciones.forEach((m) => {
+      const datos = m.datos as Record<string, unknown>;
+      const getValue = (k: string) => String((datos[k] ?? '') as any);
+      
+      // Buscar campos relacionados con fecha de extintores
+      const fechaExtintoresValue = getValue('FECHA EXTINTORES') || 
+                                   getValue('FECHA EXTINTOR') || 
+                                   getValue('FECHA DE EXTINTORES') ||
+                                   getValue('FECHA REGISTRO EXTINTORES');
+      
+      if (fechaExtintoresValue && fechaExtintoresValue.trim() !== '') {
+        try {
+          // Intentar parsear la fecha en diferentes formatos
+          const fecha = new Date(fechaExtintoresValue);
+          if (!isNaN(fecha.getTime())) {
+            if (!fechaMasRecienteDate || fecha > fechaMasRecienteDate) {
+              fechaMasRecienteDate = fecha;
+              fechaMasReciente = fechaExtintoresValue;
+            }
+          }
+        } catch (e) {
+          // Si no se puede parsear, intentar con el valor original
+          if (!fechaMasReciente) {
+            fechaMasReciente = fechaExtintoresValue;
+          }
+        }
+      }
+    });
+
+    return fechaMasReciente;
+  }, [mediciones]);
+
   // Conteos de mediciones por tipo de estudio para esta empresa específica
   const medicionesCountsEmpresa = useMemo(() => {
     const isArcosDorados = empresaId === 'ARCOS DORADOS' || empresa?.nombre === 'ARCOS DORADOS';
@@ -438,7 +475,7 @@ export default function SucursalesPage({ params }: SucursalesPageProps) {
         </div>
 
          {/* Cards de métricas */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6 mb-8">
       
 
       <div className="bg-gradient-to-b from-black to-gray-700 rounded-3xl p-6 text-white border border-gray-800 shadow-sm">
@@ -509,6 +546,40 @@ export default function SucursalesPage({ params }: SucursalesPageProps) {
           <div className="text-gray-400">
             <svg className="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
+            </svg>
+          </div>
+        </div>
+      </div>
+
+      <div className="bg-gradient-to-b from-black to-gray-700  rounded-3xl p-6 text-white border border-gray-800 shadow-sm">
+        <div className="flex items-center justify-between">
+          <div>
+            <p className="text-gray-300 text-sm">Fecha extintores</p>
+            {loadingMediciones ? (
+              <div className="h-8 bg-gray-300 rounded w-16 animate-pulse"></div>
+            ) : (
+              <p className="text-lg font-bold text-white">
+                {fechaExtintores ? (() => {
+                  try {
+                    const fecha = new Date(fechaExtintores);
+                    if (!isNaN(fecha.getTime())) {
+                      return fecha.toLocaleDateString('es-AR', { 
+                        year: 'numeric', 
+                        month: 'short', 
+                        day: 'numeric' 
+                      });
+                    }
+                    return fechaExtintores;
+                  } catch {
+                    return fechaExtintores;
+                  }
+                })() : 'N/A'}
+              </p>
+            )}
+          </div>
+          <div className="text-gray-400">
+            <svg className="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
             </svg>
           </div>
         </div>
