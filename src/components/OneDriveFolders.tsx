@@ -600,9 +600,6 @@ export default function OneDriveFolders({ empresaId, sucursalId, sucursalNombre,
                     <th className="h-12 px-4 text-left align-middle font-medium text-gray-600 [&:has([role=checkbox])]:pr-0">
                       Nombre
                     </th>
-                    <th className="h-12 px-4 text-left align-middle font-medium text-gray-600 [&:has([role=checkbox])]:pr-0">
-                      {currentFolderId || filterByEmpresa ? 'Tamaño' : 'Elementos'}
-                    </th>
                     <th className="h-12 px-4 text-right align-middle font-medium text-gray-600 [&:has([role=checkbox])]:pr-0">
                       Acciones
                     </th>
@@ -705,18 +702,6 @@ export default function OneDriveFolders({ empresaId, sucursalId, sucursalNombre,
                               <div className="font-medium">{item.name}</div>
                             </div>
                           </div>
-                        </td>
-                        <td className="p-4 align-middle">
-                          {item.type === 'folder' ? (
-                            <div className="flex items-center gap-1">
-                              <span className="font-medium">{item.childCount || 0}</span>
-                              <span className="text-xs text-gray-600">elementos</span>
-                            </div>
-                          ) : (
-                            <div className="flex items-center gap-1">
-                              <span className="font-medium text-xs">{formatFileSize(item.size)}</span>
-                            </div>
-                          )}
                         </td>
                         <td className="p-4 align-middle text-right">
                           <div className="flex items-center justify-end gap-2">

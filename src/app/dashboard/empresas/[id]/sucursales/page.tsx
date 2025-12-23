@@ -132,7 +132,7 @@ export default function SucursalesPage({ params }: SucursalesPageProps) {
       const getValue = (k: string) => String((datos[k] ?? '') as any);
       
       if (getValue('INCUMPLIMIENTO PAT') === 'CUMPLE') incumplimientoPAT += 1;
-      if (getValue('INCUMPLIMIENTO ILU') === 'CUMPLE') incumplimientoILU += 1;
+      if (getValue('INCUMPLIMIENTO ILUM') === 'CUMPLE') incumplimientoILU += 1;
       if (getValue('INCUMPLIMIENTO RUIDO') === 'CUMPLE') incumplimientoRUIDO += 1;
     });
     
@@ -288,7 +288,7 @@ export default function SucursalesPage({ params }: SucursalesPageProps) {
       const incumplimientoPAT = getValue('INCUMPLIMIENTO PAT');
       if (incumplimientoPAT === 'NO CUMPLE') counts.patNoCumple += 1;
       
-      const incumplimientoILU = getValue('INCUMPLIMIENTO ILU');
+      const incumplimientoILU = getValue('INCUMPLIMIENTO ILUM');
       if (incumplimientoILU === 'NO CUMPLE') counts.iluNoCumple += 1;
       
       const incumplimientoRUIDO = getValue('INCUMPLIMIENTO RUIDO');
@@ -341,8 +341,8 @@ export default function SucursalesPage({ params }: SucursalesPageProps) {
       else if (incumplimientoPAT === 'NO APLICA') counts.pat.noAplica += 1;
       else if (incumplimientoPAT === 'PENDIENTE') counts.pat.pendiente += 1;
       
-      // INCUMPLIMIENTO ILU
-      const incumplimientoILU = getValue('INCUMPLIMIENTO ILU');
+      // INCUMPLIMIENTO ILUM
+      const incumplimientoILU = getValue('INCUMPLIMIENTO ILUM');
       if (incumplimientoILU === 'CUMPLE') counts.iluminacion.cumple += 1;
       else if (incumplimientoILU === 'NO CUMPLE') counts.iluminacion.noCumple += 1;
       else if (incumplimientoILU === 'NO APLICA') counts.iluminacion.noAplica += 1;
@@ -355,8 +355,8 @@ export default function SucursalesPage({ params }: SucursalesPageProps) {
       else if (incumplimientoRUIDO === 'NO APLICA') counts.ruido.noAplica += 1;
       else if (incumplimientoRUIDO === 'PENDIENTE') counts.ruido.pendiente += 1;
       
-      // INCUMPLIMIENTO TERMOGRAFÍA (si existe el campo)
-      const incumplimientoTERMO = getValue('INCUMPLIMIENTO TERMOGRAFÍA') || getValue('INCUMPLIMIENTO TERMOGRAFIA');
+      // INCUMPLIMIENTOS TERMOGRAFÍA (si existe el campo)
+      const incumplimientoTERMO = getValue('INCUMPLIMIENTOS TERMOGRAFÍA') || getValue('INCUMPLIMIENTO TERMOGRAFIA');
       if (incumplimientoTERMO === 'CUMPLE') counts.termografia.cumple += 1;
       else if (incumplimientoTERMO === 'NO CUMPLE') counts.termografia.noCumple += 1;
       else if (incumplimientoTERMO === 'NO APLICA') counts.termografia.noAplica += 1;
@@ -548,7 +548,7 @@ export default function SucursalesPage({ params }: SucursalesPageProps) {
                     "PENDIENTE": incumplimientosCountsForChart.pat.pendiente
                   },
                   {
-                    name: "INCUMPLIMIENTO ILU",
+                    name: "INCUMPLIMIENTO ILUM",
                     "CUMPLE": incumplimientosCountsForChart.iluminacion.cumple,
                     "NO CUMPLE": incumplimientosCountsForChart.iluminacion.noCumple,
                     "NO APLICA": incumplimientosCountsForChart.iluminacion.noAplica,
@@ -562,7 +562,7 @@ export default function SucursalesPage({ params }: SucursalesPageProps) {
                     "PENDIENTE": incumplimientosCountsForChart.ruido.pendiente
                   },
                   {
-                    name: "INCUMPLIMIENTO TERMOGRAFÍA",
+                    name: "INCUMPLIMIENTOS TERMOGRAFÍA",
                     "CUMPLE": incumplimientosCountsForChart.termografia.cumple,
                     "NO CUMPLE": incumplimientosCountsForChart.termografia.noCumple,
                     "NO APLICA": incumplimientosCountsForChart.termografia.noAplica,
