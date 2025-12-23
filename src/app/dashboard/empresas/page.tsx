@@ -259,35 +259,35 @@ export default function EmpresasPage() {
               const chartData = [
                 {
                   name: "PAT",
-                  "En nube": medicionesCounts.pat.enNube,
+                  "EN NUBE": medicionesCounts.pat.enNube,
                   "Procesar": medicionesCounts.pat.procesar,
                   "PEDIR A TEC": medicionesCounts.pat.pedirTecnico,
                   "PENDIENTE": medicionesCounts.pat.pendienteVisita
                 },
                 {
                   name: "Iluminación",
-                  "En nube": medicionesCounts.iluminacion.enNube,
+                  "EN NUBE": medicionesCounts.iluminacion.enNube,
                   "Procesar": medicionesCounts.iluminacion.procesar,
                   "PEDIR A TEC": medicionesCounts.iluminacion.pedirTecnico,
                   "PENDIENTE": medicionesCounts.iluminacion.pendienteVisita
                 },
                 {
                   name: "Ruido",
-                  "En nube": medicionesCounts.ruido.enNube,
+                  "EN NUBE": medicionesCounts.ruido.enNube,
                   "Procesar": medicionesCounts.ruido.procesar,
                   "PEDIR A TEC": medicionesCounts.ruido.pedirTecnico,
                   "PENDIENTE": medicionesCounts.ruido.pendienteVisita
                 },
                 {
                   name: "Carga Térmica",
-                  "En nube": medicionesCounts.cargaTermica.enNube,
+                  "EN NUBE": medicionesCounts.cargaTermica.enNube,
                   "Procesar": medicionesCounts.cargaTermica.procesar,
                   "PEDIR A TEC": medicionesCounts.cargaTermica.pedirTecnico,
                   "PENDIENTE": medicionesCounts.cargaTermica.pendienteVisita
                 },
                 {
                   name: "ESTUDIO TERMOGRAFÍA",
-                  "En nube": medicionesCounts.termografia.enNube,
+                  "EN NUBE": medicionesCounts.termografia.enNube,
                   "Procesar": medicionesCounts.termografia.procesar,
                   "PEDIR A TEC": medicionesCounts.termografia.pedirTecnico,
                   "PENDIENTE": medicionesCounts.termografia.pendienteVisita
@@ -295,7 +295,7 @@ export default function EmpresasPage() {
               ];
 
               const chartConfig = {
-                "En nube": {
+                "EN NUBE": {
                   label: "EN NUBE",
                   color: "rgba(34, 197, 94, 0.4)"
                 },
@@ -334,7 +334,7 @@ export default function EmpresasPage() {
                       cursor={false}
                       content={<ChartTooltipContent />}
                     />
-                    <Bar dataKey="En nube" fill="rgba(3, 160, 61, 0.67)" radius={4} />
+                    <Bar dataKey="EN NUBE" fill="rgba(3, 160, 61, 0.67)" radius={4} />
                     <Bar dataKey="Procesar" fill="rgba(4, 68, 171, 0.67)" radius={4} />
                     <Bar dataKey="PEDIR A TEC" fill="rgba(152, 97, 3, 0.67)" radius={4} />
                     <Bar dataKey="PENDIENTE" fill="rgba(151, 5, 5, 0.67)" radius={4} />

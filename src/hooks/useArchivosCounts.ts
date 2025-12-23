@@ -96,8 +96,8 @@ export function useMedicionesCounts() {
         if (sucursalId) {
           todasLasSucursales.add(sucursalId);
           
-          // PAT (PUESTA A TIERRA)
-          const patValue = getValue('PUESTA A TIERRA');
+          // PAT
+          const patValue = getValue('PAT') || getValue('PUESTA A TIERRA');
           if (patValue === 'PENDIENTE') patPendienteVisita.add(sucursalId);
           else if (patValue === 'PEDIR A TEC') patPedirTecnico.add(sucursalId);
           else if (patValue === 'PROCESAR') patProcesar.add(sucursalId);

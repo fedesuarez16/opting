@@ -5,6 +5,9 @@ import { useSucursales, Sucursal } from '@/hooks/useSucursales';
 import { useEmpresas } from '@/hooks/useEmpresas';
 import Link from 'next/link';
 import { useMediciones } from '@/hooks/useMediciones';
+import { useAuth } from '@/contexts/AuthContext';
+import { ref, get } from 'firebase/database';
+import { database } from '@/lib/firebase';
 import { Bar, BarChart, CartesianGrid, XAxis, YAxis } from "recharts";
 import {
   ChartContainer,
@@ -12,6 +15,8 @@ import {
   ChartTooltipContent,
 } from "@/components/ui/chart";
 import OneDriveFolders from '@/components/OneDriveFolders';
+
+type UserRole = 'admin' | 'general_manager' | 'branch_manager';
 
 interface SucursalesPageProps {
   params: Promise<{
@@ -27,6 +32,28 @@ export default function SucursalesPage({ params }: SucursalesPageProps) {
   const { mediciones, loading: loadingMediciones } = useMediciones(empresaId);
   const empresa = empresas.find(e => e.id === empresaId);
   const [customLabels, setCustomLabels] = useState<Record<string, string>>({});
+  const { user } = useAuth();
+  const [userRole, setUserRole] = useState<UserRole | null>(null);
+  
+  // Obtener el rol del usuario
+  useEffect(() => {
+    const fetchUserRole = async () => {
+      if (user) {
+        try {
+          const userRef = ref(database, `users/${user.uid}`);
+          const snapshot = await get(userRef);
+          if (snapshot.exists()) {
+            const userData = snapshot.val();
+            setUserRole(userData.role);
+          }
+        } catch (error) {
+          console.error('Error fetching user role:', error);
+        }
+      }
+    };
+
+    fetchUserRole();
+  }, [user]);
   
   // Debug
   console.log('SucursalesPage - EmpresaId (decoded):', empresaId);
@@ -85,7 +112,8 @@ export default function SucursalesPage({ params }: SucursalesPageProps) {
       const datos = m.datos as Record<string, unknown>;
       const getValue = (k: string) => String((datos[k] ?? '') as any);
       
-      if (getValue('PUESTA A TIERRA') === 'EN NUBE') puestaTierra += 1;
+      const patValue = getValue('PAT');
+      if (patValue === 'EN NUBE') puestaTierra += 1;
       if (getValue('ILUMINACIÓN') === 'EN NUBE') iluminacion += 1;
       if (getValue('RUIDO') === 'EN NUBE') ruido += 1;
     });
@@ -120,7 +148,8 @@ export default function SucursalesPage({ params }: SucursalesPageProps) {
     mediciones.forEach((m) => {
       const datos = m.datos as Record<string, unknown>;
       const up = (k: string) => String((datos[k] ?? '') as any).toUpperCase();
-      if (up('PUESTA A TIERRA') === 'EN NUBE') puesta += 1;
+      const patValue = up('PAT');
+      if (patValue === 'EN NUBE') puesta += 1;
       if (up('INFORME DE VISITA') === 'EN NUBE') informe += 1;
       if (up('INCUMPLIMIENTO') === 'PENDIENTE') incumpl += 1;
       if (up('REGISTRO DE EXTINTORES') === 'EN NUBE') extintores += 1;
@@ -185,8 +214,8 @@ export default function SucursalesPage({ params }: SucursalesPageProps) {
       const datos = m.datos as Record<string, unknown>;
       const getValue = (k: string) => String((datos[k] ?? '') as any);
       
-      // PAT (PUESTA A TIERRA)
-      const patValue = getValue('PUESTA A TIERRA');
+      // PAT
+      const patValue = getValue('PAT');
       if (patValue === 'PENDIENTE') counts.pat.pendienteVisita += 1;
       else if (patValue === 'PEDIR A TEC') counts.pat.pedirTecnico += 1;
       else if (patValue === 'PROCESAR') counts.pat.procesar += 1;
@@ -270,6 +299,75 @@ export default function SucursalesPage({ params }: SucursalesPageProps) {
     return counts;
   }, [mediciones, empresaId]);
 
+  // Conteos de incumplimientos por tipo para el gráfico (para gerentes)
+  // Muestra los mismos estados (PENDIENTE, EN NUBE, PEDIR A TEC, PROCESAR) pero de los campos de incumplimiento
+  const incumplimientosCountsForChart = useMemo(() => {
+    const isArcosDorados = empresaId === 'ARCOS DORADOS' || empresa?.nombre === 'ARCOS DORADOS';
+    
+    const counts: any = {
+      pat: {
+        pendienteVisita: 0,
+        pedirTecnico: 0,
+        procesar: 0,
+        enNube: 0
+      },
+      iluminacion: {
+        pendienteVisita: 0,
+        pedirTecnico: 0,
+        procesar: 0,
+        enNube: 0
+      },
+      ruido: {
+        pendienteVisita: 0,
+        pedirTecnico: 0,
+        procesar: 0,
+        enNube: 0
+      },
+      termografia: {
+        pendienteVisita: 0,
+        pedirTecnico: 0,
+        procesar: 0,
+        enNube: 0
+      }
+    };
+
+    mediciones.forEach((m) => {
+      const datos = m.datos as Record<string, unknown>;
+      const getValue = (k: string) => String((datos[k] ?? '') as any);
+      
+      // INCUMPLIMIENTO PAT - buscar estados
+      const incumplimientoPAT = getValue('INCUMPLIMIENTO PAT');
+      if (incumplimientoPAT === 'PENDIENTE') counts.pat.pendienteVisita += 1;
+      else if (incumplimientoPAT === 'PEDIR A TEC') counts.pat.pedirTecnico += 1;
+      else if (incumplimientoPAT === 'PROCESAR') counts.pat.procesar += 1;
+      else if (incumplimientoPAT === 'EN NUBE') counts.pat.enNube += 1;
+      
+      // INCUMPLIMIENTO ILU - buscar estados
+      const incumplimientoILU = getValue('INCUMPLIMIENTO ILU');
+      if (incumplimientoILU === 'PENDIENTE') counts.iluminacion.pendienteVisita += 1;
+      else if (incumplimientoILU === 'PEDIR A TEC') counts.iluminacion.pedirTecnico += 1;
+      else if (incumplimientoILU === 'PROCESAR') counts.iluminacion.procesar += 1;
+      else if (incumplimientoILU === 'EN NUBE') counts.iluminacion.enNube += 1;
+      
+      // INCUMPLIMIENTO RUIDO - buscar estados
+      const incumplimientoRUIDO = getValue('INCUMPLIMIENTO RUIDO');
+      if (incumplimientoRUIDO === 'PENDIENTE') counts.ruido.pendienteVisita += 1;
+      else if (incumplimientoRUIDO === 'PEDIR A TEC') counts.ruido.pedirTecnico += 1;
+      else if (incumplimientoRUIDO === 'PROCESAR') counts.ruido.procesar += 1;
+      else if (incumplimientoRUIDO === 'EN NUBE') counts.ruido.enNube += 1;
+      
+      // INCUMPLIMIENTO TERMOGRAFÍA - buscar estados
+      const incumplimientoTERMO = getValue('INCUMPLIMIENTO TERMOGRAFÍA') || getValue('INCUMPLIMIENTO TERMOGRAFIA');
+      if (incumplimientoTERMO === 'PENDIENTE') counts.termografia.pendienteVisita += 1;
+      else if (incumplimientoTERMO === 'PEDIR A TEC') counts.termografia.pedirTecnico += 1;
+      else if (incumplimientoTERMO === 'PROCESAR') counts.termografia.procesar += 1;
+      else if (incumplimientoTERMO === 'EN NUBE') counts.termografia.enNube += 1;
+    });
+
+    console.log('Incumplimientos counts para gráfico:', empresaId, counts);
+    return counts;
+  }, [mediciones, empresaId, empresa]);
+
   // Update custom labels when empresa is loaded
   useEffect(() => {
     if (empresa) {
@@ -348,7 +446,11 @@ export default function SucursalesPage({ params }: SucursalesPageProps) {
         <div className="flex items-center justify-between">
           <div>
             <p className="text-gray-300 text-sm">Total sucursales</p>
-           
+            {loading ? (
+              <div className="h-8 bg-gray-300 rounded w-16 animate-pulse"></div>
+            ) : (
+              <p className="text-3xl font-bold tracking-tight">{sucursales.length}</p>
+            )}
             <p className="text-green-400 text-sm">-0.03%</p>
           </div>
           <div className="text-gray-400">
@@ -416,11 +518,16 @@ export default function SucursalesPage({ params }: SucursalesPageProps) {
 
       
 
-      {/* Gráfico de Estados de Mediciones por Tipo de Estudio */}
+      {/* Gráfico de Estados de Mediciones por Tipo de Estudio o Incumplimientos según rol */}
       <div className="mb-6">
         <div className="bg-white rounded-2xl p-6 border border-gray-200 shadow-sm">
         <div className="flex items-center justify-between mb-4">
-            <h4 className="text-lg font-medium text-gray-900">Estados de Mediciones por Tipo de Estudio (Cantidad de Mediciones) - {empresa?.nombre || 'Empresa'}</h4>
+            <h4 className="text-lg font-medium text-gray-900">
+              {userRole === 'admin' 
+                ? `Estados de Mediciones por Tipo de Estudio (Cantidad de Mediciones) - ${empresa?.nombre || 'Empresa'}`
+                : `Incumplimientos por Tipo de Estudio (Cantidad de Mediciones) - ${empresa?.nombre || 'Empresa'}`
+              }
+            </h4>
             <span className="text-xs text-gray-400">Esta empresa</span>
         </div>
         
@@ -429,39 +536,123 @@ export default function SucursalesPage({ params }: SucursalesPageProps) {
           ) : (
             (() => {
               const isArcosDorados = empresaId === 'ARCOS DORADOS' || empresa?.nombre === 'ARCOS DORADOS';
+              const isManager = userRole === 'general_manager' || userRole === 'branch_manager';
               
+              // Si es gerente, mostrar incumplimientos con los mismos estados
+              if (isManager) {
+                const chartData = [
+                  {
+                    name: "INCUMPLIMIENTO PAT",
+                    "EN NUBE": incumplimientosCountsForChart.pat.enNube,
+                    "Procesar": incumplimientosCountsForChart.pat.procesar,
+                    "PEDIR A TEC": incumplimientosCountsForChart.pat.pedirTecnico,
+                    "PENDIENTE": incumplimientosCountsForChart.pat.pendienteVisita
+                  },
+                  {
+                    name: "INCUMPLIMIENTO ILU",
+                    "EN NUBE": incumplimientosCountsForChart.iluminacion.enNube,
+                    "Procesar": incumplimientosCountsForChart.iluminacion.procesar,
+                    "PEDIR A TEC": incumplimientosCountsForChart.iluminacion.pedirTecnico,
+                    "PENDIENTE": incumplimientosCountsForChart.iluminacion.pendienteVisita
+                  },
+                  {
+                    name: "INCUMPLIMIENTO RUIDO",
+                    "EN NUBE": incumplimientosCountsForChart.ruido.enNube,
+                    "Procesar": incumplimientosCountsForChart.ruido.procesar,
+                    "PEDIR A TEC": incumplimientosCountsForChart.ruido.pedirTecnico,
+                    "PENDIENTE": incumplimientosCountsForChart.ruido.pendienteVisita
+                  },
+                  {
+                    name: "INCUMPLIMIENTO TERMOGRAFÍA",
+                    "EN NUBE": incumplimientosCountsForChart.termografia.enNube,
+                    "Procesar": incumplimientosCountsForChart.termografia.procesar,
+                    "PEDIR A TEC": incumplimientosCountsForChart.termografia.pedirTecnico,
+                    "PENDIENTE": incumplimientosCountsForChart.termografia.pendienteVisita
+                  }
+                ];
+
+                const chartConfig = {
+                  "EN NUBE": {
+                    label: "EN NUBE",
+                    color: "rgba(34, 197, 94, 0.4)"
+                  },
+                  "Procesar": {
+                    label: "PROCESAR",
+                    color: "rgba(59, 130, 246, 0.4)"
+                  },
+                  "PEDIR A TEC": {
+                    label: "PEDIR A TEC",
+                    color: "rgba(245, 158, 11, 0.4)"
+                  },
+                  "PENDIENTE": {
+                    label: "PENDIENTE",
+                    color: "rgba(239, 68, 68, 0.4)"
+                  }
+                };
+
+                return (
+                  <ChartContainer config={chartConfig} className="h-[350px] text-black w-full">
+                    <BarChart data={chartData}>
+                      <CartesianGrid strokeDasharray="3 3" vertical={false} />
+                      <XAxis
+                        dataKey="name"
+                        tickLine={false}
+                        tickMargin={10}
+                        axisLine={false}
+                        tick={{ fontSize: 12 }}
+                      />
+                      <YAxis
+                        tickLine={false}
+                        axisLine={false}
+                        tick={{ fontSize: 12 }}
+                        label={{ value: 'Cantidad de Mediciones', angle: -90, position: 'insideLeft' }}
+                      />
+                      <ChartTooltip
+                        cursor={false}
+                        content={<ChartTooltipContent />}
+                      />
+                      <Bar dataKey="EN NUBE" fill="rgba(3, 160, 61, 0.67)" radius={4} />
+                      <Bar dataKey="Procesar" fill="rgba(4, 68, 171, 0.67)" radius={4} />
+                      <Bar dataKey="PEDIR A TEC" fill="rgba(152, 97, 3, 0.67)" radius={4} />
+                      <Bar dataKey="PENDIENTE" fill="rgba(151, 5, 5, 0.67)" radius={4} />
+                    </BarChart>
+                  </ChartContainer>
+                );
+              }
+              
+              // Si es admin, mostrar estados de mediciones (comportamiento original)
               const chartData = [
                 {
                   name: "PAT",
-                  "En nube": medicionesCountsEmpresa.pat.enNube,
+                  "EN NUBE": medicionesCountsEmpresa.pat.enNube,
                   "Procesar": medicionesCountsEmpresa.pat.procesar,
                   "PEDIR A TEC": medicionesCountsEmpresa.pat.pedirTecnico,
                   "PENDIENTE": medicionesCountsEmpresa.pat.pendienteVisita
                 },
                 {
                   name: "Iluminación",
-                  "En nube": medicionesCountsEmpresa.iluminacion.enNube,
+                  "EN NUBE": medicionesCountsEmpresa.iluminacion.enNube,
                   "Procesar": medicionesCountsEmpresa.iluminacion.procesar,
                   "PEDIR A TEC": medicionesCountsEmpresa.iluminacion.pedirTecnico,
                   "PENDIENTE": medicionesCountsEmpresa.iluminacion.pendienteVisita
                 },
                 {
                   name: "Ruido",
-                  "En nube": medicionesCountsEmpresa.ruido.enNube,
+                  "EN NUBE": medicionesCountsEmpresa.ruido.enNube,
                   "Procesar": medicionesCountsEmpresa.ruido.procesar,
                   "PEDIR A TEC": medicionesCountsEmpresa.ruido.pedirTecnico,
                   "PENDIENTE": medicionesCountsEmpresa.ruido.pendienteVisita
                 },
                 {
                   name: "Carga Térmica",
-                  "En nube": medicionesCountsEmpresa.cargaTermica.enNube,
+                  "EN NUBE": medicionesCountsEmpresa.cargaTermica.enNube,
                   "Procesar": medicionesCountsEmpresa.cargaTermica.procesar,
                   "PEDIR A TEC": medicionesCountsEmpresa.cargaTermica.pedirTecnico,
                   "PENDIENTE": medicionesCountsEmpresa.cargaTermica.pendienteVisita
                 },
                 {
                   name: "ESTUDIO TERMOGRAFÍA",
-                  "En nube": medicionesCountsEmpresa.termografia.enNube,
+                  "EN NUBE": medicionesCountsEmpresa.termografia.enNube,
                   "Procesar": medicionesCountsEmpresa.termografia.procesar,
                   "PEDIR A TEC": medicionesCountsEmpresa.termografia.pedirTecnico,
                   "PENDIENTE": medicionesCountsEmpresa.termografia.pendienteVisita
@@ -472,7 +663,7 @@ export default function SucursalesPage({ params }: SucursalesPageProps) {
               if (isArcosDorados && (medicionesCountsEmpresa as any).pruebaDinamicaDisyuntores) {
                 chartData.push({
                   name: "PRUEBA  DISYUNTORES",
-                  "En nube": (medicionesCountsEmpresa as any).pruebaDinamicaDisyuntores.enNube,
+                  "EN NUBE": (medicionesCountsEmpresa as any).pruebaDinamicaDisyuntores.enNube,
                   "Procesar": (medicionesCountsEmpresa as any).pruebaDinamicaDisyuntores.procesar,
                   "PEDIR A TEC": (medicionesCountsEmpresa as any).pruebaDinamicaDisyuntores.pedirTecnico,
                   "PENDIENTE": (medicionesCountsEmpresa as any).pruebaDinamicaDisyuntores.pendienteVisita
@@ -482,7 +673,7 @@ export default function SucursalesPage({ params }: SucursalesPageProps) {
               if (isArcosDorados && (medicionesCountsEmpresa as any).termografiaTableros) {
                 chartData.push({
                   name: "TERMOGRAFIA ",
-                  "En nube": (medicionesCountsEmpresa as any).termografiaTableros.enNube,
+                  "EN NUBE": (medicionesCountsEmpresa as any).termografiaTableros.enNube,
                   "Procesar": (medicionesCountsEmpresa as any).termografiaTableros.procesar,
                   "PEDIR A TEC": (medicionesCountsEmpresa as any).termografiaTableros.pedirTecnico,
                   "PENDIENTE": (medicionesCountsEmpresa as any).termografiaTableros.pendienteVisita
@@ -490,7 +681,7 @@ export default function SucursalesPage({ params }: SucursalesPageProps) {
               }
 
               const chartConfig = {
-                "En nube": {
+                "EN NUBE": {
                   label: "EN NUBE",
                   color: "rgba(34, 197, 94, 0.4)"
                 },
@@ -529,7 +720,7 @@ export default function SucursalesPage({ params }: SucursalesPageProps) {
                       cursor={false}
                       content={<ChartTooltipContent />}
                     />
-                   <Bar dataKey="En nube" fill="rgba(3, 160, 61, 0.67)" radius={4} />
+                   <Bar dataKey="EN NUBE" fill="rgba(3, 160, 61, 0.67)" radius={4} />
                     <Bar dataKey="Procesar" fill="rgba(4, 68, 171, 0.67)" radius={4} />
                     <Bar dataKey="PEDIR A TEC" fill="rgba(152, 97, 3, 0.67)" radius={4} />
                     <Bar dataKey="PENDIENTE" fill="rgba(151, 5, 5, 0.67)" radius={4} />
