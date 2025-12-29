@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { collection, getDocs, doc, deleteDoc, addDoc, updateDoc, getDoc } from 'firebase/firestore';
+import { collection, getDocs, doc, deleteDoc, setDoc, updateDoc, getDoc } from 'firebase/firestore';
 import { firestore } from '@/lib/firebase';
 
 export interface Empresa {
@@ -113,17 +113,21 @@ export function useEmpresas() {
 
   const addEmpresa = async (empresa: Omit<Empresa, 'id'>) => {
     try {
-      const empresasCollection = collection(firestore, 'empresas');
-      const docRef = await addDoc(empresasCollection, {
+      // Usar el nombre de la empresa como ID del documento (igual que en Google Sheets)
+      const empresaId = empresa.nombre;
+      const empresaRef = doc(firestore, 'empresas', empresaId);
+      
+      await setDoc(empresaRef, {
         ...empresa,
+        nombre: empresa.nombre, // Asegurar que el nombre esté en el documento
         fechaCreacion: new Date(),
       });
       
-      console.log('Empresa agregada con ID:', docRef.id);
+      console.log('Empresa agregada con ID:', empresaId);
       
       // Refrescar la lista de empresas
       fetchEmpresas();
-      return docRef.id;
+      return empresaId;
     } catch (err) {
       console.error('Error al agregar empresa:', err);
       throw err;

@@ -159,12 +159,32 @@ export default function Sidebar({ isMobile = false, onCloseMobileMenu, collapsed
             {!collapsed && <span className="truncate">Sucursales</span>}
           </Link>
 
-          {/* Registrar usuario - Solo visible para admin */}
+          {/* Opciones de administrador - Solo visible para admin */}
           {userRole === 'admin' && (
             <>
               <div className="px-3 my-2">
                 <div className="h-px bg-gray-200"></div>
               </div>
+              <Link
+                href="/dashboard/empresas/nueva"
+                className={`group flex items-center px-3 py-2.5 text-sm font-medium rounded-lg transition-all duration-200 ${
+                  pathname === '/dashboard/empresas/nueva' 
+                    ? 'bg-gray-900 text-white shadow-sm' 
+                    : 'text-gray-700 hover:bg-gray-50 hover:text-gray-900'
+                } ${collapsed ? 'justify-center px-2' : ''}`}
+                onClick={isMobile ? onCloseMobileMenu : undefined}
+                title="Añadir empresa"
+              >
+                <span className={`${collapsed ? '' : 'mr-3'} h-5 w-5 flex-shrink-0 transition-colors duration-200 ${
+                  pathname === '/dashboard/empresas/nueva' ? 'text-white' : 'text-gray-500 group-hover:text-gray-700'
+                }`}>
+                  {/* Plus icon */}
+                  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-full h-full">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
+                  </svg>
+                </span>
+                {!collapsed && <span className="truncate">Añadir empresa</span>}
+              </Link>
               <Link
                 href="/register"
                 className={`group flex items-center px-3 py-2.5 text-sm font-medium rounded-lg transition-all duration-200 ${
