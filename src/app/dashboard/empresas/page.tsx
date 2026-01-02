@@ -165,78 +165,78 @@ export default function EmpresasPage() {
   }
 
   return (
-    <div className='p-8 bg-white min-h-full'>
+    <div className='p-4 sm:p-6 lg:p-8 bg-white'>
       {/* Cards de métricas */}
-      <div className="grid  grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 mb-6 sm:mb-8">
       
 
-        <div className="bg-gradient-to-b from-stone-900 to-gray-700 bg-transparent border border-gray-800 shadow-sm rounded-3xl p-6 text-white">
+        <div className="bg-gradient-to-b from-stone-900 to-gray-700 bg-transparent border border-gray-800 shadow-sm rounded-2xl sm:rounded-3xl p-4 sm:p-6 text-white">
           <div className="flex items-center justify-between">
-            <div>
-              <p className="text-gray-300 text-sm">Total sucursales</p>
+            <div className="flex-1 min-w-0">
+              <p className="text-gray-300 text-xs sm:text-sm truncate">Total sucursales</p>
               {loadingSucursales ? (
-                <div className="h-8 bg-gray-300 rounded w-16 animate-pulse"></div>
+                <div className="h-6 sm:h-8 bg-gray-300 rounded w-12 sm:w-16 animate-pulse mt-1"></div>
               ) : (
-                <p className="text-3xl font-bold tracking-tight">{totalSucursales}</p>
+                <p className="text-2xl sm:text-3xl font-bold tracking-tight mt-1">{totalSucursales}</p>
               )}
-              <p className="text-green-400 text-sm">-0.03%</p>
+              <p className="text-green-400 text-xs sm:text-sm mt-1">-0.03%</p>
             </div>
-            <div className="text-gray-400">
-              <svg className="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <div className="text-gray-400 flex-shrink-0 ml-2">
+              <svg className="h-6 w-6 sm:h-8 sm:w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
               </svg>
             </div>
           </div>
         </div>
 
-        <div className="bg-gradient-to-b from-stone-900 to-gray-700  rounded-3xl p-6 text-white border border-gray-800 shadow-sm">
+        <div className="bg-gradient-to-b from-stone-900 to-gray-700 rounded-2xl sm:rounded-3xl p-4 sm:p-6 text-white border border-gray-800 shadow-sm">
           <div className="flex items-center justify-between">
-            <div>
-              <p className="text-gray-300 text-sm">Incumplimiento de Estudios PAT</p>
+            <div className="flex-1 min-w-0">
+              <p className="text-gray-300 text-xs sm:text-sm truncate">Incumplimiento PAT</p>
               {loadingMediciones ? (
-                <div className="h-8 bg-gray-300 rounded w-16 animate-pulse"></div>
+                <div className="h-6 sm:h-8 bg-gray-300 rounded w-12 sm:w-16 animate-pulse mt-1"></div>
               ) : (
-                <p className="text-3xl font-bold text-white">{incumplimientosCounts.patNoCumple}</p>
+                <p className="text-2xl sm:text-3xl font-bold text-white mt-1">{incumplimientosCounts.patNoCumple}</p>
               )}
             </div>
-            <div className="text-gray-400">
-              <svg className="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <div className="text-gray-400 flex-shrink-0 ml-2">
+              <svg className="h-6 w-6 sm:h-8 sm:w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 17h8m0 0V9m0 8l-8-8-4 4-6-6" />
               </svg>
             </div>
           </div>
         </div>
 
-        <div className="bg-gradient-to-b from-stone-900 to-gray-700  rounded-3xl p-6 text-white border border-gray-800 shadow-sm">
+        <div className="bg-gradient-to-b from-stone-900 to-gray-700 rounded-2xl sm:rounded-3xl p-4 sm:p-6 text-white border border-gray-800 shadow-sm">
           <div className="flex items-center justify-between">
-            <div>
-              <p className="text-gray-300 text-sm">Incumplimiento de Estudios iluminación </p>
+            <div className="flex-1 min-w-0">
+              <p className="text-gray-300 text-xs sm:text-sm truncate">Incumplimiento Iluminación</p>
               {loadingMediciones ? (
-                <div className="h-8 bg-gray-300 rounded w-16 animate-pulse"></div>
+                <div className="h-6 sm:h-8 bg-gray-300 rounded w-12 sm:w-16 animate-pulse mt-1"></div>
               ) : (
-                <p className="text-3xl font-bold text-white">{incumplimientosCounts.iluNoCumple}</p>
+                <p className="text-2xl sm:text-3xl font-bold text-white mt-1">{incumplimientosCounts.iluNoCumple}</p>
               )}
             </div>
-            <div className="text-gray-400">
-              <svg className="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <div className="text-gray-400 flex-shrink-0 ml-2">
+              <svg className="h-6 w-6 sm:h-8 sm:w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 17h8m0 0V9m0 8l-8-8-4 4-6-6" />
               </svg>
             </div>
           </div>
         </div>
 
-        <div className="bg-gradient-to-b from-stone-900 to-gray-700  rounded-3xl p-6 text-white border border-gray-800 shadow-sm">
+        <div className="bg-gradient-to-b from-stone-900 to-gray-700 rounded-2xl sm:rounded-3xl p-4 sm:p-6 text-white border border-gray-800 shadow-sm">
           <div className="flex items-center justify-between">
-            <div>
-              <p className="text-gray-300 text-sm">Incumplimiento de Estudios ruido</p>
+            <div className="flex-1 min-w-0">
+              <p className="text-gray-300 text-xs sm:text-sm truncate">Incumplimiento Ruido</p>
               {loadingMediciones ? (
-                <div className="h-8 bg-gray-300 rounded w-16 animate-pulse"></div>
+                <div className="h-6 sm:h-8 bg-gray-300 rounded w-12 sm:w-16 animate-pulse mt-1"></div>
               ) : (
-                <p className="text-3xl font-bold text-white">{incumplimientosCounts.ruidoNoCumple}</p>
+                <p className="text-2xl sm:text-3xl font-bold text-white mt-1">{incumplimientosCounts.ruidoNoCumple}</p>
               )}
             </div>
-            <div className="text-gray-400">
-              <svg className="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <div className="text-gray-400 flex-shrink-0 ml-2">
+              <svg className="h-6 w-6 sm:h-8 sm:w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 17h8m0 0V9m0 8l-8-8-4 4-6-6" />
               </svg>
             </div>
@@ -245,15 +245,15 @@ export default function EmpresasPage() {
       </div>
 
       {/* Gráfico de Estados de Mediciones */}
-      <div className="mb-6">
-        <div className="bg-white rounded-2xl p-10 border border-gray-300 shadow-sm">
-          <div className="flex items-center justify-between mb-4">
-            <h4 className="text-lg font-medium text-gray-900">Estados de Mediciones por Tipo de Estudio (Cantidad de Sucursales)</h4>
+      <div className="mb-4 sm:mb-6">
+        <div className="bg-white rounded-xl sm:rounded-2xl p-4 sm:p-6 lg:p-10 border border-gray-300 shadow-sm">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-4 gap-2">
+            <h4 className="text-base sm:text-lg font-medium text-gray-900">Estados de Mediciones por Tipo de Estudio</h4>
             <span className="text-xs text-gray-400">Todas las empresas</span>
           </div>
           
           {loadingSucursales || loadingMediciones ? (
-            <div className="h-[315px] bg-gray-100 rounded animate-pulse" />
+            <div className="h-[250px] sm:h-[315px] bg-gray-100 rounded animate-pulse" />
           ) : (
             (() => {
               const chartData = [
@@ -314,7 +314,7 @@ export default function EmpresasPage() {
               };
 
               return (
-                <ChartContainer config={chartConfig} className="h-[315px] text-black w-full">
+                <ChartContainer config={chartConfig} className="h-[250px] sm:h-[315px] text-black w-full">
                   <BarChart data={chartData}>
                     <CartesianGrid strokeDasharray="3 3" vertical={false} />
                     <XAxis
@@ -348,9 +348,9 @@ export default function EmpresasPage() {
 
     
       {/* Search bar + Add button */}
-      <div className="mb-6">
-        <div className="flex items-center justify-between">
-          <div className="mt-1 relative rounded-md shadow-sm flex-1 mr-4">
+      <div className="mb-4 sm:mb-6">
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center sm:justify-between gap-3">
+          <div className="relative rounded-md shadow-sm flex-1">
             <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
               <svg
                 className="h-5 w-5 text-gray-400"
@@ -381,46 +381,41 @@ export default function EmpresasPage() {
 
       {/* Tabla de empresas con estilos shadcn */}
       <div className="w-full">
-        <div className="rounded-md border border-gray-200 shadow-md">
-          <div className="px-6 py-4 border-b bg-white border-gray-100 text-gray-500">
-            <div className="flex items-center justify-between">
-              <h3 className="text-lg font-semibold">Unidades de negocio</h3>
+        <div className="rounded-md border border-gray-200 shadow-md overflow-hidden">
+          <div className="px-4 sm:px-6 py-3 sm:py-4 border-b bg-white border-gray-100 text-gray-500">
+            <div className="flex flex-col sm:flex-row items-start sm:items-center sm:justify-between gap-2">
+              <h3 className="text-base sm:text-lg font-semibold">Unidades de negocio</h3>
               <div className="flex items-center gap-2">
-                <span className="text-sm text-gray-600">{filteredEmpresas.length} empresas</span>
-                <button type="button" className="p-2 rounded hover:bg-gray-100">
-                  <svg className="h-4 w-4 text-gray-600" viewBox="0 0 20 20" fill="currentColor">
-                    <path d="M6 10a2 2 0 11-4 0 2 2 0 014 0zm6 0a2 2 0 11-4 0 2 2 0 014 0zm6 0a2 2 0 11-4 0 2 2 0 014 0z" />
-                  </svg>
-                </button>
+                <span className="text-xs sm:text-sm text-gray-600">{filteredEmpresas.length} empresas</span>
               </div>
             </div>
           </div>
 
           {filteredEmpresas.length === 0 ? (
-            <div className="h-32 flex items-center justify-center text-gray-600">
+            <div className="h-32 flex items-center justify-center text-gray-600 p-4">
               <div className="text-center">
-                <p className="text-lg font-medium">No se encontraron empresas</p>
-                <p className="text-sm">Las empresas aparecerán aquí una vez que se agreguen al sistema.</p>
+                <p className="text-base sm:text-lg font-medium">No se encontraron empresas</p>
+                <p className="text-xs sm:text-sm mt-1">Las empresas aparecerán aquí una vez que se agreguen al sistema.</p>
               </div>
             </div>
           ) : (
-            <div className="relative text-gray-500 overflow-x-auto">
-              <table className="w-full text-gray-500 caption-bottom text-sm">
-                <thead className=" border-gray-200">
+            <div className="relative text-gray-500 overflow-x-auto -mx-4 sm:mx-0">
+              <table className="w-full text-gray-500 caption-bottom text-sm min-w-[640px]">
+                <thead className="border-gray-200">
                   <tr className="border-b border-gray-100 transition-colors hover:bg-gray-50">
-                    <th className="h-12 px-4 text-left align-middle font-medium text-gray-600 [&:has([role=checkbox])]:pr-0">
+                    <th className="h-10 sm:h-12 px-3 sm:px-4 text-left align-middle font-medium text-gray-600 text-xs sm:text-sm">
                       Nombre
                     </th>
-                    <th className="h-12 px-4 text-left align-middle font-medium text-gray-600 [&:has([role=checkbox])]:pr-0">
+                    <th className="h-10 sm:h-12 px-3 sm:px-4 text-left align-middle font-medium text-gray-600 text-xs sm:text-sm hidden sm:table-cell">
                       Teléfono
                     </th>
-                    <th className="h-12 px-4 text-left align-middle font-medium text-gray-600 [&:has([role=checkbox])]:pr-0">
+                    <th className="h-10 sm:h-12 px-3 sm:px-4 text-left align-middle font-medium text-gray-600 text-xs sm:text-sm hidden md:table-cell">
                       CUIT
                     </th>
-                    <th className="h-12 px-4 text-left align-middle font-medium text-gray-600 [&:has([role=checkbox])]:pr-0">
+                    <th className="h-10 sm:h-12 px-3 sm:px-4 text-left align-middle font-medium text-gray-600 text-xs sm:text-sm">
                       Sucursales
                     </th>
-                    <th className="h-12 px-4 text-right align-middle font-medium text-gray-600 [&:has([role=checkbox])]:pr-0">
+                    <th className="h-10 sm:h-12 px-3 sm:px-4 text-right align-middle font-medium text-gray-600 text-xs sm:text-sm">
                       Acciones
                     </th>
                   </tr>
@@ -431,45 +426,50 @@ export default function EmpresasPage() {
                       key={empresa.id}
                       className="border-b border-gray-100 transition-colors hover:bg-gray-50"
                     >
-                      <td className="p-4 align-middle font-medium">
-                        <div className="flex items-center gap-3">
-                          <div className="h-8 w-8 rounded-full bg-gray-700 flex items-center justify-center">
-                            <span className="text-sm font-medium text-gray-100">
+                      <td className="p-3 sm:p-4 align-middle font-medium">
+                        <div className="flex items-center gap-2 sm:gap-3">
+                          <div className="h-7 w-7 sm:h-8 sm:w-8 rounded-full bg-gray-700 flex items-center justify-center flex-shrink-0">
+                            <span className="text-xs sm:text-sm font-medium text-gray-100">
                               {empresa.nombre.charAt(0).toUpperCase()}
                             </span>
                           </div>
-                          <div>
-                            <div className="font-medium">{empresa.nombre}</div>
-                            <div className="text-sm text-gray-600">
+                          <div className="min-w-0 flex-1">
+                            <div className="font-medium text-sm sm:text-base truncate">{empresa.nombre}</div>
+                            <div className="text-xs sm:text-sm text-gray-600 truncate">
                               {empresa.email || 'Sin email'}
+                            </div>
+                            <div className="text-xs text-gray-500 sm:hidden mt-1">
+                              {empresa.telefono || 'Sin teléfono'} • {empresa.cuit || 'Sin CUIT'}
                             </div>
                           </div>
                         </div>
                       </td>
-                      <td className="p-4 align-middle">
-                        {empresa.telefono || (
-                          <span className="text-gray-600">No disponible</span>
-                        )}
+                      <td className="p-3 sm:p-4 align-middle hidden sm:table-cell">
+                        <span className="text-xs sm:text-sm">
+                          {empresa.telefono || (
+                            <span className="text-gray-600">No disponible</span>
+                          )}
+                        </span>
                       </td>
-                      <td className="p-4 align-middle font-mono text-sm">
+                      <td className="p-3 sm:p-4 align-middle font-mono text-xs sm:text-sm hidden md:table-cell">
                         {empresa.cuit || (
                           <span className="text-gray-600">No disponible</span>
                         )}
                       </td>
-                      <td className="p-4 align-middle">
+                      <td className="p-3 sm:p-4 align-middle">
                         {loadingSucursales ? (
                           <div className="h-4 bg-gray-200 rounded w-8 animate-pulse"></div>
                         ) : (
                           <div className="flex items-center gap-1">
-                            <span className="font-medium">{sucursalesPorEmpresa[empresa.id] || 0}</span>
-                            <span className="text-xs text-gray-600">sucursales</span>
+                            <span className="font-medium text-sm sm:text-base">{sucursalesPorEmpresa[empresa.id] || 0}</span>
+                            <span className="text-xs text-gray-600 hidden sm:inline">sucursales</span>
                           </div>
                         )}
                       </td>
-                      <td className="p-4 align-middle text-right">
+                      <td className="p-3 sm:p-4 align-middle text-right">
                         <Link
                           href={`/dashboard/empresas/${empresa.id}/sucursales`}
-                          className="inline-flex items-center justify-center rounded-md text-sm font-medium transition-colors border border-gray-300 hover:bg-gray-50 hover:text-gray-900 h-9 px-3"
+                          className="inline-flex items-center justify-center rounded-md text-xs sm:text-sm font-medium transition-colors border border-gray-300 hover:bg-gray-50 hover:text-gray-900 h-8 sm:h-9 px-2 sm:px-3 whitespace-nowrap"
                         >
                           Ver detalle
                         </Link>

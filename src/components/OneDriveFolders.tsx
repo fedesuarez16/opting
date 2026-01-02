@@ -357,7 +357,7 @@ export default function OneDriveFolders({ empresaId, sucursalId, sucursalNombre,
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 16.5c-.77.833.192 2.5 1.732 2.5z" />
             </svg>
           </div>
-          <h3 className="text-lg font-medium text-gray-900 mb-2">Error al cargar carpetas de OneDrive</h3>
+          <h3 className="text-lg font-medium text-gray-900 mb-2">Error al cargar carpetas </h3>
           <p className="text-red-600 mb-4">{error}</p>
           {error.includes('Not authenticated') && (
             <a
@@ -386,10 +386,10 @@ export default function OneDriveFolders({ empresaId, sucursalId, sucursalNombre,
           <div className="flex items-center space-x-2 mb-2">
             <h3 className="text-lg font-medium text-gray-900">
               {filterByEmpresa && empresaNombre 
-                ? `Carpetas de OneDrive - ${empresaNombre}` 
+                ? `Carpetas de  ${empresaNombre}` 
                 : filterBySucursal && sucursalNombre 
-                ? `Carpetas de OneDrive - ${sucursalNombre}` 
-                : 'Carpetas de OneDrive'}
+                ? `Carpetas de  - ${sucursalNombre}` 
+                : 'Carpetas de '}
             </h3>
             {folderHistory.length > 0 && (
               <button
@@ -580,16 +580,9 @@ export default function OneDriveFolders({ empresaId, sucursalId, sucursalNombre,
             <div className="px-6 py-4 border-b bg-gray-50 border-gray-100 text-gray-500">
               <div className="flex items-center justify-between">
                 <h3 className="text-lg font-semibold">
-                  {currentFolderId || filterByEmpresa ? 'Archivos y Carpetas' : 'Carpetas'}
+                  {currentFolderId || filterByEmpresa ? 'Documentación' : 'Documentación'}
                 </h3>
-                <div className="flex items-center gap-2">
-                  <span className="text-sm text-gray-600">
-                    {searchTerm.trim() 
-                      ? `${filteredItems.length} de ${items.length} elementos`
-                      : `${items.length} elementos`
-                    }
-                  </span>
-                </div>
+
               </div>
             </div>
 

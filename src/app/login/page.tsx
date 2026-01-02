@@ -116,12 +116,12 @@ export default function LoginPage() {
 
           {/* Title */}
           <h2 className="text-3xl font-bold text-black mb-4">
-            Inicia sesion
+            Inicia sesión
           </h2>
 
           {/* Registration prompt */}
           <p className="text-sm text-gray-600 mb-8">
-            Si no tienes cuenta Puedes <Link href="/register" className="font-bold text-gray-900 hover:underline">Register here!</Link>
+            Si no tienes cuenta Puedes <Link href="/register" className="font-bold text-gray-900 hover:underline">Registrate aquí!</Link>
           </p>
 
           {error && (
@@ -134,7 +134,7 @@ export default function LoginPage() {
             {/* Email Input */}
             <div>
               <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-2">
-                Email
+                Correo electrónico
               </label>
               <div className="relative">
                 <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
@@ -149,7 +149,7 @@ export default function LoginPage() {
                   autoComplete="email"
                   required
                   className="block w-full pl-10 pr-3 py-3 border-0 border-b-2 border-gray-600 focus:outline-none focus:ring-0 focus:border-gray-600 text-gray-900 placeholder-gray-400"
-                  placeholder="Enter your email address"
+                  placeholder="Ingresa tu email"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                 />
@@ -159,7 +159,7 @@ export default function LoginPage() {
             {/* Password Input */}
             <div>
               <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-2">
-                Password
+                Contraseña
               </label>
               <div className="relative">
                 <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
@@ -174,7 +174,7 @@ export default function LoginPage() {
                   autoComplete="current-password"
                   required
                   className="block w-full pl-10 pr-10 py-3 border-0 border-b-2 border-gray-600 focus:outline-none focus:ring-0 focus:border-gray-600 text-gray-900 placeholder-gray-400"
-                  placeholder="Enter your Password"
+                  placeholder="Ingresa tu contraseña"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                 />
@@ -209,12 +209,12 @@ export default function LoginPage() {
                   className="h-4 w-4 text-gray-600 focus:ring-gray-500 border-gray-300 rounded"
                 />
                 <label htmlFor="remember-me" className="ml-2 block text-sm text-gray-700">
-                  Rememebr me
+                  Recordarme
                 </label>
               </div>
               <div className="text-sm">
                 <a href="#" className="font-medium text-gray-600 hover:text-gray-500">
-                  Forgot Password?
+                  Olvidaste tu contraseña?
                 </a>
               </div>
             </div>
@@ -243,7 +243,7 @@ export default function LoginPage() {
             Bienvenido a Opting
           </h3>
           <p className="text-white text-base">
-            Lorem Ipsum is simply
+            Lorem Ipsum is simply 
           </p>
         </div>
       </div>

@@ -42,31 +42,31 @@ export default function NuevaEmpresaPage() {
   };
 
   return (
-    <div className='p-8 bg-white min-h-full flex flex-col items-center'>
-      <div className='mb-6 w-full max-w-5xl'>
+    <div className='p-4 sm:p-6 lg:p-8 bg-white flex flex-col items-center'>
+      <div className='mb-4 sm:mb-6 w-full max-w-5xl'>
         <div className="flex items-center">
-          <Link href="/dashboard/empresas" className="mr-2 text-gray-600 hover:text-gray-900">
+          <Link href="/dashboard/empresas" className="mr-2 text-gray-600 hover:text-gray-900 flex-shrink-0">
             <svg className="h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
             </svg>
           </Link>
-          <h3 className="text-2xl font-semibold text-gray-900">
+          <h3 className="text-xl sm:text-2xl font-semibold text-gray-900">
             Añadir Nueva Empresa
           </h3>
         </div>
-        <p className="mt-1 text-sm text-gray-500">
+        <p className="mt-1 text-xs sm:text-sm text-gray-500">
           Complete el formulario para agregar una nueva empresa al sistema
         </p>
       </div>
 
       {error && (
-        <div className="mb-6 w-full max-w-2xl bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative" role="alert">
-          <strong className="font-bold">Error:</strong>
-          <span className="block sm:inline"> {error}</span>
+        <div className="mb-4 sm:mb-6 w-full max-w-5xl bg-red-100 border border-red-400 text-red-700 px-3 sm:px-4 py-2 sm:py-3 rounded relative" role="alert">
+          <strong className="font-bold text-sm">Error:</strong>
+          <span className="block sm:inline text-sm"> {error}</span>
         </div>
       )}
 
-      <div className="w-full max-w-5xl bg-white rounded-2xl p-10 border border-gray-200 ">
+      <div className="w-full max-w-5xl bg-white rounded-xl sm:rounded-2xl p-4 sm:p-6 lg:p-10 border border-gray-200">
         <form onSubmit={handleSubmit}>
           <div className="space-y-6">
             <div>
@@ -163,17 +163,17 @@ export default function NuevaEmpresaPage() {
             </div>
           </div>
 
-          <div className="mt-8 flex items-center justify-end gap-4">
+          <div className="mt-6 sm:mt-8 flex flex-col-reverse sm:flex-row items-stretch sm:items-center sm:justify-end gap-3 sm:gap-4">
             <Link
               href="/dashboard/empresas"
-              className="px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500 transition-colors"
+              className="w-full sm:w-auto px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500 transition-colors text-center"
             >
               Cancelar
             </Link>
             <button
               type="submit"
               disabled={loading}
-              className="px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-gray-600 hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+              className="w-full sm:w-auto px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-gray-600 hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
             >
               {loading ? 'Guardando...' : 'Guardar Empresa'}
             </button>
