@@ -457,108 +457,108 @@ export default function SucursalesPage({ params }: SucursalesPageProps) {
   }
 
   return (
-    <div className='p-8 bg-white' >
+    <div className='p-4 sm:p-6 lg:p-8 bg-white' >
       <div className='mb-4'>
           <div className="flex items-center">
-            <Link href="/dashboard/empresas" className="mr-2 text-gray-600 hover:text-gray-900">
+            <Link href="/dashboard/empresas" className="mr-2 text-gray-600 hover:text-gray-900 flex-shrink-0">
               <svg className="h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
               </svg>
             </Link>
-            <h3 className="text-2xl font-semibold text-gray-900">
+            <h3 className="text-xl sm:text-2xl font-semibold text-gray-900 truncate">
               Sucursales de {empresa?.nombre || 'Empresa'}
             </h3>
           </div>
-          <p className="mt-1 text-sm text-gray-500">
+          <p className="mt-1 text-xs sm:text-sm text-gray-500">
             Gestione las sucursales de esta empresa
           </p>
         </div>
 
          {/* Cards de métricas */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6 mb-8">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4 sm:gap-6 mb-6 sm:mb-8">
       
 
-      <div className="bg-gradient-to-b from-black to-gray-700 rounded-3xl p-6 text-white border border-gray-800 shadow-sm">
+      <div className="bg-gradient-to-b from-black to-gray-700 rounded-2xl sm:rounded-3xl p-4 sm:p-6 text-white border border-gray-800 shadow-sm">
         <div className="flex items-center justify-between">
-          <div>
-            <p className="text-gray-300 text-sm">Total sucursales</p>
+          <div className="flex-1 min-w-0">
+            <p className="text-gray-300 text-xs sm:text-sm truncate">Total sucursales</p>
             {loading ? (
-              <div className="h-8 bg-gray-300 rounded w-16 animate-pulse"></div>
+              <div className="h-6 sm:h-8 bg-gray-300 rounded w-12 sm:w-16 animate-pulse mt-1"></div>
             ) : (
-              <p className="text-3xl font-bold tracking-tight">{sucursales.length}</p>
+              <p className="text-2xl sm:text-3xl font-bold tracking-tight mt-1">{sucursales.length}</p>
             )}
-            <p className="text-green-400 text-sm">-0.03%</p>
+            <p className="text-green-400 text-xs sm:text-sm mt-1">-0.03%</p>
           </div>
-          <div className="text-gray-400">
-            <svg className="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <div className="text-gray-400 flex-shrink-0 ml-2">
+            <svg className="h-6 w-6 sm:h-8 sm:w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
             </svg>
           </div>
         </div>
       </div>
 
-      <div className="bg-gradient-to-b from-black to-gray-700  rounded-3xl p-6 text-white border border-gray-800 shadow-sm">
+      <div className="bg-gradient-to-b from-black to-gray-700 rounded-2xl sm:rounded-3xl p-4 sm:p-6 text-white border border-gray-800 shadow-sm">
         <div className="flex items-center justify-between">
-          <div>
-            <p className="text-gray-300 text-sm">Incumplimiento de Estudios PAT</p>
+          <div className="flex-1 min-w-0">
+            <p className="text-gray-300 text-xs sm:text-sm truncate">Incumplimiento PAT</p>
             {loadingMediciones ? (
-              <div className="h-8 bg-gray-300 rounded w-16 animate-pulse"></div>
+              <div className="h-6 sm:h-8 bg-gray-300 rounded w-12 sm:w-16 animate-pulse mt-1"></div>
             ) : (
-              <p className="text-3xl font-bold text-white">{incumplimientosCountsEmpresa.patNoCumple}</p>
+              <p className="text-2xl sm:text-3xl font-bold text-white mt-1">{incumplimientosCountsEmpresa.patNoCumple}</p>
             )}
           </div>
-          <div className="text-gray-400">
-            <svg className="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <div className="text-gray-400 flex-shrink-0 ml-2">
+            <svg className="h-6 w-6 sm:h-8 sm:w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 17h8m0 0V9m0 8l-8-8-4 4-6-6" />
             </svg>
           </div>
         </div>
       </div>
 
-      <div className="bg-gradient-to-b from-black to-gray-700  rounded-3xl p-6 text-white border border-gray-800 shadow-sm">
+      <div className="bg-gradient-to-b from-black to-gray-700 rounded-2xl sm:rounded-3xl p-4 sm:p-6 text-white border border-gray-800 shadow-sm">
         <div className="flex items-center justify-between">
-          <div>
-            <p className="text-gray-300 text-sm">Incumplimiento de Estudios iluminación</p>
+          <div className="flex-1 min-w-0">
+            <p className="text-gray-300 text-xs sm:text-sm truncate">Incumplimiento Iluminación</p>
             {loadingMediciones ? (
-              <div className="h-8 bg-gray-300 rounded w-16 animate-pulse"></div>
+              <div className="h-6 sm:h-8 bg-gray-300 rounded w-12 sm:w-16 animate-pulse mt-1"></div>
             ) : (
-              <p className="text-3xl font-bold text-white">{incumplimientosCountsEmpresa.iluNoCumple}</p>
+              <p className="text-2xl sm:text-3xl font-bold text-white mt-1">{incumplimientosCountsEmpresa.iluNoCumple}</p>
             )}
           </div>
-          <div className="text-gray-400">
-            <svg className="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <div className="text-gray-400 flex-shrink-0 ml-2">
+            <svg className="h-6 w-6 sm:h-8 sm:w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 17h8m0 0V9m0 8l-8-8-4 4-6-6" />
             </svg>
           </div>
         </div>
       </div>
 
-      <div className="bg-gradient-to-b from-black to-gray-700  rounded-3xl p-6 text-white border border-gray-800 shadow-sm">
+      <div className="bg-gradient-to-b from-black to-gray-700 rounded-2xl sm:rounded-3xl p-4 sm:p-6 text-white border border-gray-800 shadow-sm">
         <div className="flex items-center justify-between">
-          <div>
-            <p className="text-gray-300 text-sm">Incumplimiento de Estudios ruido</p>
+          <div className="flex-1 min-w-0">
+            <p className="text-gray-300 text-xs sm:text-sm truncate">Incumplimiento Ruido</p>
             {loadingMediciones ? (
-              <div className="h-8 bg-gray-300 rounded w-16 animate-pulse"></div>
+              <div className="h-6 sm:h-8 bg-gray-300 rounded w-12 sm:w-16 animate-pulse mt-1"></div>
             ) : (
-              <p className="text-3xl font-bold text-white">{incumplimientosCountsEmpresa.ruidoNoCumple}</p>
+              <p className="text-2xl sm:text-3xl font-bold text-white mt-1">{incumplimientosCountsEmpresa.ruidoNoCumple}</p>
             )}
           </div>
-          <div className="text-gray-400">
-            <svg className="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <div className="text-gray-400 flex-shrink-0 ml-2">
+            <svg className="h-6 w-6 sm:h-8 sm:w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
             </svg>
           </div>
         </div>
       </div>
 
-      <div className="bg-gradient-to-b from-black to-gray-700  rounded-3xl p-6 text-white border border-gray-800 shadow-sm">
+      <div className="bg-gradient-to-b from-black to-gray-700 rounded-2xl sm:rounded-3xl p-4 sm:p-6 text-white border border-gray-800 shadow-sm">
         <div className="flex items-center justify-between">
-          <div>
-            <p className="text-gray-300 text-sm">Fecha extintores</p>
+          <div className="flex-1 min-w-0">
+            <p className="text-gray-300 text-xs sm:text-sm truncate">Fecha extintores</p>
             {loadingMediciones ? (
-              <div className="h-8 bg-gray-300 rounded w-16 animate-pulse"></div>
+              <div className="h-6 sm:h-8 bg-gray-300 rounded w-12 sm:w-16 animate-pulse mt-1"></div>
             ) : (
-              <p className="text-lg font-bold text-white">
+              <p className="text-base sm:text-lg font-bold text-white mt-1">
                 {fechaExtintores ? (() => {
                   try {
                     const fecha = new Date(fechaExtintores);
@@ -577,8 +577,8 @@ export default function SucursalesPage({ params }: SucursalesPageProps) {
               </p>
             )}
           </div>
-          <div className="text-gray-400">
-            <svg className="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <div className="text-gray-400 flex-shrink-0 ml-2">
+            <svg className="h-6 w-6 sm:h-8 sm:w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
             </svg>
           </div>
@@ -589,20 +589,20 @@ export default function SucursalesPage({ params }: SucursalesPageProps) {
       
 
       {/* Gráfico de Estados de Mediciones por Tipo de Estudio o Incumplimientos según rol */}
-      <div className="mb-6">
-        <div className="bg-white rounded-2xl p-6 border border-gray-200 shadow-sm">
-        <div className="flex items-center justify-between mb-4">
-            <h4 className="text-lg font-medium text-gray-900">
+      <div className="mb-4 sm:mb-6">
+        <div className="bg-white rounded-xl sm:rounded-2xl p-4 sm:p-6 border border-gray-200 shadow-sm overflow-hidden">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-4 gap-2">
+            <h4 className="text-base sm:text-lg font-medium text-gray-900">
               {userRole === 'admin' 
-                ? `Estados de Mediciones por Tipo de Estudio (Cantidad de Mediciones) - ${empresa?.nombre || 'Empresa'}`
-                : `Incumplimientos por Tipo de Estudio (Cantidad de Mediciones) - ${empresa?.nombre || 'Empresa'}`
+                ? `Estados de Mediciones por Tipo de Estudio - ${empresa?.nombre || 'Empresa'}`
+                : `Incumplimientos por Tipo de Estudio - ${empresa?.nombre || 'Empresa'}`
               }
             </h4>
             <span className="text-xs text-gray-400">Esta empresa</span>
         </div>
         
           {loadingMediciones ? (
-            <div className="h-[350px] bg-gray-100 rounded animate-pulse" />
+            <div className="h-[250px] sm:h-[350px] bg-gray-100 rounded animate-pulse" />
           ) : (
             (() => {
               const isArcosDorados = empresaId === 'ARCOS DORADOS' || empresa?.nombre === 'ARCOS DORADOS';
@@ -661,7 +661,7 @@ export default function SucursalesPage({ params }: SucursalesPageProps) {
                 };
 
                 return (
-                  <ChartContainer config={chartConfig} className="h-[350px] text-black w-full">
+                  <ChartContainer config={chartConfig} className="h-[250px] sm:h-[350px] text-black w-full">
                     <BarChart data={chartData}>
                       <CartesianGrid strokeDasharray="3 3" vertical={false} />
                       <XAxis
@@ -770,7 +770,7 @@ export default function SucursalesPage({ params }: SucursalesPageProps) {
               };
 
               return (
-                <ChartContainer config={chartConfig} className="h-[350px] text-black w-full">
+                <ChartContainer config={chartConfig} className="h-[250px] sm:h-[350px] text-black w-full">
                   <BarChart data={chartData}>
                     <CartesianGrid strokeDasharray="3 3" vertical={false} />
                     <XAxis

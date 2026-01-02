@@ -399,86 +399,113 @@ export default function EmpresasPage() {
               </div>
             </div>
           ) : (
-            <div className="relative text-gray-500 overflow-x-auto -mx-4 sm:mx-0">
-              <table className="w-full text-gray-500 caption-bottom text-sm min-w-[640px]">
-                <thead className="border-gray-200">
-                  <tr className="border-b border-gray-100 transition-colors hover:bg-gray-50">
-                    <th className="h-10 sm:h-12 px-3 sm:px-4 text-left align-middle font-medium text-gray-600 text-xs sm:text-sm">
-                      Nombre
-                    </th>
-                    <th className="h-10 sm:h-12 px-3 sm:px-4 text-left align-middle font-medium text-gray-600 text-xs sm:text-sm hidden sm:table-cell">
-                      Teléfono
-                    </th>
-                    <th className="h-10 sm:h-12 px-3 sm:px-4 text-left align-middle font-medium text-gray-600 text-xs sm:text-sm hidden md:table-cell">
-                      CUIT
-                    </th>
-                    <th className="h-10 sm:h-12 px-3 sm:px-4 text-left align-middle font-medium text-gray-600 text-xs sm:text-sm">
-                      Sucursales
-                    </th>
-                    <th className="h-10 sm:h-12 px-3 sm:px-4 text-right align-middle font-medium text-gray-600 text-xs sm:text-sm">
-                      Acciones
-                    </th>
-                  </tr>
-                </thead>
-                <tbody className="[&_tr:last-child]:border-0">
-                  {filteredEmpresas.map((empresa) => (
-                    <tr
-                      key={empresa.id}
-                      className="border-b border-gray-100 transition-colors hover:bg-gray-50"
+            <>
+              {/* Vista móvil - Cards simples */}
+              <div className="sm:hidden space-y-3 p-4">
+                {filteredEmpresas.map((empresa) => (
+                  <div
+                    key={empresa.id}
+                    className="bg-white border border-gray-200 rounded-lg p-4 flex items-center justify-between gap-3"
+                  >
+                    <div className="flex items-center gap-3 flex-1 min-w-0">
+                      <div className="h-10 w-10 rounded-full bg-gray-700 flex items-center justify-center flex-shrink-0">
+                        <span className="text-sm font-medium text-gray-100">
+                          {empresa.nombre.charAt(0).toUpperCase()}
+                        </span>
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <div className="font-medium text-base text-gray-900 truncate">{empresa.nombre}</div>
+                      </div>
+                    </div>
+                    <Link
+                      href={`/dashboard/empresas/${empresa.id}/sucursales`}
+                      className="inline-flex text-gray-700 items-center justify-center rounded-md text-sm font-medium transition-colors border border-gray-700 hover:bg-gray-50 hover:text-black h-9 px-3 flex-shrink-0"
                     >
-                      <td className="p-3 sm:p-4 align-middle font-medium">
-                        <div className="flex items-center gap-2 sm:gap-3">
-                          <div className="h-7 w-7 sm:h-8 sm:w-8 rounded-full bg-gray-700 flex items-center justify-center flex-shrink-0">
-                            <span className="text-xs sm:text-sm font-medium text-gray-100">
-                              {empresa.nombre.charAt(0).toUpperCase()}
-                            </span>
-                          </div>
-                          <div className="min-w-0 flex-1">
-                            <div className="font-medium text-sm sm:text-base truncate">{empresa.nombre}</div>
-                            <div className="text-xs sm:text-sm text-gray-600 truncate">
-                              {empresa.email || 'Sin email'}
+                      Ver detalle
+                    </Link>
+                  </div>
+                ))}
+              </div>
+
+              {/* Vista desktop - Tabla completa */}
+              <div className="hidden sm:block relative text-gray-500">
+                <table className="w-full text-gray-500 caption-bottom text-sm">
+                  <thead className="border-gray-200">
+                    <tr className="border-b border-gray-100 transition-colors hover:bg-gray-50">
+                      <th className="h-12 px-4 text-left align-middle font-medium text-gray-600 text-sm">
+                        Nombre
+                      </th>
+                      <th className="h-12 px-4 text-left align-middle font-medium text-gray-600 text-sm">
+                        Teléfono
+                      </th>
+                      <th className="h-12 px-4 text-left align-middle font-medium text-gray-600 text-sm hidden md:table-cell">
+                        CUIT
+                      </th>
+                      <th className="h-12 px-4 text-left align-middle font-medium text-gray-600 text-sm">
+                        Sucursales
+                      </th>
+                      <th className="h-12 px-4 text-right align-middle font-medium text-gray-600 text-sm">
+                        Acciones
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody className="[&_tr:last-child]:border-0">
+                    {filteredEmpresas.map((empresa) => (
+                      <tr
+                        key={empresa.id}
+                        className="border-b border-gray-100 transition-colors hover:bg-gray-50"
+                      >
+                        <td className="p-4 align-middle font-medium">
+                          <div className="flex items-center gap-3">
+                            <div className="h-8 w-8 rounded-full bg-gray-700 flex items-center justify-center flex-shrink-0">
+                              <span className="text-sm font-medium text-gray-100">
+                                {empresa.nombre.charAt(0).toUpperCase()}
+                              </span>
                             </div>
-                            <div className="text-xs text-gray-500 sm:hidden mt-1">
-                              {empresa.telefono || 'Sin teléfono'} • {empresa.cuit || 'Sin CUIT'}
+                            <div className="min-w-0 flex-1">
+                              <div className="font-medium text-base truncate">{empresa.nombre}</div>
+                              <div className="text-sm text-gray-600 truncate">
+                                {empresa.email || 'Sin email'}
+                              </div>
                             </div>
                           </div>
-                        </div>
-                      </td>
-                      <td className="p-3 sm:p-4 align-middle hidden sm:table-cell">
-                        <span className="text-xs sm:text-sm">
-                          {empresa.telefono || (
+                        </td>
+                        <td className="p-4 align-middle">
+                          <span className="text-sm">
+                            {empresa.telefono || (
+                              <span className="text-gray-600">No disponible</span>
+                            )}
+                          </span>
+                        </td>
+                        <td className="p-4 align-middle font-mono text-sm hidden md:table-cell">
+                          {empresa.cuit || (
                             <span className="text-gray-600">No disponible</span>
                           )}
-                        </span>
-                      </td>
-                      <td className="p-3 sm:p-4 align-middle font-mono text-xs sm:text-sm hidden md:table-cell">
-                        {empresa.cuit || (
-                          <span className="text-gray-600">No disponible</span>
-                        )}
-                      </td>
-                      <td className="p-3 sm:p-4 align-middle">
-                        {loadingSucursales ? (
-                          <div className="h-4 bg-gray-200 rounded w-8 animate-pulse"></div>
-                        ) : (
-                          <div className="flex items-center gap-1">
-                            <span className="font-medium text-sm sm:text-base">{sucursalesPorEmpresa[empresa.id] || 0}</span>
-                            <span className="text-xs text-gray-600 hidden sm:inline">sucursales</span>
-                          </div>
-                        )}
-                      </td>
-                      <td className="p-3 sm:p-4 align-middle text-right">
-                        <Link
-                          href={`/dashboard/empresas/${empresa.id}/sucursales`}
-                          className="inline-flex items-center justify-center rounded-md text-xs sm:text-sm font-medium transition-colors border border-gray-300 hover:bg-gray-50 hover:text-gray-900 h-8 sm:h-9 px-2 sm:px-3 whitespace-nowrap"
-                        >
-                          Ver detalle
-                        </Link>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+                        </td>
+                        <td className="p-4 align-middle">
+                          {loadingSucursales ? (
+                            <div className="h-4 bg-gray-200 rounded w-8 animate-pulse"></div>
+                          ) : (
+                            <div className="flex items-center gap-1">
+                              <span className="font-medium text-base">{sucursalesPorEmpresa[empresa.id] || 0}</span>
+                              <span className="text-xs text-gray-600">sucursales</span>
+                            </div>
+                          )}
+                        </td>
+                        <td className="p-4 align-middle text-right">
+                          <Link
+                            href={`/dashboard/empresas/${empresa.id}/sucursales`}
+                            className="inline-flex items-center justify-center rounded-md text-sm font-medium transition-colors border border-gray-300 hover:bg-gray-50 hover:text-gray-900 h-9 px-3 whitespace-nowrap"
+                          >
+                            Ver detalle
+                          </Link>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </>
           )}
         </div>
       </div>
