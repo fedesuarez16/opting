@@ -46,8 +46,8 @@ export default function OneDriveFolders({ empresaId, sucursalId, sucursalNombre,
   // Obtener sucursales si estamos filtrando por empresa
   const { sucursales } = useSucursales(filterByEmpresa && empresaId ? empresaId : undefined);
 
-  const fetchFolders = useCallback(async (folderId?: string, isNavigation: boolean = false) => {
-    if (isFetchingRef.current) {
+  const fetchFolders = useCallback(async (folderId?: string, isNavigation: boolean = false, forceRefresh: boolean = false) => {
+    if (isFetchingRef.current && !forceRefresh) {
       return;
     }
 
@@ -56,12 +56,23 @@ export default function OneDriveFolders({ empresaId, sucursalId, sucursalNombre,
       setLoading(true);
       setError(null);
 
+      // Agregar timestamp para evitar caché del navegador
+      const timestamp = forceRefresh ? `&_t=${Date.now()}` : '';
+      const cacheHeaders: RequestInit = {
+        cache: 'no-store',
+        headers: {
+          'Cache-Control': 'no-cache, no-store, must-revalidate',
+          'Pragma': 'no-cache',
+          'Expires': '0'
+        }
+      };
+
       let response;
       
       // Si estamos navegando dentro de una carpeta
       if (isNavigation && folderId) {
         console.log('🔍 [OneDrive] Navigating to folder:', folderId);
-        response = await fetch(`/api/onedrive/folders?action=list-folder-contents&folderId=${folderId}`);
+        response = await fetch(`/api/onedrive/folders?action=list-folder-contents&folderId=${folderId}${timestamp}`, cacheHeaders);
       } else if (filterByEmpresa && empresaNombre) {
         // Buscar la carpeta de la empresa - primero en la raíz (más confiable)
         console.log('🔍 [OneDrive] Fetching folders for empresa:', empresaNombre);
@@ -71,7 +82,7 @@ export default function OneDriveFolders({ empresaId, sucursalId, sucursalNombre,
         let empresaFolder: OneDriveFolder | null = null;
         
         // Primero buscar directamente en la raíz (más confiable)
-        const rootResponse = await fetch('/api/onedrive/folders?action=list-root-folders');
+        const rootResponse = await fetch(`/api/onedrive/folders?action=list-root-folders${timestamp}`, cacheHeaders);
         const rootData = await rootResponse.json();
         
         console.log('📥 [OneDrive] Root folders response:', rootData);
@@ -113,7 +124,7 @@ export default function OneDriveFolders({ empresaId, sucursalId, sucursalNombre,
         // Si no se encontró en la raíz, intentar con la búsqueda
         if (!empresaFolder) {
           console.log('🔍 [OneDrive] Step 2: Trying search API...');
-          const searchResponse = await fetch(`/api/onedrive/folders?action=search-folder&folderName=${encodeURIComponent(empresaNombre)}`);
+          const searchResponse = await fetch(`/api/onedrive/folders?action=search-folder&folderName=${encodeURIComponent(empresaNombre)}${timestamp}`, cacheHeaders);
           const searchData = await searchResponse.json();
           
           console.log('📥 [OneDrive] Search response:', searchData);
@@ -152,7 +163,7 @@ export default function OneDriveFolders({ empresaId, sucursalId, sucursalNombre,
         // Si encontramos la carpeta, listar su contenido
         if (empresaFolder) {
           console.log('📁 [OneDrive] Listing contents of empresa folder:', empresaFolder.name);
-          response = await fetch(`/api/onedrive/folders?action=list-folder-contents&folderId=${empresaFolder.id}`);
+          response = await fetch(`/api/onedrive/folders?action=list-folder-contents&folderId=${empresaFolder.id}${timestamp}`, cacheHeaders);
         } else {
           // Verificar si el error fue por falta de autenticación antes de reportar carpeta no encontrada
           if (rootResponse.status === 401 || rootData.error?.includes('Not authenticated') || rootData.error?.includes('No tokens found')) {
@@ -173,11 +184,11 @@ export default function OneDriveFolders({ empresaId, sucursalId, sucursalNombre,
         // Buscar carpetas que coincidan con la sucursal
         console.log('🔍 [OneDrive] Fetching folders for sucursal:', sucursalNombre || sucursalId);
         const searchTerm = sucursalNombre || sucursalId || '';
-        response = await fetch(`/api/onedrive/folders?action=search-folder&folderName=${encodeURIComponent(searchTerm)}`);
+        response = await fetch(`/api/onedrive/folders?action=search-folder&folderName=${encodeURIComponent(searchTerm)}${timestamp}`, cacheHeaders);
       } else {
         // Listar carpetas raíz
         console.log('🔍 [OneDrive] Fetching root folders');
-        response = await fetch('/api/onedrive/folders?action=list-root-folders');
+        response = await fetch(`/api/onedrive/folders?action=list-root-folders${timestamp}`, cacheHeaders);
       }
 
       const data = await response.json();
@@ -282,7 +293,9 @@ export default function OneDriveFolders({ empresaId, sucursalId, sucursalNombre,
     // Siempre navegar dentro de la carpeta normalmente, sin importar si es una sucursal o no
     console.log('📁 [OneDrive] Navegando dentro de carpeta:', folderName);
     setFolderHistory(prev => [...prev, { id: folderId, name: folderName }]);
-    fetchFolders(folderId, true);
+    // Limpiar items antes de navegar para evitar mostrar datos obsoletos
+    setItems([]);
+    fetchFolders(folderId, true, true);
   }, [fetchFolders]);
 
   const navigateBack = useCallback(() => {
@@ -306,7 +319,12 @@ export default function OneDriveFolders({ empresaId, sucursalId, sucursalNombre,
   }, [folderHistory, fetchFolders]);
 
   const handleRefresh = () => {
-    fetchFolders();
+    // Limpiar el estado antes de refrescar para forzar actualización
+    setItems([]);
+    setCurrentFolderId(null);
+    setFolderHistory([]);
+    // Forzar refresh con timestamp único
+    fetchFolders(undefined, false, true);
   };
 
   if (loading && items.length === 0) {
@@ -386,10 +404,10 @@ export default function OneDriveFolders({ empresaId, sucursalId, sucursalNombre,
           <div className="flex items-center space-x-2 mb-2">
             <h3 className="text-lg font-medium text-gray-900">
               {filterByEmpresa && empresaNombre 
-                ? `Carpetas de  ${empresaNombre}` 
+                ? `Sucursales de   ${empresaNombre}` 
                 : filterBySucursal && sucursalNombre 
-                ? `Carpetas de  - ${sucursalNombre}` 
-                : 'Carpetas de '}
+                ? `Sucursales de   - ${sucursalNombre}` 
+                : 'Sucursales de  '}
             </h3>
             {folderHistory.length > 0 && (
               <button
@@ -403,7 +421,7 @@ export default function OneDriveFolders({ empresaId, sucursalId, sucursalNombre,
           </div>
           <p className="text-sm text-gray-500 mt-1">
             {filterByEmpresa && empresaNombre
-              ? `Carpetas dentro de ${empresaNombre}`
+              ? `Sucursales  de ${empresaNombre}`
               : filterBySucursal && sucursalNombre 
               ? `Carpetas relacionadas con ${sucursalNombre}` 
               : 'Carpetas disponibles en el nivel raíz'}

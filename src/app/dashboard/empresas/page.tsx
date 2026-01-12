@@ -3,8 +3,12 @@
 import { useState, useEffect } from 'react';
 import { useEmpresas, Empresa } from '@/hooks/useEmpresas';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { collection, getDocs, addDoc } from 'firebase/firestore';
 import { firestore } from '@/lib/firebase';
+import { useAuth } from '@/contexts/AuthContext';
+import { ref, get } from 'firebase/database';
+import { database } from '@/lib/firebase';
 // import { useSucursales } from '@/hooks/useSucursales';
 import { useSucursalesCount } from '@/hooks/useSucursalesCount';
 import { useMedicionesCounts } from '@/hooks/useArchivosCounts';
@@ -45,6 +49,8 @@ const empresasMock: Empresa[] = [
 
 export default function EmpresasPage() {
   const { empresas, loading, error, addEmpresa, updateEmpresa, deleteEmpresa, fetchEmpresas } = useEmpresas();
+  const { user, loading: authLoading } = useAuth();
+  const router = useRouter();
   const [showModal, setShowModal] = useState(false);
   const [currentEmpresa, setCurrentEmpresa] = useState<Empresa | null>(null);
   const [search, setSearch] = useState('');
@@ -52,6 +58,42 @@ export default function EmpresasPage() {
   const [empresasAMostrar, setEmpresasAMostrar] = useState<Empresa[]>([]);
   const { sucursalesCounts: sucursalesPorEmpresa, loading: loadingSucursales, totalSucursales } = useSucursalesCount();
   const { medicionesCounts, incumplimientosCounts, loading: loadingMediciones } = useMedicionesCounts();
+
+  // Verificar rol del usuario y redirigir si es necesario
+  useEffect(() => {
+    const checkUserRole = async () => {
+      if (authLoading || !user) {
+        return;
+      }
+
+      try {
+        const userRef = ref(database, `users/${user.uid}`);
+        const snapshot = await get(userRef);
+        
+        if (snapshot.exists()) {
+          const userData = snapshot.val();
+          
+          // Redirigir gerente general a su página específica
+          if (userData.role === 'general_manager') {
+            console.log('General manager detected, redirecting to /empresagte');
+            router.push('/empresagte');
+            return;
+          }
+          
+          // Redirigir gerente de sucursal a su página de sucursal específica
+          if (userData.role === 'branch_manager' && userData.empresaId && userData.sucursalId) {
+            console.log('Branch manager detected, redirecting to sucursal page');
+            router.push(`/dashboard/empresas/${encodeURIComponent(userData.empresaId)}/sucursales/${encodeURIComponent(userData.sucursalId)}`);
+            return;
+          }
+        }
+      } catch (err) {
+        console.error('Error checking user role:', err);
+      }
+    };
+
+    checkUserRole();
+  }, [user, authLoading, router]);
 
   // Depuración adicional
   useEffect(() => {
@@ -140,7 +182,8 @@ export default function EmpresasPage() {
     }
   };
 
-  if (loading) {
+  // Mostrar loading mientras se verifica el rol o se cargan los datos
+  if (authLoading || loading) {
     return (
       <div className='p-8 bg-white min-h-full'>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
@@ -192,11 +235,13 @@ export default function EmpresasPage() {
         <div className="bg-gradient-to-b from-stone-900 to-gray-700 rounded-2xl sm:rounded-3xl p-4 sm:p-6 text-white border border-gray-800 shadow-sm">
           <div className="flex items-center justify-between">
             <div className="flex-1 min-w-0">
-              <p className="text-gray-300 text-xs sm:text-sm truncate">Incumplimiento PAT</p>
+              <p className="text-gray-300 text-xs sm:text-sm truncate">Pendientes de Entrega PAT</p>
               {loadingMediciones ? (
                 <div className="h-6 sm:h-8 bg-gray-300 rounded w-12 sm:w-16 animate-pulse mt-1"></div>
               ) : (
-                <p className="text-2xl sm:text-3xl font-bold text-white mt-1">{incumplimientosCounts.patNoCumple}</p>
+                <p className="text-2xl sm:text-3xl font-bold text-white mt-1">
+                  {medicionesCounts.pat.pendienteVisita + medicionesCounts.pat.pedirTecnico + medicionesCounts.pat.procesar}
+                </p>
               )}
             </div>
             <div className="text-gray-400 flex-shrink-0 ml-2">
@@ -210,11 +255,13 @@ export default function EmpresasPage() {
         <div className="bg-gradient-to-b from-stone-900 to-gray-700 rounded-2xl sm:rounded-3xl p-4 sm:p-6 text-white border border-gray-800 shadow-sm">
           <div className="flex items-center justify-between">
             <div className="flex-1 min-w-0">
-              <p className="text-gray-300 text-xs sm:text-sm truncate">Incumplimiento Iluminación</p>
+              <p className="text-gray-300 text-xs sm:text-sm truncate">Pendientes de Entrega Iluminación</p>
               {loadingMediciones ? (
                 <div className="h-6 sm:h-8 bg-gray-300 rounded w-12 sm:w-16 animate-pulse mt-1"></div>
               ) : (
-                <p className="text-2xl sm:text-3xl font-bold text-white mt-1">{incumplimientosCounts.iluNoCumple}</p>
+                <p className="text-2xl sm:text-3xl font-bold text-white mt-1">
+                  {medicionesCounts.iluminacion.pendienteVisita + medicionesCounts.iluminacion.pedirTecnico + medicionesCounts.iluminacion.procesar}
+                </p>
               )}
             </div>
             <div className="text-gray-400 flex-shrink-0 ml-2">
@@ -228,11 +275,13 @@ export default function EmpresasPage() {
         <div className="bg-gradient-to-b from-stone-900 to-gray-700 rounded-2xl sm:rounded-3xl p-4 sm:p-6 text-white border border-gray-800 shadow-sm">
           <div className="flex items-center justify-between">
             <div className="flex-1 min-w-0">
-              <p className="text-gray-300 text-xs sm:text-sm truncate">Incumplimiento Ruido</p>
+              <p className="text-gray-300 text-xs sm:text-sm truncate">Pendientes de Entrega Ruido</p>
               {loadingMediciones ? (
                 <div className="h-6 sm:h-8 bg-gray-300 rounded w-12 sm:w-16 animate-pulse mt-1"></div>
               ) : (
-                <p className="text-2xl sm:text-3xl font-bold text-white mt-1">{incumplimientosCounts.ruidoNoCumple}</p>
+                <p className="text-2xl sm:text-3xl font-bold text-white mt-1">
+                  {medicionesCounts.ruido.pendienteVisita + medicionesCounts.ruido.pedirTecnico + medicionesCounts.ruido.procesar}
+                </p>
               )}
             </div>
             <div className="text-gray-400 flex-shrink-0 ml-2">

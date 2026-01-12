@@ -1,12 +1,15 @@
 'use client';
 
-import { useState, use, useMemo } from 'react';
+import { useState, use, useMemo, useEffect } from 'react';
 import { useMediciones, Medicion } from '@/hooks/useMediciones';
 import { useSucursales } from '@/hooks/useSucursales';
 import { useEmpresas } from '@/hooks/useEmpresas';
+import { useAuth } from '@/contexts/AuthContext';
+import { ref, get } from 'firebase/database';
+import { database } from '@/lib/firebase';
 import Link from 'next/link';
 import { storage, firestore } from '@/lib/firebase';
-import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
+import { ref as storageRef, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { collection, addDoc, doc, getDocs, query, orderBy } from 'firebase/firestore';
 import SucursalOneDriveFiles from '@/components/SucursalOneDriveFiles';
 import { Bar, BarChart, CartesianGrid, XAxis, YAxis } from "recharts";
@@ -15,6 +18,8 @@ import {
   ChartTooltip,
   ChartTooltipContent,
 } from "@/components/ui/chart";
+
+type UserRole = 'admin' | 'general_manager' | 'branch_manager';
 
 interface SucursalDetailPageProps {
   params: Promise<{
@@ -28,6 +33,7 @@ export default function SucursalDetailPage({ params }: SucursalDetailPageProps) 
   const empresaId = decodeURIComponent(resolvedParams.id);
   const sucursalId = decodeURIComponent(resolvedParams.sucursalId);
   
+  const { user } = useAuth();
   const { mediciones, loading: loadingMediciones, error: errorMediciones } = useMediciones(empresaId, sucursalId);
   const { sucursales } = useSucursales(empresaId);
   const { empresas } = useEmpresas();
@@ -42,6 +48,27 @@ export default function SucursalDetailPage({ params }: SucursalDetailPageProps) 
   const [uploadedOk, setUploadedOk] = useState<boolean>(false);
   const [archivos, setArchivos] = useState<Array<{ id: string; nombre: string; tipo?: string; tamano?: number; url: string; fechaSubida?: unknown }>>([]);
   const [loadingArchivos, setLoadingArchivos] = useState<boolean>(true);
+  const [userRole, setUserRole] = useState<UserRole | null>(null);
+
+  // Obtener el rol del usuario
+  useEffect(() => {
+    const fetchUserRole = async () => {
+      if (user) {
+        try {
+          const userRef = ref(database, `users/${user.uid}`);
+          const snapshot = await get(userRef);
+          if (snapshot.exists()) {
+            const userData = snapshot.val();
+            setUserRole(userData.role);
+          }
+        } catch (error) {
+          console.error('Error fetching user role:', error);
+        }
+      }
+    };
+
+    fetchUserRole();
+  }, [user]);
 
   const fetchArchivos = async () => {
     try {
@@ -214,6 +241,55 @@ export default function SucursalDetailPage({ params }: SucursalDetailPageProps) 
     return counts;
   }, [mediciones, sucursalId]);
 
+  // Conteos de incumplimientos para el gráfico (solo CUMPLE y NO CUMPLE)
+  const incumplimientosCountsForChart = useMemo(() => {
+    const counts = {
+      pat: {
+        cumple: 0,
+        noCumple: 0
+      },
+      iluminacion: {
+        cumple: 0,
+        noCumple: 0
+      },
+      ruido: {
+        cumple: 0,
+        noCumple: 0
+      },
+      termografia: {
+        cumple: 0,
+        noCumple: 0
+      }
+    };
+
+    mediciones.forEach((m) => {
+      const datos = m.datos as Record<string, unknown>;
+      const getValue = (k: string) => String((datos[k] ?? '') as any);
+      
+      // INCUMPLIMIENTO PAT
+      const incumplimientoPAT = getValue('INCUMPLIMIENTO PAT');
+      if (incumplimientoPAT === 'CUMPLE') counts.pat.cumple += 1;
+      else if (incumplimientoPAT === 'NO CUMPLE') counts.pat.noCumple += 1;
+      
+      // INCUMPLIMIENTO ILUM
+      const incumplimientoILU = getValue('INCUMPLIMIENTO ILUM');
+      if (incumplimientoILU === 'CUMPLE') counts.iluminacion.cumple += 1;
+      else if (incumplimientoILU === 'NO CUMPLE') counts.iluminacion.noCumple += 1;
+      
+      // INCUMPLIMIENTO RUIDO
+      const incumplimientoRUIDO = getValue('INCUMPLIMIENTO RUIDO');
+      if (incumplimientoRUIDO === 'CUMPLE') counts.ruido.cumple += 1;
+      else if (incumplimientoRUIDO === 'NO CUMPLE') counts.ruido.noCumple += 1;
+      
+      // INCUMPLIMIENTOS TERMOGRAFÍA
+      const incumplimientoTERMO = getValue('INCUMPLIMIENTOS TERMOGRAFÍA') || getValue('INCUMPLIMIENTO TERMOGRAFIA');
+      if (incumplimientoTERMO === 'CUMPLE') counts.termografia.cumple += 1;
+      else if (incumplimientoTERMO === 'NO CUMPLE') counts.termografia.noCumple += 1;
+    });
+
+    return counts;
+  }, [mediciones]);
+
   if (loadingMediciones) {
     return (
       <div className="flex items-center justify-center h-64">
@@ -251,36 +327,6 @@ export default function SucursalDetailPage({ params }: SucursalDetailPageProps) 
 
      
 
-      {/* Información de la sucursal */}
-      {sucursal && (
-        <div className="bg-white shadow overflow-hidden sm:rounded-md mb-6">
-          <div className="px-4 py-5 sm:p-6">
-            <h4 className="text-lg font-medium text-gray-900 mb-4">Información de la Sucursal</h4>
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-              <div>
-                <p className="text-sm font-medium text-gray-500">Dirección</p>
-                <p className="mt-1 text-sm text-gray-900">{sucursal.direccion || 'No disponible'}</p>
-              </div>
-              <div>
-                <p className="text-sm font-medium text-gray-500">Teléfono</p>
-                <p className="mt-1 text-sm text-gray-900">{sucursal.telefono || 'No disponible'}</p>
-              </div>
-              <div>
-                <p className="text-sm font-medium text-gray-500">Email</p>
-                <p className="mt-1 text-sm text-gray-900">{sucursal.email || 'No disponible'}</p>
-              </div>
-              <div>
-                <p className="text-sm font-medium text-gray-500">Estado</p>
-                <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
-                  sucursal.estado === 'activa' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
-                }`}>
-                  {sucursal.estado === 'activa' ? 'Activa' : 'Inactiva'}
-                </span>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
 
       {/* Gráfico de Estados de Mediciones por Tipo de Estudio */}
       <div className="mb-6">
@@ -296,6 +342,73 @@ export default function SucursalDetailPage({ params }: SucursalDetailPageProps) 
             </div>
           ) : (
             (() => {
+              const isManager = userRole === 'general_manager' || userRole === 'branch_manager';
+              
+              // Si es gerente, mostrar solo CUMPLE y NO CUMPLE
+              if (isManager) {
+                const chartData = [
+                  {
+                    name: "INCUMPLIMIENTO PAT",
+                    "CUMPLE": incumplimientosCountsForChart.pat.cumple,
+                    "NO CUMPLE": incumplimientosCountsForChart.pat.noCumple
+                  },
+                  {
+                    name: "INCUMPLIMIENTO ILUM",
+                    "CUMPLE": incumplimientosCountsForChart.iluminacion.cumple,
+                    "NO CUMPLE": incumplimientosCountsForChart.iluminacion.noCumple
+                  },
+                  {
+                    name: "INCUMPLIMIENTO RUIDO",
+                    "CUMPLE": incumplimientosCountsForChart.ruido.cumple,
+                    "NO CUMPLE": incumplimientosCountsForChart.ruido.noCumple
+                  },
+                  {
+                    name: "INCUMPLIMIENTOS TERMOGRAFÍA",
+                    "CUMPLE": incumplimientosCountsForChart.termografia.cumple,
+                    "NO CUMPLE": incumplimientosCountsForChart.termografia.noCumple
+                  }
+                ];
+
+                const chartConfig = {
+                  "CUMPLE": {
+                    label: "CUMPLE",
+                    color: "rgba(34, 197, 94, 0.4)"
+                  },
+                  "NO CUMPLE": {
+                    label: "NO CUMPLE",
+                    color: "rgba(239, 68, 68, 0.4)"
+                  }
+                };
+
+                return (
+                  <ChartContainer config={chartConfig} className="h-[350px] text-black w-full">
+                    <BarChart data={chartData}>
+                      <CartesianGrid strokeDasharray="3 3" vertical={false} />
+                      <XAxis
+                        dataKey="name"
+                        tickLine={false}
+                        tickMargin={10}
+                        axisLine={false}
+                        tick={{ fontSize: 12 }}
+                      />
+                      <YAxis
+                        tickLine={false}
+                        axisLine={false}
+                        tick={{ fontSize: 12 }}
+                        label={{ value: 'Cantidad de Mediciones', angle: -90, position: 'insideLeft' }}
+                      />
+                      <ChartTooltip
+                        cursor={false}
+                        content={<ChartTooltipContent />}
+                      />
+                      <Bar dataKey="CUMPLE" fill="rgba(34, 197, 94, 0.67)" radius={4} />
+                      <Bar dataKey="NO CUMPLE" fill="rgba(239, 68, 68, 0.67)" radius={4} />
+                    </BarChart>
+                  </ChartContainer>
+                );
+              }
+
+              // Para admin, mostrar estados de mediciones
               const chartData = [
                 {
                   name: "PAT",

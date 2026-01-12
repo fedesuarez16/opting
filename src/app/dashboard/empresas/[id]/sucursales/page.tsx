@@ -608,36 +608,28 @@ export default function SucursalesPage({ params }: SucursalesPageProps) {
               const isArcosDorados = empresaId === 'ARCOS DORADOS' || empresa?.nombre === 'ARCOS DORADOS';
               const isManager = userRole === 'general_manager' || userRole === 'branch_manager';
               
-              // Si es gerente, mostrar incumplimientos
+              // Si es gerente, mostrar incumplimientos (solo CUMPLE y NO CUMPLE)
               if (isManager) {
                 const chartData = [
                   {
                     name: "INCUMPLIMIENTO PAT",
                     "CUMPLE": incumplimientosCountsForChart.pat.cumple,
-                    "NO CUMPLE": incumplimientosCountsForChart.pat.noCumple,
-                    "NO APLICA": incumplimientosCountsForChart.pat.noAplica,
-                    "PENDIENTE": incumplimientosCountsForChart.pat.pendiente
+                    "NO CUMPLE": incumplimientosCountsForChart.pat.noCumple
                   },
                   {
                     name: "INCUMPLIMIENTO ILUM",
                     "CUMPLE": incumplimientosCountsForChart.iluminacion.cumple,
-                    "NO CUMPLE": incumplimientosCountsForChart.iluminacion.noCumple,
-                    "NO APLICA": incumplimientosCountsForChart.iluminacion.noAplica,
-                    "PENDIENTE": incumplimientosCountsForChart.iluminacion.pendiente
+                    "NO CUMPLE": incumplimientosCountsForChart.iluminacion.noCumple
                   },
                   {
                     name: "INCUMPLIMIENTO RUIDO",
                     "CUMPLE": incumplimientosCountsForChart.ruido.cumple,
-                    "NO CUMPLE": incumplimientosCountsForChart.ruido.noCumple,
-                    "NO APLICA": incumplimientosCountsForChart.ruido.noAplica,
-                    "PENDIENTE": incumplimientosCountsForChart.ruido.pendiente
+                    "NO CUMPLE": incumplimientosCountsForChart.ruido.noCumple
                   },
                   {
                     name: "INCUMPLIMIENTOS TERMOGRAFÍA",
                     "CUMPLE": incumplimientosCountsForChart.termografia.cumple,
-                    "NO CUMPLE": incumplimientosCountsForChart.termografia.noCumple,
-                    "NO APLICA": incumplimientosCountsForChart.termografia.noAplica,
-                    "PENDIENTE": incumplimientosCountsForChart.termografia.pendiente
+                    "NO CUMPLE": incumplimientosCountsForChart.termografia.noCumple
                   }
                 ];
 
@@ -649,14 +641,6 @@ export default function SucursalesPage({ params }: SucursalesPageProps) {
                   "NO CUMPLE": {
                     label: "NO CUMPLE",
                     color: "rgba(239, 68, 68, 0.4)"
-                  },
-                  "NO APLICA": {
-                    label: "NO APLICA",
-                    color: "rgba(156, 163, 175, 0.4)"
-                  },
-                  "PENDIENTE": {
-                    label: "PENDIENTE",
-                    color: "rgba(245, 158, 11, 0.4)"
                   }
                 };
 
@@ -681,10 +665,8 @@ export default function SucursalesPage({ params }: SucursalesPageProps) {
                         cursor={false}
                         content={<ChartTooltipContent />}
                       />
-                      <Bar dataKey="CUMPLE" fill="rgba(3, 160, 61, 0.67)" radius={4} />
-                      <Bar dataKey="NO CUMPLE" fill="rgba(151, 5, 5, 0.67)" radius={4} />
-                      <Bar dataKey="NO APLICA" fill="rgba(107, 114, 128, 0.67)" radius={4} />
-                      <Bar dataKey="PENDIENTE" fill="rgba(152, 97, 3, 0.67)" radius={4} />
+                      <Bar dataKey="CUMPLE" fill="rgba(34, 197, 94, 0.67)" radius={4} />
+                      <Bar dataKey="NO CUMPLE" fill="rgba(239, 68, 68, 0.67)" radius={4} />
                     </BarChart>
                   </ChartContainer>
                 );

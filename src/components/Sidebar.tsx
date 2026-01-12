@@ -117,47 +117,101 @@ export default function Sidebar({ isMobile = false, onCloseMobileMenu, collapsed
             {!collapsed && <span className="truncate">Dashboard</span>}
           </Link>
 
-          <Link
-            href="/dashboard/empresas"
-            className={`group flex items-center px-3 py-2.5 text-sm font-medium rounded-lg transition-all duration-200 ${
-              pathname.startsWith('/dashboard/empresas') && pathname !== '/dashboard/empresas'
-                ? 'bg-gray-900 text-white shadow-sm' 
-                : 'text-gray-700 hover:bg-gray-50 hover:text-gray-900'
-            } ${collapsed ? 'justify-center px-2' : ''}`}
-            onClick={isMobile ? onCloseMobileMenu : undefined}
-            title="Empresas"
-          >
-            <span className={`${collapsed ? '' : 'mr-3'} h-5 w-5 flex-shrink-0 transition-colors duration-200 ${
-              pathname.startsWith('/dashboard/empresas') && pathname !== '/dashboard/empresas' ? 'text-white' : 'text-gray-500 group-hover:text-gray-700'
-            }`}>
-              {/* Empresas icon */}
-              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-full h-full">
-                <path strokeLinecap="round" strokeLinejoin="round" d="M21.75 6.75v10.5a2.25 2.25 0 0 1-2.25 2.25h-15a2.25 2.25 0 0 1-2.25-2.25V6.75m19.5 0A2.25 2.25 0 0 0 19.5 4.5h-15a2.25 2.25 0 0 0-2.25 2.25m19.5 0v.243a2.25 2.25 0 0 1-1.07 1.916l-7.5 4.615a2.25 2.25 0 0 1-2.36 0L3.32 8.91a2.25 2.25 0 0 1-1.07-1.916V6.75" />
-              </svg>
-            </span>
-            {!collapsed && <span className="truncate">Empresas</span>}
-          </Link>
+          {/* Solo mostrar enlace de Empresas a administradores */}
+          {userRole === 'admin' && (
+            <Link
+              href="/dashboard/empresas"
+              className={`group flex items-center px-3 py-2.5 text-sm font-medium rounded-lg transition-all duration-200 ${
+                pathname.startsWith('/dashboard/empresas') && pathname !== '/dashboard/empresas'
+                  ? 'bg-gray-900 text-white shadow-sm' 
+                  : 'text-gray-700 hover:bg-gray-50 hover:text-gray-900'
+              } ${collapsed ? 'justify-center px-2' : ''}`}
+              onClick={isMobile ? onCloseMobileMenu : undefined}
+              title="Empresas"
+            >
+              <span className={`${collapsed ? '' : 'mr-3'} h-5 w-5 flex-shrink-0 transition-colors duration-200 ${
+                pathname.startsWith('/dashboard/empresas') && pathname !== '/dashboard/empresas' ? 'text-white' : 'text-gray-500 group-hover:text-gray-700'
+              }`}>
+                {/* Empresas icon */}
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-full h-full">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M21.75 6.75v10.5a2.25 2.25 0 0 1-2.25 2.25h-15a2.25 2.25 0 0 1-2.25-2.25V6.75m19.5 0A2.25 2.25 0 0 0 19.5 4.5h-15a2.25 2.25 0 0 0-2.25 2.25m19.5 0v.243a2.25 2.25 0 0 1-1.07 1.916l-7.5 4.615a2.25 2.25 0 0 1-2.36 0L3.32 8.91a2.25 2.25 0 0 1-1.07-1.916V6.75" />
+                </svg>
+              </span>
+              {!collapsed && <span className="truncate">Empresas</span>}
+            </Link>
+          )}
 
-          <Link
-            href="/dashboard/empresas"
-            className={`group flex items-center px-3 py-2.5 text-sm font-medium rounded-lg transition-all duration-200 ${
-              pathname.startsWith('/dashboard/sucursales') 
-                ? 'bg-gray-900 text-white shadow-sm' 
-                : 'text-gray-700 hover:bg-gray-50 hover:text-gray-900'
-            } ${collapsed ? 'justify-center px-2' : ''}`}
-            onClick={isMobile ? onCloseMobileMenu : undefined}
-            title="Sucursales"
-          >
-            <span className={`${collapsed ? '' : 'mr-3'} h-5 w-5 flex-shrink-0 transition-colors duration-200 ${
-              pathname.startsWith('/dashboard/sucursales') ? 'text-white' : 'text-gray-500 group-hover:text-gray-700'
-            }`}>
-              {/* Sucursales icon */}
-              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-full h-full">
-                <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 12.75V12A2.25 2.25 0 0 1 4.5 9.75h15A2.25 2.25 0 0 1 21.75 12v.75m-8.69-6.44-2.12-2.12a1.5 1.5 0 0 0-1.061-.44H4.5A2.25 2.25 0 0 0 2.25 6v12a2.25 2.25 0 0 0 2.25 2.25h15A2.25 2.25 0 0 0 21.75 18V9a2.25 2.25 0 0 0-2.25-2.25h-5.379a1.5 1.5 0 0 1-1.06-.44Z" />
-              </svg>
-            </span>
-            {!collapsed && <span className="truncate">Sucursales</span>}
-          </Link>
+          {/* Solo mostrar enlace de Sucursales a administradores */}
+          {userRole === 'admin' && (
+            <Link
+              href="/dashboard/empresas"
+              className={`group flex items-center px-3 py-2.5 text-sm font-medium rounded-lg transition-all duration-200 ${
+                pathname.startsWith('/dashboard/sucursales') 
+                  ? 'bg-gray-900 text-white shadow-sm' 
+                  : 'text-gray-700 hover:bg-gray-50 hover:text-gray-900'
+              } ${collapsed ? 'justify-center px-2' : ''}`}
+              onClick={isMobile ? onCloseMobileMenu : undefined}
+              title="Sucursales"
+            >
+              <span className={`${collapsed ? '' : 'mr-3'} h-5 w-5 flex-shrink-0 transition-colors duration-200 ${
+                pathname.startsWith('/dashboard/sucursales') ? 'text-white' : 'text-gray-500 group-hover:text-gray-700'
+              }`}>
+                {/* Sucursales icon */}
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-full h-full">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 12.75V12A2.25 2.25 0 0 1 4.5 9.75h15A2.25 2.25 0 0 1 21.75 12v.75m-8.69-6.44-2.12-2.12a1.5 1.5 0 0 0-1.061-.44H4.5A2.25 2.25 0 0 0 2.25 6v12a2.25 2.25 0 0 0 2.25 2.25h15A2.25 2.25 0 0 0 21.75 18V9a2.25 2.25 0 0 0-2.25-2.25h-5.379a1.5 1.5 0 0 1-1.06-.44Z" />
+                </svg>
+              </span>
+              {!collapsed && <span className="truncate">Sucursales</span>}
+            </Link>
+          )}
+
+          {/* Enlace de Extintores - visible para admin, general_manager y branch_manager */}
+          {(userRole === 'admin' || userRole === 'general_manager' || userRole === 'branch_manager') && (
+            <Link
+              href="/dashboard/extintores"
+              className={`group flex items-center px-3 py-2.5 text-sm font-medium rounded-lg transition-all duration-200 ${
+                pathname === '/dashboard/extintores' 
+                  ? 'bg-gray-900 text-white shadow-sm' 
+                  : 'text-gray-700 hover:bg-gray-50 hover:text-gray-900'
+              } ${collapsed ? 'justify-center px-2' : ''}`}
+              onClick={isMobile ? onCloseMobileMenu : undefined}
+              title="Extintores"
+            >
+              <span className={`${collapsed ? '' : 'mr-3'} h-5 w-5 flex-shrink-0 transition-colors duration-200 ${
+                pathname === '/dashboard/extintores' ? 'text-white' : 'text-gray-500 group-hover:text-gray-700'
+              }`}>
+                {/* Extintores icon */}
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-full h-full">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z" />
+                </svg>
+              </span>
+              {!collapsed && <span className="truncate">Extintores</span>}
+            </Link>
+          )}
+
+          {/* Enlace de Usuarios - solo visible para admin */}
+          {userRole === 'admin' && (
+            <Link
+              href="/dashboard/usuarios"
+              className={`group flex items-center px-3 py-2.5 text-sm font-medium rounded-lg transition-all duration-200 ${
+                pathname === '/dashboard/usuarios' 
+                  ? 'bg-gray-900 text-white shadow-sm' 
+                  : 'text-gray-700 hover:bg-gray-50 hover:text-gray-900'
+              } ${collapsed ? 'justify-center px-2' : ''}`}
+              onClick={isMobile ? onCloseMobileMenu : undefined}
+              title="Usuarios"
+            >
+              <span className={`${collapsed ? '' : 'mr-3'} h-5 w-5 flex-shrink-0 transition-colors duration-200 ${
+                pathname === '/dashboard/usuarios' ? 'text-white' : 'text-gray-500 group-hover:text-gray-700'
+              }`}>
+                {/* Usuarios icon */}
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-full h-full">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M15 19.128a9.38 9.38 0 002.625.372 9.337 9.337 0 004.121-.952 4.125 4.125 0 00-7.533-2.493M15 19.128v-.003c0-1.113-.285-2.16-.786-3.07M15 19.128v.106A12.318 12.318 0 018.624 21c-2.331 0-4.512-.645-6.374-1.766l-.001-.109a6.375 6.375 0 0111.964-3.07M12 6.375a3.375 3.375 0 11-6.75 0 3.375 3.375 0 016.75 0zm8.25 2.25a2.625 2.625 0 11-5.25 0 2.625 2.625 0 015.25 0z" />
+                </svg>
+              </span>
+              {!collapsed && <span className="truncate">Usuarios</span>}
+            </Link>
+          )}
 
           {/* Opciones de administrador - Solo visible para admin */}
           {userRole === 'admin' && (

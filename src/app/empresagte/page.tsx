@@ -7,6 +7,7 @@ import { database } from '@/lib/firebase';
 import { useRouter } from 'next/navigation';
 import { useEmpresas } from '@/hooks/useEmpresas';
 import { useMediciones } from '@/hooks/useMediciones';
+import { useSucursales } from '@/hooks/useSucursales';
 import { Bar, BarChart, CartesianGrid, XAxis, YAxis } from "recharts";
 import {
   ChartContainer,
@@ -24,12 +25,14 @@ export default function EmpresaGerentePage() {
   const [loading, setLoading] = useState(true);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isDesktopSidebarCollapsed, setIsDesktopSidebarCollapsed] = useState(false);
+  const [showExtintoresModal, setShowExtintoresModal] = useState(false);
   
   const { empresas } = useEmpresas();
   const empresa = empresas.find(e => e.id === empresaIdFromUser);
   const empresaId = empresa?.id || empresaIdFromUser || undefined;
   const empresaAsignadaNombre = empresa?.nombre;
   const { mediciones, loading: loadingMediciones } = useMediciones(empresaId);
+  const { sucursales } = useSucursales(empresaId);
 
   useEffect(() => {
     if (!authLoading && !user) {
@@ -83,7 +86,7 @@ export default function EmpresaGerentePage() {
       const incumplimientoPAT = getValue('INCUMPLIMIENTO PAT');
       if (incumplimientoPAT === 'NO CUMPLE') counts.patNoCumple += 1;
       
-      const incumplimientoILU = getValue('INCUMPLIMIENTO ILU');
+      const incumplimientoILU = getValue('INCUMPLIMIENTO ILUM');
       if (incumplimientoILU === 'NO CUMPLE') counts.iluNoCumple += 1;
       
       const incumplimientoRUIDO = getValue('INCUMPLIMIENTO RUIDO');
@@ -93,6 +96,55 @@ export default function EmpresaGerentePage() {
     console.log('Incumplimientos counts para empresa:', empresaId, counts);
     return counts;
   }, [mediciones, empresaId]);
+
+  // Conteos de incumplimientos para el gráfico (solo CUMPLE y NO CUMPLE)
+  const incumplimientosCountsForChart = useMemo(() => {
+    const counts = {
+      pat: {
+        cumple: 0,
+        noCumple: 0
+      },
+      iluminacion: {
+        cumple: 0,
+        noCumple: 0
+      },
+      ruido: {
+        cumple: 0,
+        noCumple: 0
+      },
+      termografia: {
+        cumple: 0,
+        noCumple: 0
+      }
+    };
+
+    mediciones.forEach((m) => {
+      const datos = m.datos as Record<string, unknown>;
+      const getValue = (k: string) => String((datos[k] ?? '') as any);
+      
+      // INCUMPLIMIENTO PAT
+      const incumplimientoPAT = getValue('INCUMPLIMIENTO PAT');
+      if (incumplimientoPAT === 'CUMPLE') counts.pat.cumple += 1;
+      else if (incumplimientoPAT === 'NO CUMPLE') counts.pat.noCumple += 1;
+      
+      // INCUMPLIMIENTO ILUM
+      const incumplimientoILU = getValue('INCUMPLIMIENTO ILUM');
+      if (incumplimientoILU === 'CUMPLE') counts.iluminacion.cumple += 1;
+      else if (incumplimientoILU === 'NO CUMPLE') counts.iluminacion.noCumple += 1;
+      
+      // INCUMPLIMIENTO RUIDO
+      const incumplimientoRUIDO = getValue('INCUMPLIMIENTO RUIDO');
+      if (incumplimientoRUIDO === 'CUMPLE') counts.ruido.cumple += 1;
+      else if (incumplimientoRUIDO === 'NO CUMPLE') counts.ruido.noCumple += 1;
+      
+      // INCUMPLIMIENTOS TERMOGRAFÍA
+      const incumplimientoTERMO = getValue('INCUMPLIMIENTOS TERMOGRAFÍA') || getValue('INCUMPLIMIENTO TERMOGRAFIA');
+      if (incumplimientoTERMO === 'CUMPLE') counts.termografia.cumple += 1;
+      else if (incumplimientoTERMO === 'NO CUMPLE') counts.termografia.noCumple += 1;
+    });
+
+    return counts;
+  }, [mediciones]);
 
   // Conteos de mediciones por tipo de estudio para esta empresa específica
   const medicionesCountsEmpresa = useMemo(() => {
@@ -133,8 +185,8 @@ export default function EmpresaGerentePage() {
       const datos = m.datos as Record<string, unknown>;
       const getValue = (k: string) => String((datos[k] ?? '') as any);
       
-      // PAT (PUESTA A TIERRA)
-      const patValue = getValue('PUESTA A TIERRA');
+      // PAT - buscar primero 'PAT', luego 'PUESTA A TIERRA' como fallback
+      const patValue = getValue('PAT') || getValue('PUESTA A TIERRA');
       if (patValue === 'PENDIENTE') counts.pat.pendienteVisita += 1;
       else if (patValue === 'PEDIR A TEC') counts.pat.pedirTecnico += 1;
       else if (patValue === 'PROCESAR') counts.pat.procesar += 1;
@@ -172,6 +224,73 @@ export default function EmpresaGerentePage() {
     console.log('Mediciones counts para empresa:', empresaId, counts);
     return counts;
   }, [mediciones, empresaId]);
+
+  // Calcular extintores que vencen el mes siguiente
+  const extintoresVencenMesSiguiente = useMemo(() => {
+    const ahora = new Date();
+    const mesSiguiente = new Date(ahora.getFullYear(), ahora.getMonth() + 1, 1);
+    const finMesSiguiente = new Date(ahora.getFullYear(), ahora.getMonth() + 2, 0);
+    
+    const sucursalesConExtintoresVencen: Array<{
+      sucursalId: string;
+      sucursalNombre: string;
+      fechaVencimiento: string;
+    }> = [];
+
+    // Agrupar mediciones por sucursal
+    const medicionesPorSucursal = new Map<string, typeof mediciones>();
+    mediciones.forEach((m) => {
+      const sucursalId = m.sucursalId;
+      if (sucursalId) {
+        if (!medicionesPorSucursal.has(sucursalId)) {
+          medicionesPorSucursal.set(sucursalId, []);
+        }
+        medicionesPorSucursal.get(sucursalId)!.push(m);
+      }
+    });
+
+    // Para cada sucursal, obtener la fecha más reciente de extintores
+    medicionesPorSucursal.forEach((medicionesSucursal, sucursalId) => {
+      let fechaMasReciente: Date | null = null;
+      let fechaMasRecienteStr: string | null = null;
+
+      medicionesSucursal.forEach((m) => {
+        const datos = m.datos as Record<string, unknown>;
+        const getValue = (k: string) => String((datos[k] ?? '') as any);
+        
+        const fechaExtintoresValue = getValue('FECHA EXTINTORES') || 
+                                     getValue('FECHA EXTINTOR') || 
+                                     getValue('FECHA DE EXTINTORES') ||
+                                     getValue('FECHA REGISTRO EXTINTORES');
+        
+        if (fechaExtintoresValue && fechaExtintoresValue.trim() !== '') {
+          try {
+            const fecha = new Date(fechaExtintoresValue);
+            if (!isNaN(fecha.getTime())) {
+              if (!fechaMasReciente || fecha > fechaMasReciente) {
+                fechaMasReciente = fecha;
+                fechaMasRecienteStr = fechaExtintoresValue;
+              }
+            }
+          } catch (e) {
+            // Ignorar errores de parsing
+          }
+        }
+      });
+
+      // Verificar si la fecha está en el mes siguiente
+      if (fechaMasReciente && fechaMasReciente >= mesSiguiente && fechaMasReciente <= finMesSiguiente) {
+        const sucursal = sucursales.find(s => s.id === sucursalId);
+        sucursalesConExtintoresVencen.push({
+          sucursalId,
+          sucursalNombre: sucursal?.nombre || sucursalId,
+          fechaVencimiento: fechaMasRecienteStr || (fechaMasReciente ? fechaMasReciente.toLocaleDateString('es-AR') : 'N/A')
+        });
+      }
+    });
+
+    return sucursalesConExtintoresVencen;
+  }, [mediciones, sucursales]);
 
   if (authLoading || loading) {
     return (
@@ -286,11 +405,34 @@ export default function EmpresaGerentePage() {
             </div>
 
             {/* Cards de métricas */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-6 mb-8">
+              {/* Nueva tarjeta de extintores que vencen */}
+              <div 
+                className="bg-gradient-to-b from-red-900 to-red-700 rounded-3xl p-6 text-white border border-red-800 shadow-sm cursor-pointer hover:shadow-lg transition-shadow"
+                onClick={() => setShowExtintoresModal(true)}
+              >
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-gray-200 text-sm">Extintores vencen mes siguiente</p>
+                    {loadingMediciones ? (
+                      <div className="animate-pulse">
+                        <div className="h-8 bg-gray-300 rounded w-16"></div>
+                      </div>
+                    ) : (
+                      <p className="text-3xl font-bold text-white">{extintoresVencenMesSiguiente.length}</p>
+                    )}
+                  </div>
+                  <div className="text-red-300">
+                    <svg className="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 16.5c-.77.833.192 2.5 1.732 2.5z" />
+                    </svg>
+                  </div>
+                </div>
+              </div>
               <div className="bg-gradient-to-b from-black to-gray-700 rounded-3xl p-6 text-white border border-gray-800 shadow-sm">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-gray-300 text-sm"> Estudios PAT</p>
+                    <p className="text-gray-300 text-sm">Incumplimientos PAT</p>
                     {loadingMediciones ? (
                       <div className="animate-pulse">
                         <div className="h-8 bg-gray-300 rounded w-16"></div>
@@ -310,7 +452,7 @@ export default function EmpresaGerentePage() {
               <div className="bg-gradient-to-b from-black to-gray-700  rounded-3xl p-6 text-white border border-gray-800 shadow-sm">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-gray-300 text-sm"> Estudios iluminación</p>
+                    <p className="text-gray-300 text-sm">Incumplimientos Iluminación</p>
                     {loadingMediciones ? (
                       <div className="animate-pulse">
                         <div className="h-8 bg-gray-300 rounded w-16"></div>
@@ -330,7 +472,7 @@ export default function EmpresaGerentePage() {
               <div className="bg-gradient-to-b from-black to-gray-700  rounded-3xl p-6 text-white border border-gray-800 shadow-sm">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-gray-300 text-sm">  Estudios ruido</p>
+                    <p className="text-gray-300 text-sm">Incumplimientos Ruido</p>
                     {loadingMediciones ? (
                       <div className="animate-pulse">
                         <div className="h-8 bg-gray-300 rounded w-16"></div>
@@ -372,7 +514,7 @@ export default function EmpresaGerentePage() {
             <div className="mb-6">
               <div className="bg-white rounded-2xl p-6 border border-gray-200 shadow-sm">
                 <div className="flex items-center justify-between mb-4">
-                  <h4 className="text-lg font-medium text-gray-900">Estados de Mediciones por Tipo de Estudio (Cantidad de Mediciones) - {empresaAsignadaNombre}</h4>
+                  <h4 className="text-lg font-medium text-gray-900">Incumplimientos por Tipo de Estudio - {empresaAsignadaNombre}</h4>
                   <span className="text-xs text-gray-400">Esta empresa</span>
                 </div>
                 
@@ -384,58 +526,35 @@ export default function EmpresaGerentePage() {
                   (() => {
                     const chartData = [
                       {
-                        name: "PAT",
-                        "PENDIENTE": medicionesCountsEmpresa.pat.pendienteVisita,
-                        "PEDIR A TEC": medicionesCountsEmpresa.pat.pedirTecnico,
-                        "Procesar": medicionesCountsEmpresa.pat.procesar,
-                        "En nube": medicionesCountsEmpresa.pat.enNube
+                        name: "INCUMPLIMIENTO PAT",
+                        "CUMPLE": incumplimientosCountsForChart.pat.cumple,
+                        "NO CUMPLE": incumplimientosCountsForChart.pat.noCumple
                       },
                       {
-                        name: "Iluminación",
-                        "PENDIENTE": medicionesCountsEmpresa.iluminacion.pendienteVisita,
-                        "PEDIR A TEC": medicionesCountsEmpresa.iluminacion.pedirTecnico,
-                        "Procesar": medicionesCountsEmpresa.iluminacion.procesar,
-                        "En nube": medicionesCountsEmpresa.iluminacion.enNube
+                        name: "INCUMPLIMIENTO ILUM",
+                        "CUMPLE": incumplimientosCountsForChart.iluminacion.cumple,
+                        "NO CUMPLE": incumplimientosCountsForChart.iluminacion.noCumple
                       },
                       {
-                        name: "Ruido",
-                        "PENDIENTE": medicionesCountsEmpresa.ruido.pendienteVisita,
-                        "PEDIR A TEC": medicionesCountsEmpresa.ruido.pedirTecnico,
-                        "Procesar": medicionesCountsEmpresa.ruido.procesar,
-                        "En nube": medicionesCountsEmpresa.ruido.enNube
+                        name: "INCUMPLIMIENTO RUIDO",
+                        "CUMPLE": incumplimientosCountsForChart.ruido.cumple,
+                        "NO CUMPLE": incumplimientosCountsForChart.ruido.noCumple
                       },
                       {
-                        name: "Carga Térmica",
-                        "PENDIENTE": medicionesCountsEmpresa.cargaTermica.pendienteVisita,
-                        "PEDIR A TEC": medicionesCountsEmpresa.cargaTermica.pedirTecnico,
-                        "Procesar": medicionesCountsEmpresa.cargaTermica.procesar,
-                        "En nube": medicionesCountsEmpresa.cargaTermica.enNube
-                      },
-                      {
-                        name: "ESTUDIO TERMOGRAFÍA",
-                        "PENDIENTE": medicionesCountsEmpresa.termografia.pendienteVisita,
-                        "PEDIR A TEC": medicionesCountsEmpresa.termografia.pedirTecnico,
-                        "Procesar": medicionesCountsEmpresa.termografia.procesar,
-                        "En nube": medicionesCountsEmpresa.termografia.enNube
+                        name: "INCUMPLIMIENTOS TERMOGRAFÍA",
+                        "CUMPLE": incumplimientosCountsForChart.termografia.cumple,
+                        "NO CUMPLE": incumplimientosCountsForChart.termografia.noCumple
                       }
                     ];
 
                     const chartConfig = {
-                      "PENDIENTE": {
-                        label: "PENDIENTE",
-                        color: "#ef4444"
+                      "CUMPLE": {
+                        label: "CUMPLE",
+                        color: "rgba(34, 197, 94, 0.4)"
                       },
-                      "PEDIR A TEC": {
-                        label: "PEDIR A TEC",
-                        color: "#f59e0b"
-                      },
-                      "Procesar": {
-                        label: "PROCESAR",
-                        color: "#3b82f6"
-                      },
-                      "En nube": {
-                        label: "EN NUBE",
-                        color: "#22c55e"
+                      "NO CUMPLE": {
+                        label: "NO CUMPLE",
+                        color: "rgba(239, 68, 68, 0.4)"
                       }
                     };
 
@@ -460,10 +579,8 @@ export default function EmpresaGerentePage() {
                             cursor={false}
                             content={<ChartTooltipContent />}
                           />
-                          <Bar dataKey="PENDIENTE" fill="#ef4444" radius={4} />
-                          <Bar dataKey="PEDIR A TEC" fill="#f59e0b" radius={4} />
-                          <Bar dataKey="Procesar" fill="#3b82f6" radius={4} />
-                          <Bar dataKey="En nube" fill="#22c55e" radius={4} />
+                          <Bar dataKey="CUMPLE" fill="rgba(34, 197, 94, 0.67)" radius={4} />
+                          <Bar dataKey="NO CUMPLE" fill="rgba(239, 68, 68, 0.67)" radius={4} />
                         </BarChart>
                       </ChartContainer>
                     );
@@ -479,6 +596,73 @@ export default function EmpresaGerentePage() {
           </div>
         </main>
       </div>
+
+      {/* Modal de extintores que vencen */}
+      {showExtintoresModal && (
+        <div className="fixed z-50 inset-0 overflow-y-auto">
+          <div className="flex items-center justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
+            <div className="fixed inset-0 transition-opacity" aria-hidden="true">
+              <div className="absolute inset-0 bg-gray-500 opacity-75" onClick={() => setShowExtintoresModal(false)}></div>
+            </div>
+            <span className="hidden sm:inline-block sm:align-middle sm:h-screen" aria-hidden="true">&#8203;</span>
+            <div className="inline-block align-bottom bg-white rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-2xl sm:w-full">
+              <div className="bg-white px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="text-lg font-medium text-gray-900">
+                    Extintores que vencen el mes siguiente
+                  </h3>
+                  <button
+                    onClick={() => setShowExtintoresModal(false)}
+                    className="text-gray-400 hover:text-gray-500"
+                  >
+                    <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                  </button>
+                </div>
+                
+                {extintoresVencenMesSiguiente.length === 0 ? (
+                  <div className="text-center py-8">
+                    <p className="text-gray-500">No hay extintores que venzan el mes siguiente.</p>
+                  </div>
+                ) : (
+                  <div className="space-y-3">
+                    {extintoresVencenMesSiguiente.map((item, index) => (
+                      <div
+                        key={index}
+                        className="border border-gray-200 rounded-lg p-4 hover:bg-gray-50 transition-colors"
+                      >
+                        <div className="flex items-center justify-between">
+                          <div>
+                            <p className="font-medium text-gray-900">{item.sucursalNombre}</p>
+                            <p className="text-sm text-gray-500 mt-1">
+                              Fecha de vencimiento: {item.fechaVencimiento}
+                            </p>
+                          </div>
+                          <div className="text-red-500">
+                            <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 16.5c-.77.833.192 2.5 1.732 2.5z" />
+                            </svg>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+              <div className="bg-gray-50 px-4 py-3 sm:px-6 sm:flex sm:flex-row-reverse">
+                <button
+                  type="button"
+                  onClick={() => setShowExtintoresModal(false)}
+                  className="w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-gray-600 text-base font-medium text-white hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500 sm:ml-3 sm:w-auto sm:text-sm"
+                >
+                  Cerrar
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
