@@ -380,32 +380,39 @@ export default function SucursalDetailPage({ params }: SucursalDetailPageProps) 
                   }
                 };
 
-                return (
-                  <ChartContainer config={chartConfig} className="h-[350px] text-black w-full">
-                    <BarChart data={chartData}>
-                      <CartesianGrid strokeDasharray="3 3" vertical={false} />
-                      <XAxis
-                        dataKey="name"
-                        tickLine={false}
-                        tickMargin={10}
-                        axisLine={false}
-                        tick={{ fontSize: 12 }}
-                      />
-                      <YAxis
-                        tickLine={false}
-                        axisLine={false}
-                        tick={{ fontSize: 12 }}
-                        label={{ value: 'Cantidad de Mediciones', angle: -90, position: 'insideLeft' }}
-                      />
-                      <ChartTooltip
-                        cursor={false}
-                        content={<ChartTooltipContent />}
-                      />
-                      <Bar dataKey="CUMPLE" fill="rgba(34, 197, 94, 0.67)" radius={4} />
-                      <Bar dataKey="NO CUMPLE" fill="rgba(239, 68, 68, 0.67)" radius={4} />
-                    </BarChart>
-                  </ChartContainer>
-                );
+              return (
+                <div className="overflow-x-auto -mx-4 sm:mx-0 px-4 sm:px-0">
+                  <div className="min-w-[600px] sm:min-w-0">
+                    <ChartContainer config={chartConfig} className="h-[250px] sm:h-[350px] text-black w-full">
+                      <BarChart data={chartData}>
+                        <CartesianGrid strokeDasharray="3 3" vertical={false} />
+                        <XAxis
+                          dataKey="name"
+                          tickLine={false}
+                          tickMargin={10}
+                          axisLine={false}
+                          tick={{ fontSize: 12 }}
+                          angle={-45}
+                          textAnchor="end"
+                          height={80}
+                        />
+                        <YAxis
+                          tickLine={false}
+                          axisLine={false}
+                          tick={{ fontSize: 12 }}
+                          label={{ value: 'Cantidad de Mediciones', angle: -90, position: 'insideLeft' }}
+                        />
+                        <ChartTooltip
+                          cursor={false}
+                          content={<ChartTooltipContent />}
+                        />
+                        <Bar dataKey="CUMPLE" fill="rgba(34, 197, 94, 0.67)" radius={4} />
+                        <Bar dataKey="NO CUMPLE" fill="rgba(239, 68, 68, 0.67)" radius={4} />
+                      </BarChart>
+                    </ChartContainer>
+                  </div>
+                </div>
+              );
               }
 
               // Para admin, mostrar estados de mediciones
@@ -467,32 +474,39 @@ export default function SucursalDetailPage({ params }: SucursalDetailPageProps) 
               };
 
               return (
-                <ChartContainer config={chartConfig} className="h-[350px] text-black w-full">
-                  <BarChart data={chartData}>
-                    <CartesianGrid strokeDasharray="3 3" vertical={false} />
-                    <XAxis
-                      dataKey="name"
-                      tickLine={false}
-                      tickMargin={10}
-                      axisLine={false}
-                      tick={{ fontSize: 12 }}
-                    />
-                    <YAxis
-                      tickLine={false}
-                      axisLine={false}
-                      tick={{ fontSize: 12 }}
-                      label={{ value: 'Cantidad de Mediciones', angle: -90, position: 'insideLeft' }}
-                    />
-                    <ChartTooltip
-                      cursor={false}
-                      content={<ChartTooltipContent />}
-                    />
-                    <Bar dataKey="PENDIENTE" fill="#ef4444" radius={4} />
-                    <Bar dataKey="PEDIR A TEC" fill="#f59e0b" radius={4} />
-                    <Bar dataKey="Procesar" fill="#3b82f6" radius={4} />
-                    <Bar dataKey="En nube" fill="#22c55e" radius={4} />
-                  </BarChart>
-                </ChartContainer>
+                <div className="overflow-x-auto -mx-4 sm:mx-0 px-4 sm:px-0">
+                  <div className="min-w-[600px] sm:min-w-0">
+                    <ChartContainer config={chartConfig} className="h-[250px] sm:h-[350px] text-black w-full">
+                      <BarChart data={chartData}>
+                        <CartesianGrid strokeDasharray="3 3" vertical={false} />
+                        <XAxis
+                          dataKey="name"
+                          tickLine={false}
+                          tickMargin={10}
+                          axisLine={false}
+                          tick={{ fontSize: 12 }}
+                          angle={-45}
+                          textAnchor="end"
+                          height={80}
+                        />
+                        <YAxis
+                          tickLine={false}
+                          axisLine={false}
+                          tick={{ fontSize: 12 }}
+                          label={{ value: 'Cantidad de Mediciones', angle: -90, position: 'insideLeft' }}
+                        />
+                        <ChartTooltip
+                          cursor={false}
+                          content={<ChartTooltipContent />}
+                        />
+                        <Bar dataKey="PENDIENTE" fill="#ef4444" radius={4} />
+                        <Bar dataKey="PEDIR A TEC" fill="#f59e0b" radius={4} />
+                        <Bar dataKey="Procesar" fill="#3b82f6" radius={4} />
+                        <Bar dataKey="En nube" fill="#22c55e" radius={4} />
+                      </BarChart>
+                    </ChartContainer>
+                  </div>
+                </div>
               );
             })()
           )}

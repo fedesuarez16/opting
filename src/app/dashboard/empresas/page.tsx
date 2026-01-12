@@ -363,32 +363,39 @@ export default function EmpresasPage() {
               };
 
               return (
-                <ChartContainer config={chartConfig} className="h-[250px] sm:h-[315px] text-black w-full">
-                  <BarChart data={chartData}>
-                    <CartesianGrid strokeDasharray="3 3" vertical={false} />
-                    <XAxis
-                      dataKey="name"
-                      tickLine={false}
-                      tickMargin={10}
-                      axisLine={false}
-                      tick={{ fontSize: 12 }}
-                    />
-                    <YAxis
-                      tickLine={false}
-                      axisLine={false}
-                      tick={{ fontSize: 12 }}
-                      label={{ value: 'Cantidad de Sucursales', angle: -90, position: 'insideLeft' }}
-                    />
-                    <ChartTooltip
-                      cursor={false}
-                      content={<ChartTooltipContent />}
-                    />
-                    <Bar dataKey="EN NUBE" fill="rgba(3, 160, 61, 0.67)" radius={4} />
-                    <Bar dataKey="Procesar" fill="rgba(4, 68, 171, 0.67)" radius={4} />
-                    <Bar dataKey="PEDIR A TEC" fill="rgba(152, 97, 3, 0.67)" radius={4} />
-                    <Bar dataKey="PENDIENTE" fill="rgba(151, 5, 5, 0.67)" radius={4} />
-                  </BarChart>
-                </ChartContainer>
+                <div className="overflow-x-auto -mx-4 sm:mx-0 px-4 sm:px-0">
+                  <div className="min-w-[600px] sm:min-w-0">
+                    <ChartContainer config={chartConfig} className="h-[250px] sm:h-[315px] text-black w-full">
+                      <BarChart data={chartData}>
+                        <CartesianGrid strokeDasharray="3 3" vertical={false} />
+                        <XAxis
+                          dataKey="name"
+                          tickLine={false}
+                          tickMargin={10}
+                          axisLine={false}
+                          tick={{ fontSize: 12 }}
+                          angle={-45}
+                          textAnchor="end"
+                          height={80}
+                        />
+                        <YAxis
+                          tickLine={false}
+                          axisLine={false}
+                          tick={{ fontSize: 12 }}
+                          label={{ value: 'Cantidad de Sucursales', angle: -90, position: 'insideLeft' }}
+                        />
+                        <ChartTooltip
+                          cursor={false}
+                          content={<ChartTooltipContent />}
+                        />
+                        <Bar dataKey="EN NUBE" fill="rgba(3, 160, 61, 0.67)" radius={4} />
+                        <Bar dataKey="Procesar" fill="rgba(4, 68, 171, 0.67)" radius={4} />
+                        <Bar dataKey="PEDIR A TEC" fill="rgba(152, 97, 3, 0.67)" radius={4} />
+                        <Bar dataKey="PENDIENTE" fill="rgba(151, 5, 5, 0.67)" radius={4} />
+                      </BarChart>
+                    </ChartContainer>
+                  </div>
+                </div>
               );
             })()
           )}
