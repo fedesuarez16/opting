@@ -297,7 +297,7 @@ export default function EmpresasPage() {
       <div className="mb-4 sm:mb-6">
         <div className="bg-white rounded-xl sm:rounded-2xl p-4 sm:p-6 lg:p-10 border border-gray-300 shadow-sm">
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-4 gap-2">
-            <h4 className="text-base sm:text-lg font-medium text-gray-900">Estados de Mediciones por Tipo de Estudio</h4>
+            <h4 className="text-base sm:text-lg font-medium text-gray-900">Estado de Procesamiento de los Monitoreos Laborales</h4>
             <span className="text-xs text-gray-400">Todas las empresas</span>
           </div>
           
@@ -335,48 +335,56 @@ export default function EmpresasPage() {
                   "PENDIENTE": medicionesCounts.cargaTermica.pendienteVisita
                 },
                 {
-                  name: "ESTUDIO TERMOGRAFÍA",
+                  name: "TERMOGRAFÍA",
                   "EN NUBE": medicionesCounts.termografia.enNube,
                   "Procesar": medicionesCounts.termografia.procesar,
                   "PEDIR A TEC": medicionesCounts.termografia.pedirTecnico,
                   "PENDIENTE": medicionesCounts.termografia.pendienteVisita
+                },
+                {
+                  name: "INF. PRUEBA DISYUNTORES",
+                  "EN NUBE": (medicionesCounts as any).informePruebaDinamicaDisyuntores?.enNube || 0,
+                  "Procesar": (medicionesCounts as any).informePruebaDinamicaDisyuntores?.procesar || 0,
+                  "PEDIR A TEC": (medicionesCounts as any).informePruebaDinamicaDisyuntores?.pedirTecnico || 0,
+                  "PENDIENTE": (medicionesCounts as any).informePruebaDinamicaDisyuntores?.pendienteVisita || 0
                 }
               ];
 
               const chartConfig = {
                 "EN NUBE": {
                   label: "EN NUBE",
-                  color: "rgba(34, 197, 94, 0.4)"
+                  color: "#22c55e"
                 },
                 "Procesar": {
                   label: "PROCESAR",
-                  color: "rgba(59, 130, 246, 0.4)"
+                  color: "#3b82f6"
                 },
                 "PEDIR A TEC": {
                   label: "PEDIR A TEC",
-                  color: "rgba(245, 158, 11, 0.4)"
+                  color: "#f59e0b"
                 },
                 "PENDIENTE": {
                   label: "PENDIENTE",
-                  color: "rgba(239, 68, 68, 0.4)"
+                  color: "#ef4444"
                 }
               };
 
               return (
                 <div className="overflow-x-auto -mx-4 sm:mx-0 px-4 sm:px-0">
-                  <div className="min-w-[600px] sm:min-w-0">
-                    <ChartContainer config={chartConfig} className="h-[250px] sm:h-[315px] text-black w-full">
-                      <BarChart data={chartData}>
+                  <div className="min-w-[700px] sm:min-w-0">
+                    <ChartContainer config={chartConfig} className="h-[280px] sm:h-[380px] text-black w-full">
+                      <BarChart data={chartData} margin={{ bottom: 60, left: 10, right: 10, top: 10 }}>
                         <CartesianGrid strokeDasharray="3 3" vertical={false} />
                         <XAxis
                           dataKey="name"
                           tickLine={false}
-                          tickMargin={10}
+                          tickMargin={8}
                           axisLine={false}
-                          tick={{ fontSize: 12 }}
+                          tick={{ fontSize: 10 }}
                           angle={-45}
                           textAnchor="end"
-                          height={80}
+                          height={70}
+                          interval={0}
                         />
                         <YAxis
                           tickLine={false}
@@ -388,10 +396,10 @@ export default function EmpresasPage() {
                           cursor={false}
                           content={<ChartTooltipContent />}
                         />
-                        <Bar dataKey="EN NUBE" fill="rgba(3, 160, 61, 0.67)" radius={4} />
-                        <Bar dataKey="Procesar" fill="rgba(4, 68, 171, 0.67)" radius={4} />
-                        <Bar dataKey="PEDIR A TEC" fill="rgba(152, 97, 3, 0.67)" radius={4} />
-                        <Bar dataKey="PENDIENTE" fill="rgba(151, 5, 5, 0.67)" radius={4} />
+                        <Bar dataKey="EN NUBE" fill="#22c55e" radius={4} />
+                        <Bar dataKey="Procesar" fill="#3b82f6" radius={4} />
+                        <Bar dataKey="PEDIR A TEC" fill="#f59e0b" radius={4} />
+                        <Bar dataKey="PENDIENTE" fill="#ef4444" radius={4} />
                       </BarChart>
                     </ChartContainer>
                   </div>

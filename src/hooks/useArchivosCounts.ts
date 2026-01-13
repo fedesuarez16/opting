@@ -33,6 +33,12 @@ export function useMedicionesCounts() {
       pedirTecnico: 0,
       procesar: 0,
       enNube: 0
+    },
+    informePruebaDinamicaDisyuntores: {
+      pendienteVisita: 0,
+      pedirTecnico: 0,
+      procesar: 0,
+      enNube: 0
     }
   });
 
@@ -77,6 +83,11 @@ export function useMedicionesCounts() {
       const termoPedirTecnico = new Set<string>();
       const termoProcesar = new Set<string>();
       const termoEnNube = new Set<string>();
+      
+      const informePruebaPendienteVisita = new Set<string>();
+      const informePruebaPedirTecnico = new Set<string>();
+      const informePruebaProcesar = new Set<string>();
+      const informePruebaEnNube = new Set<string>();
       
       // Sets para contar incumplimientos
       const patNoCumple = new Set<string>();
@@ -125,11 +136,18 @@ export function useMedicionesCounts() {
           else if (cargaValue === 'EN NUBE') cargaEnNube.add(sucursalId);
           
           // TERMOGRAFÍA
-          const termoValue = getValue('ESTUDIO TERMOGRAFIA');
+          const termoValue = getValue('TERMOGRAFIA') || getValue('ESTUDIO TERMOGRAFIA');
           if (termoValue === 'PENDIENTE') termoPendienteVisita.add(sucursalId);
           else if (termoValue === 'PEDIR A TEC') termoPedirTecnico.add(sucursalId);
           else if (termoValue === 'PROCESAR') termoProcesar.add(sucursalId);
           else if (termoValue === 'EN NUBE') termoEnNube.add(sucursalId);
+          
+          // INFORME PRUEBA DINAMICA DISYUNTORES
+          const informePruebaValue = getValue('INFORME PRUEBA DINAMICA DISYUNTORES') || getValue('PRUEBA DINAMICA DE DISYUNTORES');
+          if (informePruebaValue === 'PENDIENTE') informePruebaPendienteVisita.add(sucursalId);
+          else if (informePruebaValue === 'PEDIR A TEC') informePruebaPedirTecnico.add(sucursalId);
+          else if (informePruebaValue === 'PROCESAR') informePruebaProcesar.add(sucursalId);
+          else if (informePruebaValue === 'EN NUBE') informePruebaEnNube.add(sucursalId);
           
           // INCUMPLIMIENTOS
           const incumplimientoPAT = getValue('INCUMPLIMIENTO PAT');
@@ -174,6 +192,12 @@ export function useMedicionesCounts() {
           pedirTecnico: termoPedirTecnico.size,
           procesar: termoProcesar.size,
           enNube: termoEnNube.size
+        },
+        informePruebaDinamicaDisyuntores: {
+          pendienteVisita: informePruebaPendienteVisita.size,
+          pedirTecnico: informePruebaPedirTecnico.size,
+          procesar: informePruebaProcesar.size,
+          enNube: informePruebaEnNube.size
         }
       };
 

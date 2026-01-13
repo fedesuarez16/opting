@@ -228,6 +228,12 @@ export default function SucursalesPage({ params }: SucursalesPageProps) {
         pedirTecnico: 0,
         procesar: 0,
         enNube: 0
+      },
+      informePruebaDinamicaDisyuntores: {
+        pendienteVisita: 0,
+        pedirTecnico: 0,
+        procesar: 0,
+        enNube: 0
       }
     };
 
@@ -280,11 +286,18 @@ export default function SucursalesPage({ params }: SucursalesPageProps) {
       else if (cargaValue === 'EN NUBE') counts.cargaTermica.enNube += 1;
       
       // ESTUDIO TERMOGRAFÍA
-      const termoValue = getValue('ESTUDIO TERMOGRAFIA');
+      const termoValue = getValue('TERMOGRAFIA');
       if (termoValue === 'PENDIENTE') counts.termografia.pendienteVisita += 1;
       else if (termoValue === 'PEDIR A TEC') counts.termografia.pedirTecnico += 1;
       else if (termoValue === 'PROCESAR') counts.termografia.procesar += 1;
       else if (termoValue === 'EN NUBE') counts.termografia.enNube += 1;
+      
+      // INFORME PRUEBA DINAMICA DISYUNTORES (siempre disponible)
+      const informePruebaDinamicaValue = getValue('INFORME PRUEBA DINAMICA DISYUNTORES') || getValue('PRUEBA DINAMICA DE DISYUNTORES');
+      if (informePruebaDinamicaValue === 'PENDIENTE') counts.informePruebaDinamicaDisyuntores.pendienteVisita += 1;
+      else if (informePruebaDinamicaValue === 'PEDIR A TEC') counts.informePruebaDinamicaDisyuntores.pedirTecnico += 1;
+      else if (informePruebaDinamicaValue === 'PROCESAR') counts.informePruebaDinamicaDisyuntores.procesar += 1;
+      else if (informePruebaDinamicaValue === 'EN NUBE') counts.informePruebaDinamicaDisyuntores.enNube += 1;
       
       // PRUEBA DINAMICA DE DISYUNTORES (solo para ARCOS DORADOS)
       if (isArcosDorados && counts.pruebaDinamicaDisyuntores) {
@@ -335,6 +348,21 @@ export default function SucursalesPage({ params }: SucursalesPageProps) {
     console.log('Incumplimientos counts para empresa:', empresaId, counts);
     return counts;
   }, [mediciones, empresaId]);
+
+  // Pendiente de Entrega para admin (todos los estados que NO son "EN NUBE")
+  const pendienteEntregaCounts = useMemo(() => {
+    return {
+      pat: medicionesCountsEmpresa.pat.pendienteVisita + 
+           medicionesCountsEmpresa.pat.pedirTecnico + 
+           medicionesCountsEmpresa.pat.procesar,
+      iluminacion: medicionesCountsEmpresa.iluminacion.pendienteVisita + 
+                  medicionesCountsEmpresa.iluminacion.pedirTecnico + 
+                  medicionesCountsEmpresa.iluminacion.procesar,
+      ruido: medicionesCountsEmpresa.ruido.pendienteVisita + 
+             medicionesCountsEmpresa.ruido.pedirTecnico + 
+             medicionesCountsEmpresa.ruido.procesar
+    };
+  }, [medicionesCountsEmpresa]);
 
   // Conteos de incumplimientos por tipo para el gráfico (para gerentes)
   const incumplimientosCountsForChart = useMemo(() => {
@@ -500,11 +528,17 @@ export default function SucursalesPage({ params }: SucursalesPageProps) {
       <div className="bg-gradient-to-b from-black to-gray-700 rounded-2xl sm:rounded-3xl p-4 sm:p-6 text-white border border-gray-800 shadow-sm">
         <div className="flex items-center justify-between">
           <div className="flex-1 min-w-0">
-            <p className="text-gray-300 text-xs sm:text-sm truncate">Incumplimiento PAT</p>
+            <p className="text-gray-300 text-xs sm:text-sm truncate">
+              {userRole === 'admin' ? 'PAT Pendiente de Entrega ' : 'Incumplimiento PAT'}
+            </p>
             {loadingMediciones ? (
               <div className="h-6 sm:h-8 bg-gray-300 rounded w-12 sm:w-16 animate-pulse mt-1"></div>
             ) : (
-              <p className="text-2xl sm:text-3xl font-bold text-white mt-1">{incumplimientosCountsEmpresa.patNoCumple}</p>
+              <p className="text-2xl sm:text-3xl font-bold text-white mt-1">
+                {userRole === 'admin' 
+                  ? pendienteEntregaCounts.pat 
+                  : incumplimientosCountsEmpresa.patNoCumple}
+              </p>
             )}
           </div>
           <div className="text-gray-400 flex-shrink-0 ml-2">
@@ -518,11 +552,17 @@ export default function SucursalesPage({ params }: SucursalesPageProps) {
       <div className="bg-gradient-to-b from-black to-gray-700 rounded-2xl sm:rounded-3xl p-4 sm:p-6 text-white border border-gray-800 shadow-sm">
         <div className="flex items-center justify-between">
           <div className="flex-1 min-w-0">
-            <p className="text-gray-300 text-xs sm:text-sm truncate">Incumplimiento Iluminación</p>
+            <p className="text-gray-300 text-xs sm:text-sm truncate">
+              {userRole === 'admin' ? ' Ilu pendiente de Entrega ' : 'Incumplimiento Iluminación'}
+            </p>
             {loadingMediciones ? (
               <div className="h-6 sm:h-8 bg-gray-300 rounded w-12 sm:w-16 animate-pulse mt-1"></div>
             ) : (
-              <p className="text-2xl sm:text-3xl font-bold text-white mt-1">{incumplimientosCountsEmpresa.iluNoCumple}</p>
+              <p className="text-2xl sm:text-3xl font-bold text-white mt-1">
+                {userRole === 'admin' 
+                  ? pendienteEntregaCounts.iluminacion 
+                  : incumplimientosCountsEmpresa.iluNoCumple}
+              </p>
             )}
           </div>
           <div className="text-gray-400 flex-shrink-0 ml-2">
@@ -536,11 +576,17 @@ export default function SucursalesPage({ params }: SucursalesPageProps) {
       <div className="bg-gradient-to-b from-black to-gray-700 rounded-2xl sm:rounded-3xl p-4 sm:p-6 text-white border border-gray-800 shadow-sm">
         <div className="flex items-center justify-between">
           <div className="flex-1 min-w-0">
-            <p className="text-gray-300 text-xs sm:text-sm truncate">Incumplimiento Ruido</p>
+            <p className="text-gray-300 text-xs sm:text-sm truncate">
+              {userRole === 'admin' ? 'Ruido Pendiente de Entrega' : 'Incumplimiento Ruido'}
+            </p>
             {loadingMediciones ? (
               <div className="h-6 sm:h-8 bg-gray-300 rounded w-12 sm:w-16 animate-pulse mt-1"></div>
             ) : (
-              <p className="text-2xl sm:text-3xl font-bold text-white mt-1">{incumplimientosCountsEmpresa.ruidoNoCumple}</p>
+              <p className="text-2xl sm:text-3xl font-bold text-white mt-1">
+                {userRole === 'admin' 
+                  ? pendienteEntregaCounts.ruido 
+                  : incumplimientosCountsEmpresa.ruidoNoCumple}
+              </p>
             )}
           </div>
           <div className="text-gray-400 flex-shrink-0 ml-2">
@@ -594,7 +640,7 @@ export default function SucursalesPage({ params }: SucursalesPageProps) {
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-4 gap-2">
             <h4 className="text-base sm:text-lg font-medium text-gray-900">
               {userRole === 'admin' 
-                ? `Estados de Mediciones por Tipo de Estudio - ${empresa?.nombre || 'Empresa'}`
+                ? `Estado de Procesamiento de los Monitoreos Laborales - ${empresa?.nombre || 'Empresa'}`
                 : `Incumplimientos por Tipo de Estudio - ${empresa?.nombre || 'Empresa'}`
               }
             </h4>
@@ -612,22 +658,22 @@ export default function SucursalesPage({ params }: SucursalesPageProps) {
               if (isManager) {
                 const chartData = [
                   {
-                    name: "INCUMPLIMIENTO PAT",
+                    name: "INC. PAT",
                     "CUMPLE": incumplimientosCountsForChart.pat.cumple,
                     "NO CUMPLE": incumplimientosCountsForChart.pat.noCumple
                   },
                   {
-                    name: "INCUMPLIMIENTO ILUM",
+                    name: "INC. ILUM",
                     "CUMPLE": incumplimientosCountsForChart.iluminacion.cumple,
                     "NO CUMPLE": incumplimientosCountsForChart.iluminacion.noCumple
                   },
                   {
-                    name: "INCUMPLIMIENTO RUIDO",
+                    name: "INC. RUIDO",
                     "CUMPLE": incumplimientosCountsForChart.ruido.cumple,
                     "NO CUMPLE": incumplimientosCountsForChart.ruido.noCumple
                   },
                   {
-                    name: "INCUMPLIMIENTOS TERMOGRAFÍA",
+                    name: "INC. TERMOG.",
                     "CUMPLE": incumplimientosCountsForChart.termografia.cumple,
                     "NO CUMPLE": incumplimientosCountsForChart.termografia.noCumple
                   }
@@ -646,19 +692,20 @@ export default function SucursalesPage({ params }: SucursalesPageProps) {
 
                 return (
                   <div className="overflow-x-auto -mx-4 sm:mx-0 px-4 sm:px-0">
-                    <div className="min-w-[600px] sm:min-w-0">
-                      <ChartContainer config={chartConfig} className="h-[250px] sm:h-[350px] text-black w-full">
-                        <BarChart data={chartData}>
+                    <div className="min-w-[700px] sm:min-w-0">
+                      <ChartContainer config={chartConfig} className="h-[280px] sm:h-[380px] text-black w-full">
+                        <BarChart data={chartData} margin={{ bottom: 60, left: 10, right: 10, top: 10 }}>
                           <CartesianGrid strokeDasharray="3 3" vertical={false} />
                           <XAxis
                             dataKey="name"
                             tickLine={false}
-                            tickMargin={10}
+                            tickMargin={8}
                             axisLine={false}
-                            tick={{ fontSize: 12 }}
+                            tick={{ fontSize: 10 }}
                             angle={-45}
                             textAnchor="end"
-                            height={80}
+                            height={70}
+                            interval={0}
                           />
                           <YAxis
                             tickLine={false}
@@ -710,69 +757,56 @@ export default function SucursalesPage({ params }: SucursalesPageProps) {
                   "PENDIENTE": medicionesCountsEmpresa.cargaTermica.pendienteVisita
                 },
                 {
-                  name: "ESTUDIO TERMOGRAFÍA",
+                  name: "TERMOGRAFÍA",
                   "EN NUBE": medicionesCountsEmpresa.termografia.enNube,
                   "Procesar": medicionesCountsEmpresa.termografia.procesar,
                   "PEDIR A TEC": medicionesCountsEmpresa.termografia.pedirTecnico,
                   "PENDIENTE": medicionesCountsEmpresa.termografia.pendienteVisita
+                },
+                {
+                  name: "INF. PRUEBA DISYUNTORES",
+                  "EN NUBE": (medicionesCountsEmpresa as any).informePruebaDinamicaDisyuntores.enNube,
+                  "Procesar": (medicionesCountsEmpresa as any).informePruebaDinamicaDisyuntores.procesar,
+                  "PEDIR A TEC": (medicionesCountsEmpresa as any).informePruebaDinamicaDisyuntores.pedirTecnico,
+                  "PENDIENTE": (medicionesCountsEmpresa as any).informePruebaDinamicaDisyuntores.pendienteVisita
                 }
               ];
-
-              // Agregar estudios adicionales solo para ARCOS DORADOS
-              if (isArcosDorados && (medicionesCountsEmpresa as any).pruebaDinamicaDisyuntores) {
-                chartData.push({
-                  name: "PRUEBA  DISYUNTORES",
-                  "EN NUBE": (medicionesCountsEmpresa as any).pruebaDinamicaDisyuntores.enNube,
-                  "Procesar": (medicionesCountsEmpresa as any).pruebaDinamicaDisyuntores.procesar,
-                  "PEDIR A TEC": (medicionesCountsEmpresa as any).pruebaDinamicaDisyuntores.pedirTecnico,
-                  "PENDIENTE": (medicionesCountsEmpresa as any).pruebaDinamicaDisyuntores.pendienteVisita
-                });
-              }
-
-              if (isArcosDorados && (medicionesCountsEmpresa as any).termografiaTableros) {
-                chartData.push({
-                  name: "TERMOGRAFIA ",
-                  "EN NUBE": (medicionesCountsEmpresa as any).termografiaTableros.enNube,
-                  "Procesar": (medicionesCountsEmpresa as any).termografiaTableros.procesar,
-                  "PEDIR A TEC": (medicionesCountsEmpresa as any).termografiaTableros.pedirTecnico,
-                  "PENDIENTE": (medicionesCountsEmpresa as any).termografiaTableros.pendienteVisita
-                });
-              }
 
               const chartConfig = {
                 "EN NUBE": {
                   label: "EN NUBE",
-                  color: "rgba(34, 197, 94, 0.4)"
+                  color: "#22c55e"
                 },
                 "Procesar": {
                   label: "PROCESAR",
-                  color: "rgba(59, 130, 246, 0.4)"
+                  color: "#3b82f6"
                 },
                 "PEDIR A TEC": {
                   label: "PEDIR A TEC",
-                  color: "rgba(245, 158, 11, 0.4)"
+                  color: "#f59e0b"
                 },
                 "PENDIENTE": {
                   label: "PENDIENTE",
-                  color: "rgba(239, 68, 68, 0.4)"
+                  color: "#ef4444"
                 }
               };
 
               return (
                 <div className="overflow-x-auto -mx-4 sm:mx-0 px-4 sm:px-0">
-                  <div className="min-w-[600px] sm:min-w-0">
-                    <ChartContainer config={chartConfig} className="h-[250px] sm:h-[350px] text-black w-full">
-                      <BarChart data={chartData}>
+                  <div className="min-w-[700px] sm:min-w-0">
+                    <ChartContainer config={chartConfig} className="h-[280px] sm:h-[380px] text-black w-full">
+                      <BarChart data={chartData} margin={{ bottom: 60, left: 10, right: 10, top: 10 }}>
                         <CartesianGrid strokeDasharray="3 3" vertical={false} />
                         <XAxis
                           dataKey="name"
                           tickLine={false}
-                          tickMargin={10}
+                          tickMargin={8}
                           axisLine={false}
-                          tick={{ fontSize: 12 }}
+                          tick={{ fontSize: 10 }}
                           angle={-45}
                           textAnchor="end"
-                          height={80}
+                          height={70}
+                          interval={0}
                         />
                         <YAxis
                           tickLine={false}
@@ -784,10 +818,10 @@ export default function SucursalesPage({ params }: SucursalesPageProps) {
                           cursor={false}
                           content={<ChartTooltipContent />}
                         />
-                        <Bar dataKey="EN NUBE" fill="rgba(3, 160, 61, 0.67)" radius={4} />
-                        <Bar dataKey="Procesar" fill="rgba(4, 68, 171, 0.67)" radius={4} />
-                        <Bar dataKey="PEDIR A TEC" fill="rgba(152, 97, 3, 0.67)" radius={4} />
-                        <Bar dataKey="PENDIENTE" fill="rgba(151, 5, 5, 0.67)" radius={4} />
+                        <Bar dataKey="EN NUBE" fill="#22c55e" radius={4} />
+                        <Bar dataKey="Procesar" fill="#3b82f6" radius={4} />
+                        <Bar dataKey="PEDIR A TEC" fill="#f59e0b" radius={4} />
+                        <Bar dataKey="PENDIENTE" fill="#ef4444" radius={4} />
                       </BarChart>
                     </ChartContainer>
                   </div>
