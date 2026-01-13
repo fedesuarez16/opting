@@ -525,8 +525,8 @@ export default function SucursalDetailPage({ params }: SucursalDetailPageProps) 
         <div className="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden">
           <div className="px-6 py-4 border-b border-gray-200 bg-gray-50">
             <div className="flex items-center justify-between">
-              <h3 className="text-lg font-medium text-gray-900">Mediciones</h3>
-              <span className="text-sm text-gray-500">{filteredMediciones.length} mediciones</span>
+              <h3 className="text-lg font-medium text-gray-900">Relevamientos</h3>
+              <span className="text-sm text-gray-500">{filteredMediciones.length} relevamientos</span>
             </div>
           </div>
           
@@ -557,7 +557,7 @@ export default function SucursalDetailPage({ params }: SucursalDetailPageProps) 
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center gap-3 mb-2">
                             <h4 className="text-lg font-semibold text-gray-900 truncate">
-                              Medición del {medicion.fecha}
+                              Relevamiento del {medicion.fecha}
                             </h4>
                           </div>
                           
