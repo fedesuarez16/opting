@@ -315,10 +315,10 @@ export default function SucursalDetailPage({ params }: SucursalDetailPageProps) 
       <div className="sm:flex sm:items-center sm:justify-between mb-6">
         <div>
           <h3 className="text-2xl font-semibold text-gray-900">
-            Mediciones de {sucursal?.nombre || 'Sucursal'}
+          Relevamiento de {sucursal?.nombre || 'Sucursal'}
           </h3>
           <p className="mt-1 text-sm text-gray-500">
-            {empresa?.nombre || 'Empresa'} - {filteredMediciones.length} mediciones encontradas
+            {empresa?.nombre || 'Empresa'} 
           </p>
         </div>
       
@@ -690,20 +690,80 @@ interface MedicionDetailModalProps {
 }
 
 function MedicionDetailModal({ medicion, onClose }: MedicionDetailModalProps) {
+  // Campos permitidos a mostrar
+  const allowedFields = [
+    'INCUMPLIMIENTO ILUM',
+    'INCUMPLIMIENTO CARGA TERMICA',
+    'INCUMPLIMIENTO CARGA TÉRMICA',
+    'INCUMPLIENTO CARGA TERMICA',
+    'INCUMPLIMIENTO RUIDO',
+    'INCUMPLIMIENTOS TERMOGRAFÍA',
+    'INCUMPLIMIENTO TERMOGRAFIA',
+    'FECHAS DE MEDICIÓN',
+    'TÉCNICOS',
+    'tecnico',
+    'SERVICIO',
+    'servicio',
+    'FECHA EXTINTORES'
+  ];
+
+  // Filtrar y mapear los campos permitidos
+  const filteredData = Object.entries(medicion.datos)
+    .filter(([key]) => {
+      // Incluir solo los campos permitidos
+      const keyUpper = key.toUpperCase();
+      return allowedFields.some(field => {
+        const fieldUpper = field.toUpperCase();
+        return keyUpper === fieldUpper || 
+               keyUpper.includes(fieldUpper) ||
+               fieldUpper.includes(keyUpper);
+      });
+    })
+    .map(([key, value]) => {
+      // Normalizar nombres de campos para mostrar
+      const keyUpper = key.toUpperCase();
+      let displayKey = key;
+      
+      if (keyUpper === 'TÉCNICOS' || keyUpper === 'TECNICO') {
+        displayKey = 'Técnico';
+      } else if (keyUpper === 'SERVICIO') {
+        displayKey = 'Servicio';
+      } else if (keyUpper === 'FECHAS DE MEDICIÓN' || keyUpper.includes('FECHAS DE MEDICIÓN')) {
+        displayKey = 'Fechas de Medición';
+      } else if (keyUpper === 'FECHA EXTINTORES' || keyUpper.includes('FECHA EXTINTORES')) {
+        displayKey = 'Fecha Extintores';
+      } else if (keyUpper === 'INCUMPLIMIENTO ILUM' || keyUpper.includes('INCUMPLIMIENTO ILUM')) {
+        displayKey = 'Incumplimiento Iluminación';
+      } else if (keyUpper.includes('INCUMPLIMIENTO CARGA') || keyUpper.includes('INCUMPLIENTO CARGA')) {
+        displayKey = 'Incumplimiento Carga Térmica';
+      } else if (keyUpper === 'INCUMPLIMIENTO RUIDO' || keyUpper.includes('INCUMPLIMIENTO RUIDO')) {
+        displayKey = 'Incumplimiento Ruido';
+      } else if (keyUpper.includes('INCUMPLIMIENTO TERMOGRAF') || keyUpper.includes('INCUMPLIMIENTOS TERMOGRAF')) {
+        displayKey = 'Incumplimientos Termografía';
+      }
+      
+      return { key: displayKey, value };
+    });
+
   return (
     <div className="fixed z-50 inset-0 overflow-y-auto">
       <div className="flex items-center justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
-        <div className="fixed inset-0 bg-gray-100 bg-opacity-50 transition-opacity z-40" aria-hidden="true" onClick={onClose}></div>
+        <div className="fixed inset-0 bg-gray-500 bg-opacity-25 transition-opacity z-40" aria-hidden="true" onClick={onClose}></div>
         <span className="hidden sm:inline-block sm:align-middle sm:h-screen" aria-hidden="true">&#8203;</span>
-        <div className="relative z-50 inline-block align-bottom bg-white rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-4xl sm:w-full">
-          <div className="bg-white px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
-            <div className="flex justify-between items-center mb-4">
-              <h3 className="text-lg font-medium text-gray-900">
-                Detalles de Medición - {medicion.fecha}
-              </h3>
+        <div className="relative z-50 inline-block align-bottom bg-white rounded-2xl text-left overflow-hidden shadow-2xl transform transition-all sm:my-8 sm:align-middle sm:max-w-4xl sm:w-full">
+          <div className="bg-gradient-to-b from-white to-gray-50 px-4 pt-6 pb-4 sm:p-8 sm:pb-6">
+            <div className="flex justify-between items-start mb-6">
+              <div>
+                <h3 className="text-xl font-semibold text-gray-900">
+                  Detalles de Medición
+                </h3>
+                <p className="mt-1 text-sm text-gray-500">
+                  {medicion.fecha}
+                </p>
+              </div>
               <button
                 onClick={onClose}
-                className="text-gray-400 hover:text-gray-600"
+                className="text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-full p-1 transition-colors"
               >
                 <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -711,33 +771,62 @@ function MedicionDetailModal({ medicion, onClose }: MedicionDetailModalProps) {
               </button>
             </div>
             
-            <div className="max-h-96 overflow-y-auto">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {Object.entries(medicion.datos).map(([key, value]) => {
-                  // Saltear campos internos de Firebase
-                  if (key.startsWith('_') || key === 'fechaCreacion') return null;
-                  
-                  return (
-                    <div key={key} className="border-b border-gray-200 pb-2">
-                      <p className="text-sm font-medium text-gray-600">{key}</p>
-                      <p className="mt-1 text-sm text-gray-900">
-                        {value !== null && value !== undefined ? String(value) : 'No especificado'}
-                      </p>
-                    </div>
-                  );
-                })}
+            {filteredData.length === 0 ? (
+              <div className="text-center py-12">
+                <div className="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-gray-100 mb-4">
+                  <svg className="h-6 w-6 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                  </svg>
+                </div>
+                <p className="text-gray-500 font-medium">No hay información disponible para mostrar.</p>
               </div>
-            </div>
+            ) : (
+              <div className="max-h-[60vh] overflow-y-auto pr-2">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {filteredData.map(({ key, value }) => {
+                    const valueStr = value !== null && value !== undefined ? String(value) : 'No especificado';
+                    const isEmpty = !valueStr || valueStr.trim() === '' || valueStr === 'No especificado';
+                    
+                    return (
+                      <div 
+                        key={key} 
+                        className="bg-white rounded-lg border border-gray-200 p-4 hover:shadow-md transition-shadow"
+                      >
+                        <div className="flex items-start gap-3">
+                          <div className="flex-shrink-0 mt-0.5">
+                            <div className="h-8 w-8 rounded-lg bg-gray-100 flex items-center justify-center">
+                              <svg className="h-4 w-4 text-gray-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                              </svg>
+                            </div>
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1">
+                              {key}
+                            </p>
+                            <p className={`text-base font-medium ${isEmpty ? 'text-gray-400 italic' : 'text-gray-900'}`}>
+                              {valueStr}
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
           </div>
           
-          <div className="bg-gray-50 px-4 py-3 sm:px-6 sm:flex sm:flex-row-reverse">
-            <button
-              type="button"
-              onClick={onClose}
-              className="w-full inline-flex justify-center rounded-md border border-gray-300 shadow-sm px-4 py-2 bg-white text-base font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 sm:mt-0 sm:w-auto sm:text-sm"
-            >
-              Cerrar
-            </button>
+          <div className="bg-gray-50 px-4 py-4 sm:px-8 sm:py-5 border-t border-gray-200">
+            <div className="flex justify-end">
+              <button
+                type="button"
+                onClick={onClose}
+                className="inline-flex items-center justify-center rounded-lg border border-transparent shadow-sm px-6 py-2.5 bg-gray-700 text-base font-medium text-white hover:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500 transition-colors"
+              >
+                Cerrar
+              </button>
+            </div>
           </div>
         </div>
       </div>

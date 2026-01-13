@@ -419,13 +419,7 @@ export default function OneDriveFolders({ empresaId, sucursalId, sucursalNombre,
               </button>
             )}
           </div>
-          <p className="text-sm text-gray-500 mt-1">
-            {filterByEmpresa && empresaNombre
-              ? `Sucursales  de ${empresaNombre}`
-              : filterBySucursal && sucursalNombre 
-              ? `Carpetas relacionadas con ${sucursalNombre}` 
-              : 'Carpetas disponibles en el nivel raíz'}
-          </p>
+         
           {folderHistory.length > 0 && (
             <div className="flex items-center space-x-1 mt-1">
               <span className="text-xs text-gray-400">Ubicación actual:</span>

@@ -1,10 +1,10 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useEmpresas, Empresa } from '@/hooks/useEmpresas';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { collection, getDocs, addDoc } from 'firebase/firestore';
+import { collection, getDocs, addDoc, collectionGroup } from 'firebase/firestore';
 import { firestore } from '@/lib/firebase';
 import { useAuth } from '@/contexts/AuthContext';
 import { ref, get } from 'firebase/database';
@@ -58,6 +58,10 @@ export default function EmpresasPage() {
   const [empresasAMostrar, setEmpresasAMostrar] = useState<Empresa[]>([]);
   const { sucursalesCounts: sucursalesPorEmpresa, loading: loadingSucursales, totalSucursales } = useSucursalesCount();
   const { medicionesCounts, incumplimientosCounts, loading: loadingMediciones } = useMedicionesCounts();
+  const [showDetailModal, setShowDetailModal] = useState(false);
+  const [selectedStudyType, setSelectedStudyType] = useState<'pat' | 'iluminacion' | 'ruido' | null>(null);
+  const [studyCountsByEmpresa, setStudyCountsByEmpresa] = useState<Record<string, number>>({});
+  const [loadingStudyDetails, setLoadingStudyDetails] = useState(false);
 
   // Verificar rol del usuario y redirigir si es necesario
   useEffect(() => {
@@ -138,6 +142,55 @@ export default function EmpresasPage() {
     empresa.nombre.toLowerCase().includes(search.toLowerCase()) ||
     (empresa.email && empresa.email.toLowerCase().includes(search.toLowerCase()))
   );
+
+  // Función para obtener conteos por empresa para un tipo de estudio
+  const fetchStudyCountsByEmpresa = async (studyType: 'pat' | 'iluminacion' | 'ruido') => {
+    setLoadingStudyDetails(true);
+    try {
+      const medicionesQuery = collectionGroup(firestore, 'mediciones');
+      const medicionesSnapshot = await getDocs(medicionesQuery);
+      
+      const countsByEmpresa: Record<string, number> = {};
+      
+      medicionesSnapshot.forEach((doc) => {
+        const datos = doc.data() as Record<string, unknown>;
+        const getValue = (k: string) => String((datos[k] ?? '') as unknown);
+        
+        // Obtener el CLIENTE (empresaId) de la medición
+        const clienteId = getValue('CLIENTE');
+        if (!clienteId) return;
+        
+        let studyValue = '';
+        if (studyType === 'pat') {
+          studyValue = getValue('PAT');
+        } else if (studyType === 'iluminacion') {
+          studyValue = getValue('ILUMINACIÓN');
+        } else if (studyType === 'ruido') {
+          studyValue = getValue('RUIDO');
+        }
+        
+        // Contar solo los que NO están en nube (pendiente, pedir a tec, procesar)
+        if (studyValue === 'PENDIENTE' || studyValue === 'PEDIR A TEC' || studyValue === 'PROCESAR') {
+          if (!countsByEmpresa[clienteId]) {
+            countsByEmpresa[clienteId] = 0;
+          }
+          countsByEmpresa[clienteId] += 1;
+        }
+      });
+      
+      setStudyCountsByEmpresa(countsByEmpresa);
+    } catch (error) {
+      console.error('Error al obtener conteos por empresa:', error);
+    } finally {
+      setLoadingStudyDetails(false);
+    }
+  };
+
+  const handleCardClick = (studyType: 'pat' | 'iluminacion' | 'ruido') => {
+    setSelectedStudyType(studyType);
+    setShowDetailModal(true);
+    fetchStudyCountsByEmpresa(studyType);
+  };
 
   // Función para crear una empresa de prueba
   const _crearEmpresaPrueba = async () => {
@@ -232,7 +285,10 @@ export default function EmpresasPage() {
           </div>
         </div>
 
-        <div className="bg-gradient-to-b from-stone-900 to-gray-700 rounded-2xl sm:rounded-3xl p-4 sm:p-6 text-white border border-gray-800 shadow-sm">
+        <div 
+          className="bg-gradient-to-b from-stone-900 to-gray-700 rounded-2xl sm:rounded-3xl p-4 sm:p-6 text-white border border-gray-800 shadow-sm cursor-pointer hover:opacity-90 transition-opacity"
+          onClick={() => handleCardClick('pat')}
+        >
           <div className="flex items-center justify-between">
             <div className="flex-1 min-w-0">
               <p className="text-gray-300 text-xs sm:text-sm truncate">Pendientes de Entrega PAT</p>
@@ -252,7 +308,10 @@ export default function EmpresasPage() {
           </div>
         </div>
 
-        <div className="bg-gradient-to-b from-stone-900 to-gray-700 rounded-2xl sm:rounded-3xl p-4 sm:p-6 text-white border border-gray-800 shadow-sm">
+        <div 
+          className="bg-gradient-to-b from-stone-900 to-gray-700 rounded-2xl sm:rounded-3xl p-4 sm:p-6 text-white border border-gray-800 shadow-sm cursor-pointer hover:opacity-90 transition-opacity"
+          onClick={() => handleCardClick('iluminacion')}
+        >
           <div className="flex items-center justify-between">
             <div className="flex-1 min-w-0">
               <p className="text-gray-300 text-xs sm:text-sm truncate">Pendientes de Entrega Iluminación</p>
@@ -272,7 +331,10 @@ export default function EmpresasPage() {
           </div>
         </div>
 
-        <div className="bg-gradient-to-b from-stone-900 to-gray-700 rounded-2xl sm:rounded-3xl p-4 sm:p-6 text-white border border-gray-800 shadow-sm">
+        <div 
+          className="bg-gradient-to-b from-stone-900 to-gray-700 rounded-2xl sm:rounded-3xl p-4 sm:p-6 text-white border border-gray-800 shadow-sm cursor-pointer hover:opacity-90 transition-opacity"
+          onClick={() => handleCardClick('ruido')}
+        >
           <div className="flex items-center justify-between">
             <div className="flex-1 min-w-0">
               <p className="text-gray-300 text-xs sm:text-sm truncate">Pendientes de Entrega Ruido</p>
@@ -594,6 +656,111 @@ export default function EmpresasPage() {
           }}
         />
       )}
+
+      {/* Modal de detalle por empresa */}
+      {showDetailModal && selectedStudyType && (
+        <StudyDetailModal
+          studyType={selectedStudyType}
+          countsByEmpresa={studyCountsByEmpresa}
+          empresas={empresas}
+          loading={loadingStudyDetails}
+          onClose={() => {
+            setShowDetailModal(false);
+            setSelectedStudyType(null);
+            setStudyCountsByEmpresa({});
+          }}
+        />
+      )}
+    </div>
+  );
+}
+
+interface StudyDetailModalProps {
+  studyType: 'pat' | 'iluminacion' | 'ruido';
+  countsByEmpresa: Record<string, number>;
+  empresas: Empresa[];
+  loading: boolean;
+  onClose: () => void;
+}
+
+function StudyDetailModal({ studyType, countsByEmpresa, empresas, loading, onClose }: StudyDetailModalProps) {
+  const studyNames = {
+    pat: 'PAT',
+    iluminacion: 'Iluminación',
+    ruido: 'Ruido'
+  };
+
+  // Crear array de empresas con sus conteos, ordenado por nombre
+  const empresasWithCounts = useMemo(() => {
+    return empresas
+      .map(empresa => ({
+        empresa,
+        count: countsByEmpresa[empresa.id] || 0
+      }))
+      .filter(item => item.count > 0) // Solo mostrar empresas con conteo > 0
+      .sort((a, b) => b.count - a.count); // Ordenar por conteo descendente
+  }, [empresas, countsByEmpresa]);
+
+  return (
+    <div className="fixed z-50 inset-0 overflow-y-auto">
+      <div className="flex items-center justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
+        <div className="fixed inset-0 transition-opacity z-40" aria-hidden="true">
+          <div className="absolute inset-0 bg-gray-500 opacity-75" onClick={onClose}></div>
+        </div>
+        <span className="hidden sm:inline-block sm:align-middle sm:h-screen" aria-hidden="true">&#8203;</span>
+        <div className="relative z-50 inline-block align-bottom bg-white rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full">
+          <div className="bg-white px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-medium text-gray-900">
+                {studyNames[studyType]}
+              </h3>
+              <button
+                onClick={onClose}
+                className="text-gray-400 hover:text-gray-500"
+              >
+                <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+            
+            {loading ? (
+              <div className="py-8">
+                <div className="animate-pulse space-y-4">
+                  <div className="h-4 bg-gray-200 rounded w-3/4"></div>
+                  <div className="h-4 bg-gray-200 rounded w-1/2"></div>
+                  <div className="h-4 bg-gray-200 rounded w-5/6"></div>
+                </div>
+              </div>
+            ) : empresasWithCounts.length === 0 ? (
+              <div className="py-8 text-center text-gray-500">
+                <p>No hay estudios pendientes de entrega para este tipo.</p>
+              </div>
+            ) : (
+              <div className="space-y-3">
+                {empresasWithCounts.map(({ empresa, count }) => (
+                  <div
+                    key={empresa.id}
+                    className="flex items-center justify-between py-2 border-b border-gray-200 last:border-b-0"
+                  >
+                    <span className="text-base font-medium text-gray-900">{empresa.nombre}</span>
+                    <span className="text-lg font-bold text-gray-700">{count}</span>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+          <div className="bg-gray-50 px-4 py-3 sm:px-6 sm:flex sm:flex-row-reverse">
+            <button
+              type="button"
+              onClick={onClose}
+              className="w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-gray-600 text-base font-medium text-white hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500 sm:ml-3 sm:w-auto sm:text-sm"
+            >
+              Cerrar
+            </button>
+          </div>
+        </div>
+      </div>
     </div>
   );
 }

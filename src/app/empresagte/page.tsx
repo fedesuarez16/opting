@@ -26,6 +26,9 @@ export default function EmpresaGerentePage() {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isDesktopSidebarCollapsed, setIsDesktopSidebarCollapsed] = useState(false);
   const [showExtintoresModal, setShowExtintoresModal] = useState(false);
+  const [showIncumplimientoModal, setShowIncumplimientoModal] = useState(false);
+  const [selectedIncumplimientoType, setSelectedIncumplimientoType] = useState<'pat' | 'iluminacion' | 'ruido' | null>(null);
+  const [sucursalesConIncumplimiento, setSucursalesConIncumplimiento] = useState<Array<{ sucursalId: string; sucursalNombre: string }>>([]);
   
   const { empresas } = useEmpresas();
   const empresa = empresas.find(e => e.id === empresaIdFromUser);
@@ -115,6 +118,14 @@ export default function EmpresaGerentePage() {
       termografia: {
         cumple: 0,
         noCumple: 0
+      },
+      cargaTermica: {
+        cumple: 0,
+        noCumple: 0
+      },
+      informePruebaDinamicaDisyuntores: {
+        cumple: 0,
+        noCumple: 0
       }
     };
 
@@ -138,9 +149,19 @@ export default function EmpresaGerentePage() {
       else if (incumplimientoRUIDO === 'NO CUMPLE') counts.ruido.noCumple += 1;
       
       // INCUMPLIMIENTOS TERMOGRAFÍA
-      const incumplimientoTERMO = getValue('INCUMPLIMIENTOS TERMOGRAFÍA') || getValue('INCUMPLIMIENTO TERMOGRAFIA');
+      const incumplimientoTERMO = getValue('INCUMPLIMIENTOS TERMOGRAFÍA') || getValue('INCUMPLIMIENTOS TERMOGRAFÍA');
       if (incumplimientoTERMO === 'CUMPLE') counts.termografia.cumple += 1;
       else if (incumplimientoTERMO === 'NO CUMPLE') counts.termografia.noCumple += 1;
+      
+      // INCUMPLIMIENTO CARGA TÉRMICA
+      const incumplimientoCARGA = getValue('INCUMPLIMIENTO CARGA TERMICA') || getValue('INCUMPLIENTO CARGA TERMICA');
+      if (incumplimientoCARGA === 'CUMPLE') counts.cargaTermica.cumple += 1;
+      else if (incumplimientoCARGA === 'NO CUMPLE') counts.cargaTermica.noCumple += 1;
+      
+      // INFORME PRUEBA DINAMICA DISYUNTORES
+      const incumplimientoPRUEBA = getValue('INCUMPLIMIENTO INFORME PRUEBA DINAMICA DISYUNTORES') || getValue('INCUMPLIMIENTO PRUEBA DINAMICA DISYUNTORES');
+      if (incumplimientoPRUEBA === 'CUMPLE') counts.informePruebaDinamicaDisyuntores.cumple += 1;
+      else if (incumplimientoPRUEBA === 'NO CUMPLE') counts.informePruebaDinamicaDisyuntores.noCumple += 1;
     });
 
     return counts;
@@ -292,6 +313,46 @@ export default function EmpresaGerentePage() {
     return sucursalesConExtintoresVencen;
   }, [mediciones, sucursales]);
 
+  // Función para obtener sucursales con incumplimientos
+  const getSucursalesConIncumplimiento = (type: 'pat' | 'iluminacion' | 'ruido') => {
+    const sucursalesSet = new Set<string>();
+    
+    mediciones.forEach((m) => {
+      const datos = m.datos as Record<string, unknown>;
+      const getValue = (k: string) => String((datos[k] ?? '') as any);
+      
+      let incumplimientoValue = '';
+      if (type === 'pat') {
+        incumplimientoValue = getValue('INCUMPLIMIENTO PAT');
+      } else if (type === 'iluminacion') {
+        incumplimientoValue = getValue('INCUMPLIMIENTO ILUM');
+      } else if (type === 'ruido') {
+        incumplimientoValue = getValue('INCUMPLIMIENTO RUIDO');
+      }
+      
+      if (incumplimientoValue === 'NO CUMPLE' && m.sucursalId) {
+        sucursalesSet.add(m.sucursalId);
+      }
+    });
+    
+    const sucursalesList = Array.from(sucursalesSet).map(sucursalId => {
+      const sucursal = sucursales.find(s => s.id === sucursalId);
+      return {
+        sucursalId,
+        sucursalNombre: sucursal?.nombre || sucursalId
+      };
+    });
+    
+    return sucursalesList;
+  };
+
+  const handleIncumplimientoCardClick = (type: 'pat' | 'iluminacion' | 'ruido') => {
+    setSelectedIncumplimientoType(type);
+    const sucursalesList = getSucursalesConIncumplimiento(type);
+    setSucursalesConIncumplimiento(sucursalesList);
+    setShowIncumplimientoModal(true);
+  };
+
   if (authLoading || loading) {
     return (
       <div className="flex items-center justify-center h-screen">
@@ -312,7 +373,7 @@ export default function EmpresaGerentePage() {
   }
 
   return (
-    <div className="h-screen flex overflow-hidden bg-gray-100">
+    <div className="min-h-screen md:h-screen flex flex-col md:flex-row md:overflow-hidden bg-gray-100">
       {/* Desktop Sidebar */}
       <div className={`hidden md:flex md:flex-shrink-0 transition-all duration-300 ${isDesktopSidebarCollapsed ? 'w-20' : 'w-52'}`}>
         <div className="flex flex-col w-full">
@@ -324,21 +385,15 @@ export default function EmpresaGerentePage() {
       </div>
 
       {/* Mobile menu */}
-      <div className="md:hidden">
-        <div className="fixed inset-0 flex z-40">
+      {isMobileMenuOpen && (
+        <div className="md:hidden fixed inset-0 z-50 flex">
           <div
-            className={`fixed inset-0 bg-gray-600 bg-opacity-75 transition-opacity ease-linear duration-300 ${
-              isMobileMenuOpen ? 'opacity-100' : 'opacity-0 pointer-events-none'
-            }`}
+            className="fixed inset-0 bg-gray-600 bg-opacity-75 transition-opacity ease-linear duration-300"
             onClick={() => setIsMobileMenuOpen(false)}
           ></div>
 
-          <div
-            className={`relative flex-1 flex flex-col max-w-xs w-full bg-white transform transition ease-in-out duration-300 ${
-              isMobileMenuOpen ? 'translate-x-0' : '-translate-x-full'
-            }`}
-          >
-            <div className="absolute top-0 right-0 -mr-12 pt-2">
+          <div className="relative flex flex-col max-w-xs w-full h-full bg-white transform transition ease-in-out duration-300 translate-x-0">
+            <div className="absolute top-0 right-0 -mr-12 pt-2 z-10">
               <button
                 className="ml-1 flex items-center justify-center h-10 w-10 rounded-full focus:outline-none focus:ring-2 focus:ring-inset focus:ring-white"
                 onClick={() => setIsMobileMenuOpen(false)}
@@ -351,10 +406,10 @@ export default function EmpresaGerentePage() {
             <Sidebar isMobile onCloseMobileMenu={() => setIsMobileMenuOpen(false)} />
           </div>
         </div>
-      </div>
+      )}
 
       {/* Main content area */}
-      <div className="flex flex-col flex-1 overflow-hidden">
+      <div className="flex flex-col flex-1 md:overflow-hidden min-w-0">
         {/* Top bar */}
         <div className="w-full bg-white border-b border-gray-200 px-4 py-3 flex items-center justify-between">
           <div className="flex items-center space-x-4">
@@ -394,7 +449,7 @@ export default function EmpresaGerentePage() {
 
         {/* Main content */}
         <main className="flex-1 relative z-0 overflow-y-auto focus:outline-none">
-          <div className='p-8 bg-white min-h-full'>
+          <div className='p-4 sm:p-6 lg:p-8 bg-white min-h-full'>
             <div className='mb-4'>
               <h3 className="text-2xl font-semibold text-gray-900">
                 Dashboard - {empresaAsignadaNombre}
@@ -429,7 +484,10 @@ export default function EmpresaGerentePage() {
                   </div>
                 </div>
               </div>
-              <div className="bg-gradient-to-b from-black to-gray-700 rounded-3xl p-6 text-white border border-gray-800 shadow-sm">
+              <div 
+                className="bg-gradient-to-b from-black to-gray-700 rounded-3xl p-6 text-white border border-gray-800 shadow-sm cursor-pointer hover:opacity-90 transition-opacity"
+                onClick={() => handleIncumplimientoCardClick('pat')}
+              >
                 <div className="flex items-center justify-between">
                   <div>
                     <p className="text-gray-300 text-sm">Incumplimientos PAT</p>
@@ -449,7 +507,10 @@ export default function EmpresaGerentePage() {
                 </div>
               </div>
 
-              <div className="bg-gradient-to-b from-black to-gray-700  rounded-3xl p-6 text-white border border-gray-800 shadow-sm">
+              <div 
+                className="bg-gradient-to-b from-black to-gray-700  rounded-3xl p-6 text-white border border-gray-800 shadow-sm cursor-pointer hover:opacity-90 transition-opacity"
+                onClick={() => handleIncumplimientoCardClick('iluminacion')}
+              >
                 <div className="flex items-center justify-between">
                   <div>
                     <p className="text-gray-300 text-sm">Incumplimientos Iluminación</p>
@@ -469,7 +530,10 @@ export default function EmpresaGerentePage() {
                 </div>
               </div>
 
-              <div className="bg-gradient-to-b from-black to-gray-700  rounded-3xl p-6 text-white border border-gray-800 shadow-sm">
+              <div 
+                className="bg-gradient-to-b from-black to-gray-700  rounded-3xl p-6 text-white border border-gray-800 shadow-sm cursor-pointer hover:opacity-90 transition-opacity"
+                onClick={() => handleIncumplimientoCardClick('ruido')}
+              >
                 <div className="flex items-center justify-between">
                   <div>
                     <p className="text-gray-300 text-sm">Incumplimientos Ruido</p>
@@ -526,24 +590,34 @@ export default function EmpresaGerentePage() {
                   (() => {
                     const chartData = [
                       {
-                        name: "INCUMPLIMIENTO PAT",
+                        name: "INC. PAT",
                         "CUMPLE": incumplimientosCountsForChart.pat.cumple,
                         "NO CUMPLE": incumplimientosCountsForChart.pat.noCumple
                       },
                       {
-                        name: "INCUMPLIMIENTO ILUM",
+                        name: "INC. ILUM",
                         "CUMPLE": incumplimientosCountsForChart.iluminacion.cumple,
                         "NO CUMPLE": incumplimientosCountsForChart.iluminacion.noCumple
                       },
                       {
-                        name: "INCUMPLIMIENTO RUIDO",
+                        name: "INC. RUIDO",
                         "CUMPLE": incumplimientosCountsForChart.ruido.cumple,
                         "NO CUMPLE": incumplimientosCountsForChart.ruido.noCumple
                       },
                       {
-                        name: "INCUMPLIMIENTOS TERMOGRAFÍA",
+                        name: "INC. TERMOG.",
                         "CUMPLE": incumplimientosCountsForChart.termografia.cumple,
                         "NO CUMPLE": incumplimientosCountsForChart.termografia.noCumple
+                      },
+                      {
+                        name: "CARGA TÉRMICA",
+                        "CUMPLE": incumplimientosCountsForChart.cargaTermica.cumple,
+                        "NO CUMPLE": incumplimientosCountsForChart.cargaTermica.noCumple
+                      },
+                      {
+                        name: "INF. PRUEBA DISYUNTORES",
+                        "CUMPLE": incumplimientosCountsForChart.informePruebaDinamicaDisyuntores.cumple,
+                        "NO CUMPLE": incumplimientosCountsForChart.informePruebaDinamicaDisyuntores.noCumple
                       }
                     ];
 
@@ -569,7 +643,7 @@ export default function EmpresaGerentePage() {
                                 tickLine={false}
                                 tickMargin={10}
                                 axisLine={false}
-                                tick={{ fontSize: 12 }}
+                                tick={{ fontSize: 8 }}
                                 angle={-45}
                                 textAnchor="end"
                                 height={80}
@@ -584,8 +658,8 @@ export default function EmpresaGerentePage() {
                                 cursor={false}
                                 content={<ChartTooltipContent />}
                               />
-                              <Bar dataKey="CUMPLE" fill="rgba(34, 197, 94, 0.67)" radius={4} />
-                              <Bar dataKey="NO CUMPLE" fill="rgba(239, 68, 68, 0.67)" radius={4} />
+                              <Bar dataKey="CUMPLE" fill="rgb(34, 197, 94)" radius={4} />
+                              <Bar dataKey="NO CUMPLE" fill="rgba(239, 68, 68, 0.97)" radius={4} />
                             </BarChart>
                           </ChartContainer>
                         </div>
@@ -608,11 +682,11 @@ export default function EmpresaGerentePage() {
       {showExtintoresModal && (
         <div className="fixed z-50 inset-0 overflow-y-auto">
           <div className="flex items-center justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
-            <div className="fixed inset-0 transition-opacity" aria-hidden="true">
+            <div className="fixed inset-0 transition-opacity z-40" aria-hidden="true">
               <div className="absolute inset-0 bg-gray-500 opacity-75" onClick={() => setShowExtintoresModal(false)}></div>
             </div>
             <span className="hidden sm:inline-block sm:align-middle sm:h-screen" aria-hidden="true">&#8203;</span>
-            <div className="inline-block align-bottom bg-white rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-2xl sm:w-full">
+            <div className="relative z-50 inline-block align-bottom bg-white rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-2xl sm:w-full">
               <div className="bg-white px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
                 <div className="flex items-center justify-between mb-4">
                   <h3 className="text-lg font-medium text-gray-900">
@@ -661,6 +735,82 @@ export default function EmpresaGerentePage() {
                 <button
                   type="button"
                   onClick={() => setShowExtintoresModal(false)}
+                  className="w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-gray-600 text-base font-medium text-white hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500 sm:ml-3 sm:w-auto sm:text-sm"
+                >
+                  Cerrar
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal de incumplimientos por sucursal */}
+      {showIncumplimientoModal && selectedIncumplimientoType && (
+        <div className="fixed z-50 inset-0 overflow-y-auto">
+          <div className="flex items-center justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
+            <div className="fixed inset-0 transition-opacity z-40" aria-hidden="true">
+              <div className="absolute inset-0 bg-gray-500 opacity-75" onClick={() => {
+                setShowIncumplimientoModal(false);
+                setSelectedIncumplimientoType(null);
+                setSucursalesConIncumplimiento([]);
+              }}></div>
+            </div>
+            <span className="hidden sm:inline-block sm:align-middle sm:h-screen" aria-hidden="true">&#8203;</span>
+            <div className="relative z-50 inline-block align-bottom bg-white rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-2xl sm:w-full">
+              <div className="bg-white px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="text-lg font-medium text-gray-900">
+                    Incumplimientos {selectedIncumplimientoType === 'pat' ? 'PAT' : selectedIncumplimientoType === 'iluminacion' ? 'Iluminación' : 'Ruido'}
+                  </h3>
+                  <button
+                    onClick={() => {
+                      setShowIncumplimientoModal(false);
+                      setSelectedIncumplimientoType(null);
+                      setSucursalesConIncumplimiento([]);
+                    }}
+                    className="text-gray-400 hover:text-gray-500"
+                  >
+                    <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                  </button>
+                </div>
+                
+                {sucursalesConIncumplimiento.length === 0 ? (
+                  <div className="text-center py-8">
+                    <p className="text-gray-500">No hay sucursales con incumplimientos de este tipo.</p>
+                  </div>
+                ) : (
+                  <div className="space-y-3 max-h-96 overflow-y-auto">
+                    {sucursalesConIncumplimiento.map((item) => (
+                      <div
+                        key={item.sucursalId}
+                        className="border border-gray-200 rounded-lg p-4 hover:bg-gray-50 transition-colors"
+                      >
+                        <div className="flex items-center justify-between">
+                          <div>
+                            <p className="font-medium text-gray-900">{item.sucursalNombre}</p>
+                          </div>
+                          <div className="text-red-500">
+                            <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                            </svg>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+              <div className="bg-gray-50 px-4 py-3 sm:px-6 sm:flex sm:flex-row-reverse">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowIncumplimientoModal(false);
+                    setSelectedIncumplimientoType(null);
+                    setSucursalesConIncumplimiento([]);
+                  }}
                   className="w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-gray-600 text-base font-medium text-white hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500 sm:ml-3 sm:w-auto sm:text-sm"
                 >
                   Cerrar

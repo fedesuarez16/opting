@@ -196,7 +196,7 @@ export default function SucursalOneDriveFiles({ empresaId, sucursalId }: Sucursa
       <div className="bg-white rounded-2xl p-6 border border-gray-200 shadow-sm mb-6">
         <div className="flex items-center justify-center h-32">
           <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-500"></div>
-          <span className="ml-2 text-gray-600">Cargando archivos de OneDrive...</span>
+          <span className="ml-2 text-gray-600">Cargando archivos...</span>
         </div>
       </div>
     );
@@ -231,7 +231,7 @@ export default function SucursalOneDriveFiles({ empresaId, sucursalId }: Sucursa
       <div className="flex items-center justify-between mb-6">
         <div>
           <div className="flex items-center space-x-2 mb-2">
-            <h3 className="text-lg font-medium text-gray-900">Archivos de sucursal</h3>
+            <h3 className="text-lg font-medium text-gray-900">Documentacion de sucursal</h3>
             {folderHistory.length > 0 && (
               <button
                 onClick={navigateBack}
@@ -247,11 +247,7 @@ export default function SucursalOneDriveFiles({ empresaId, sucursalId }: Sucursa
               {empresaNombre} - {sucursalId}
             </p>
           )}
-          {folderPath && (
-            <p className="text-xs text-gray-400 mt-1">
-              Ruta: {folderPath}
-            </p>
-          )}
+          
           {folderHistory.length > 0 && (
             <div className="flex items-center space-x-1 mt-1">
               <span className="text-xs text-gray-400">Ubicación actual:</span>
