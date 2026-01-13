@@ -391,7 +391,7 @@ export default function SucursalDetailPage({ params }: SucursalDetailPageProps) 
                           tickLine={false}
                           tickMargin={10}
                           axisLine={false}
-                          tick={{ fontSize: 12 }}
+                          tick={{ fontSize: 8 }}
                           angle={-45}
                           textAnchor="end"
                           height={80}
@@ -692,6 +692,7 @@ interface MedicionDetailModalProps {
 function MedicionDetailModal({ medicion, onClose }: MedicionDetailModalProps) {
   // Campos permitidos a mostrar
   const allowedFields = [
+    'INCUMPLIMIENTO PAT',
     'INCUMPLIMIENTO ILUM',
     'INCUMPLIMIENTO CARGA TERMICA',
     'INCUMPLIMIENTO CARGA TÉRMICA',
@@ -732,6 +733,8 @@ function MedicionDetailModal({ medicion, onClose }: MedicionDetailModalProps) {
         displayKey = 'Fechas de Medición';
       } else if (keyUpper === 'FECHA EXTINTORES' || keyUpper.includes('FECHA EXTINTORES')) {
         displayKey = 'Fecha Extintores';
+      } else if (keyUpper === 'INCUMPLIMIENTO PAT' || keyUpper.includes('INCUMPLIMIENTO PAT')) {
+        displayKey = 'Incumplimiento PAT';
       } else if (keyUpper === 'INCUMPLIMIENTO ILUM' || keyUpper.includes('INCUMPLIMIENTO ILUM')) {
         displayKey = 'Incumplimiento Iluminación';
       } else if (keyUpper.includes('INCUMPLIMIENTO CARGA') || keyUpper.includes('INCUMPLIENTO CARGA')) {
