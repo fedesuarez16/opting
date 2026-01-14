@@ -189,6 +189,30 @@ export default function Sidebar({ isMobile = false, onCloseMobileMenu, collapsed
             </Link>
           )}
 
+          {/* Enlace de Servicios - solo visible para admin */}
+          {userRole === 'admin' && (
+            <Link
+              href="/dashboard/servicios"
+              className={`group flex items-center px-3 py-2.5 text-sm font-medium rounded-lg transition-all duration-200 ${
+                pathname === '/dashboard/servicios' 
+                  ? 'bg-gray-900 text-white shadow-sm' 
+                  : 'text-gray-700 hover:bg-gray-50 hover:text-gray-900'
+              } ${collapsed ? 'justify-center px-2' : ''}`}
+              onClick={isMobile ? onCloseMobileMenu : undefined}
+              title="Servicios"
+            >
+              <span className={`${collapsed ? '' : 'mr-3'} h-5 w-5 flex-shrink-0 transition-colors duration-200 ${
+                pathname === '/dashboard/servicios' ? 'text-white' : 'text-gray-500 group-hover:text-gray-700'
+              }`}>
+                {/* Servicios icon */}
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-full h-full">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M21 7.5l-9-5.25L3 7.5m18 0l-9 5.25m9-5.25v9l-9 5.25M3 7.5l9 5.25M3 7.5v9l9 5.25m0-9v9" />
+                </svg>
+              </span>
+              {!collapsed && <span className="truncate">Servicios</span>}
+            </Link>
+          )}
+
           {/* Enlace de Usuarios - solo visible para admin */}
           {userRole === 'admin' && (
             <Link

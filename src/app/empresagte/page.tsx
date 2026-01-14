@@ -31,7 +31,7 @@ export default function EmpresaGerentePage() {
   const [showExtintoresModal, setShowExtintoresModal] = useState(false);
   const [showIncumplimientoModal, setShowIncumplimientoModal] = useState(false);
   const [selectedIncumplimientoType, setSelectedIncumplimientoType] = useState<'pat' | 'iluminacion' | 'ruido' | null>(null);
-  const [sucursalesConIncumplimiento, setSucursalesConIncumplimiento] = useState<Array<{ sucursalId: string; sucursalNombre: string }>>([]);
+  const [sucursalesConIncumplimiento, setSucursalesConIncumplimiento] = useState<Array<{ empresaId: string; sucursalId: string; sucursalNombre: string }>>([]);
   const [showBlindajeModal, setShowBlindajeModal] = useState(false);
   const [relevamientosConBlindaje, setRelevamientosConBlindaje] = useState<Array<{ empresaId: string; empresaNombre: string; sucursalId: string; sucursalNombre: string; fecha: string }>>([]);
   const [loadingBlindaje, setLoadingBlindaje] = useState(false);
@@ -252,6 +252,31 @@ export default function EmpresaGerentePage() {
     return counts;
   }, [mediciones, empresaId]);
 
+  // Calcular cantidad de sucursales únicas con servicio BLINDAJE LEGAL
+  const sucursalesConBlindajeLegal = useMemo(() => {
+    if (!empresaId) return 0;
+    
+    const sucursalesSet = new Set<string>();
+    
+    mediciones.forEach((m) => {
+      const datos = m.datos as Record<string, unknown>;
+      const getValue = (k: string) => String((datos[k] ?? '') as unknown);
+      
+      const servicio = getValue('SERVICIO') || getValue('servicio');
+      const clienteId = getValue('CLIENTE');
+      
+      // Verificar si contiene "BLINDAJE LEGAL" y pertenece a la empresa asignada
+      if (servicio && servicio.toUpperCase().includes('BLINDAJE LEGAL') && clienteId === empresaId) {
+        const sucursalId = getValue('SUCURSAL');
+        if (sucursalId) {
+          sucursalesSet.add(sucursalId);
+        }
+      }
+    });
+    
+    return sucursalesSet.size;
+  }, [mediciones, empresaId]);
+
   // Calcular extintores que vencen el mes siguiente
   const extintoresVencenMesSiguiente = useMemo(() => {
     const ahora = new Date();
@@ -259,6 +284,7 @@ export default function EmpresaGerentePage() {
     const finMesSiguiente = new Date(ahora.getFullYear(), ahora.getMonth() + 2, 0);
     
     const sucursalesConExtintoresVencen: Array<{
+      empresaId: string;
       sucursalId: string;
       sucursalNombre: string;
       fechaVencimiento: string;
@@ -309,6 +335,7 @@ export default function EmpresaGerentePage() {
       if (fechaMasReciente && fechaMasReciente >= mesSiguiente && fechaMasReciente <= finMesSiguiente) {
         const sucursal = sucursales.find(s => s.id === sucursalId);
         sucursalesConExtintoresVencen.push({
+          empresaId: empresaId || '',
           sucursalId,
           sucursalNombre: sucursal?.nombre || sucursalId,
           fechaVencimiento: fechaMasRecienteStr || (fechaMasReciente ? fechaMasReciente.toLocaleDateString('es-AR') : 'N/A')
@@ -344,6 +371,7 @@ export default function EmpresaGerentePage() {
     const sucursalesList = Array.from(sucursalesSet).map(sucursalId => {
       const sucursal = sucursales.find(s => s.id === sucursalId);
       return {
+        empresaId: empresaId || '',
         sucursalId,
         sucursalNombre: sucursal?.nombre || sucursalId
       };
@@ -525,6 +553,30 @@ export default function EmpresaGerentePage() {
 
             {/* Cards de métricas */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-6 mb-8">
+              {/* Card de Total Locales Relevados */}
+              <div 
+                className="bg-gradient-to-b from-black to-gray-700 rounded-3xl p-6 text-white border border-gray-800 shadow-sm cursor-pointer hover:opacity-90 transition-opacity"
+                onClick={handleTotalMedicionesClick}
+              >
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-gray-300 text-sm">Total Locales Relevados</p>
+                    {loadingMediciones ? (
+                      <div className="animate-pulse">
+                        <div className="h-8 bg-gray-300 rounded w-16"></div>
+                      </div>
+                    ) : (
+                      <p className="text-3xl font-bold text-white">{sucursalesConBlindajeLegal}</p>
+                    )}
+                  </div>
+                  <div className="text-gray-400">
+                    <svg className="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
+                    </svg>
+                  </div>
+                </div>
+              </div>
+              
               {/* Nueva tarjeta de extintores que vencen */}
               <div 
                 className="bg-gradient-to-b from-red-900 to-red-700 rounded-3xl p-6 text-white border border-red-800 shadow-sm cursor-pointer hover:shadow-lg transition-shadow"
@@ -617,28 +669,6 @@ export default function EmpresaGerentePage() {
                 </div>
               </div>
 
-              <div 
-                className="bg-gradient-to-b from-black to-gray-700 rounded-3xl p-6 text-white border border-gray-800 shadow-sm cursor-pointer hover:opacity-90 transition-opacity"
-                onClick={handleTotalMedicionesClick}
-              >
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-gray-300 text-sm">Total Mediciones</p>
-                    {loadingMediciones ? (
-                      <div className="animate-pulse">
-                        <div className="h-8 bg-gray-300 rounded w-16"></div>
-                      </div>
-                    ) : (
-                      <p className="text-3xl font-bold text-white">{mediciones.length}</p>
-                    )}
-                  </div>
-                  <div className="text-gray-400">
-                    <svg className="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
-                    </svg>
-                  </div>
-                </div>
-              </div>
             </div>
 
             {/* Gráfico de Estados de Mediciones por Tipo de Estudio */}
@@ -780,17 +810,19 @@ export default function EmpresaGerentePage() {
                         className="border border-gray-200 rounded-lg p-4 hover:bg-gray-50 transition-colors"
                       >
                         <div className="flex items-center justify-between">
-                          <div>
+                          <div className="flex-1">
                             <p className="font-medium text-gray-900">{item.sucursalNombre}</p>
                             <p className="text-sm text-gray-500 mt-1">
                               Fecha de vencimiento: {item.fechaVencimiento}
                             </p>
                           </div>
-                          <div className="text-red-500">
-                            <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 16.5c-.77.833.192 2.5 1.732 2.5z" />
-                            </svg>
-                          </div>
+                          <Link
+                            href={`/dashboard/empresas/${encodeURIComponent(item.empresaId)}/sucursales/${encodeURIComponent(item.sucursalId)}`}
+                            className="ml-4 px-3 py-1.5 text-sm bg-gray-600 text-white rounded-md hover:bg-gray-700 transition-colors flex-shrink-0"
+                            onClick={() => setShowExtintoresModal(false)}
+                          >
+                            Ver detalle
+                          </Link>
                         </div>
                       </div>
                     ))}
@@ -855,14 +887,20 @@ export default function EmpresaGerentePage() {
                         className="border border-gray-200 rounded-lg p-4 hover:bg-gray-50 transition-colors"
                       >
                         <div className="flex items-center justify-between">
-                          <div>
+                          <div className="flex-1">
                             <p className="font-medium text-gray-900">{item.sucursalNombre}</p>
                           </div>
-                          <div className="text-red-500">
-                            <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                            </svg>
-                          </div>
+                          <Link
+                            href={`/dashboard/empresas/${encodeURIComponent(item.empresaId)}/sucursales/${encodeURIComponent(item.sucursalId)}`}
+                            className="ml-4 px-3 py-1.5 text-sm bg-gray-600 text-white rounded-md hover:bg-gray-700 transition-colors flex-shrink-0"
+                            onClick={() => {
+                              setShowIncumplimientoModal(false);
+                              setSelectedIncumplimientoType(null);
+                              setSucursalesConIncumplimiento([]);
+                            }}
+                          >
+                            Ver detalle
+                          </Link>
                         </div>
                       </div>
                     ))}
