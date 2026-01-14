@@ -333,7 +333,6 @@ export default function SucursalDetailPage({ params }: SucursalDetailPageProps) 
         <div className="bg-white rounded-2xl p-6 border border-gray-200 shadow-sm">
           <div className="flex items-center justify-between mb-4">
             <h4 className="text-lg font-medium text-gray-900">Estados de Mediciones por Tipo de Estudio (Cantidad de Mediciones) - {sucursal?.nombre || 'Sucursal'}</h4>
-            <span className="text-xs text-gray-400">Esta sucursal</span>
           </div>
           
           {loadingMediciones ? (

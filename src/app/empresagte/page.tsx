@@ -8,6 +8,9 @@ import { useRouter } from 'next/navigation';
 import { useEmpresas } from '@/hooks/useEmpresas';
 import { useMediciones } from '@/hooks/useMediciones';
 import { useSucursales } from '@/hooks/useSucursales';
+import { collectionGroup, getDocs } from 'firebase/firestore';
+import { firestore } from '@/lib/firebase';
+import Link from 'next/link';
 import { Bar, BarChart, CartesianGrid, XAxis, YAxis } from "recharts";
 import {
   ChartContainer,
@@ -29,6 +32,9 @@ export default function EmpresaGerentePage() {
   const [showIncumplimientoModal, setShowIncumplimientoModal] = useState(false);
   const [selectedIncumplimientoType, setSelectedIncumplimientoType] = useState<'pat' | 'iluminacion' | 'ruido' | null>(null);
   const [sucursalesConIncumplimiento, setSucursalesConIncumplimiento] = useState<Array<{ sucursalId: string; sucursalNombre: string }>>([]);
+  const [showBlindajeModal, setShowBlindajeModal] = useState(false);
+  const [relevamientosConBlindaje, setRelevamientosConBlindaje] = useState<Array<{ empresaId: string; empresaNombre: string; sucursalId: string; sucursalNombre: string; fecha: string }>>([]);
+  const [loadingBlindaje, setLoadingBlindaje] = useState(false);
   
   const { empresas } = useEmpresas();
   const empresa = empresas.find(e => e.id === empresaIdFromUser);
@@ -353,6 +359,64 @@ export default function EmpresaGerentePage() {
     setShowIncumplimientoModal(true);
   };
 
+  // Función para obtener relevamientos con servicio BLINDAJE LEGAL de la empresa asignada
+  const fetchRelevamientosConBlindaje = async () => {
+    if (!empresaId) return;
+    
+    setLoadingBlindaje(true);
+    try {
+      const medicionesQuery = collectionGroup(firestore, 'mediciones');
+      const medicionesSnapshot = await getDocs(medicionesQuery);
+      
+      const relevamientosList: Array<{ empresaId: string; empresaNombre: string; sucursalId: string; sucursalNombre: string; fecha: string }> = [];
+      
+      medicionesSnapshot.forEach((doc) => {
+        const datos = doc.data() as Record<string, unknown>;
+        const getValue = (k: string) => String((datos[k] ?? '') as unknown);
+        
+        // Obtener el servicio y verificar que pertenezca a la empresa asignada
+        const servicio = getValue('SERVICIO') || getValue('servicio');
+        const clienteId = getValue('CLIENTE');
+        
+        // Verificar si contiene "BLINDAJE LEGAL" y pertenece a la empresa asignada
+        if (servicio && servicio.toUpperCase().includes('BLINDAJE LEGAL') && clienteId === empresaId) {
+          const sucursalId = getValue('SUCURSAL');
+          const fecha = getValue('FECHAS DE MEDICIÓN') || getValue('FECHA DE MEDICIÓN') || getValue('fecha') || 'No especificada';
+          
+          if (sucursalId) {
+            const sucursal = sucursales.find(s => s.id === sucursalId);
+            relevamientosList.push({
+              empresaId: empresaId,
+              empresaNombre: empresaAsignadaNombre || empresaId,
+              sucursalId,
+              sucursalNombre: sucursal?.nombre || sucursalId,
+              fecha
+            });
+          }
+        }
+      });
+      
+      // Ordenar por sucursal y fecha
+      relevamientosList.sort((a, b) => {
+        if (a.sucursalNombre !== b.sucursalNombre) {
+          return a.sucursalNombre.localeCompare(b.sucursalNombre);
+        }
+        return b.fecha.localeCompare(a.fecha); // Más reciente primero
+      });
+      
+      setRelevamientosConBlindaje(relevamientosList);
+    } catch (error) {
+      console.error('Error al obtener relevamientos con BLINDAJE LEGAL:', error);
+    } finally {
+      setLoadingBlindaje(false);
+    }
+  };
+
+  const handleTotalMedicionesClick = () => {
+    setShowBlindajeModal(true);
+    fetchRelevamientosConBlindaje();
+  };
+
   if (authLoading || loading) {
     return (
       <div className="flex items-center justify-center h-screen">
@@ -553,7 +617,10 @@ export default function EmpresaGerentePage() {
                 </div>
               </div>
 
-              <div className="bg-gradient-to-b from-black to-gray-700 rounded-3xl p-6 text-white border border-gray-800 shadow-sm">
+              <div 
+                className="bg-gradient-to-b from-black to-gray-700 rounded-3xl p-6 text-white border border-gray-800 shadow-sm cursor-pointer hover:opacity-90 transition-opacity"
+                onClick={handleTotalMedicionesClick}
+              >
                 <div className="flex items-center justify-between">
                   <div>
                     <p className="text-gray-300 text-sm">Total Mediciones</p>
@@ -819,6 +886,109 @@ export default function EmpresaGerentePage() {
           </div>
         </div>
       )}
+
+      {/* Modal de relevamientos con BLINDAJE LEGAL */}
+      {showBlindajeModal && (
+        <BlindajeLegalModal
+          relevamientos={relevamientosConBlindaje}
+          loading={loadingBlindaje}
+          onClose={() => {
+            setShowBlindajeModal(false);
+            setRelevamientosConBlindaje([]);
+          }}
+        />
+      )}
+    </div>
+  );
+}
+
+interface BlindajeLegalModalProps {
+  relevamientos: Array<{ empresaId: string; empresaNombre: string; sucursalId: string; sucursalNombre: string; fecha: string }>;
+  loading: boolean;
+  onClose: () => void;
+}
+
+function BlindajeLegalModal({ relevamientos, loading, onClose }: BlindajeLegalModalProps) {
+  return (
+    <div className="fixed z-50 inset-0 overflow-y-auto">
+      <div className="flex items-center justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
+        <div className="fixed inset-0 transition-opacity z-40" aria-hidden="true">
+          <div className="absolute inset-0 bg-gray-500 opacity-75" onClick={onClose}></div>
+        </div>
+        <span className="hidden sm:inline-block sm:align-middle sm:h-screen" aria-hidden="true">&#8203;</span>
+        <div className="relative z-50 inline-block align-bottom bg-white rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-2xl sm:w-full">
+          <div className="bg-white px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-medium text-gray-900">
+                Relevamientos
+              </h3>
+              <button
+                onClick={onClose}
+                className="text-gray-400 hover:text-gray-500"
+              >
+                <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+            
+            {loading ? (
+              <div className="py-8">
+                <div className="animate-pulse space-y-4">
+                  <div className="h-4 bg-gray-200 rounded w-3/4"></div>
+                  <div className="h-4 bg-gray-200 rounded w-1/2"></div>
+                  <div className="h-4 bg-gray-200 rounded w-5/6"></div>
+                </div>
+              </div>
+            ) : relevamientos.length === 0 ? (
+              <div className="text-center py-8">
+                <p className="text-gray-500">No se encontraron relevamientos con servicio BLINDAJE LEGAL.</p>
+              </div>
+            ) : (
+              <div className="max-h-[60vh] overflow-y-auto">
+                <div className="space-y-3">
+                  {relevamientos.map((relevamiento, index) => (
+                    <div
+                      key={`${relevamiento.empresaId}_${relevamiento.sucursalId}_${index}`}
+                      className="flex flex-col sm:flex-row sm:items-center sm:justify-between py-3 px-4 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors gap-3"
+                    >
+                      <div className="flex-1 min-w-0">
+                        <div className="text-base font-medium text-gray-900 truncate">
+                          {relevamiento.sucursalNombre}
+                        </div>
+                        <div className="text-sm text-gray-500 truncate">
+                          {relevamiento.empresaNombre}
+                        </div>
+                      </div>
+                      <div className="flex-shrink-0">
+                        <div className="text-sm bg-green-100 border border-green-300 opacity-80 w-fit p-2 rounded-md text-center text-white">
+                          <div className="text-sm text-black font-semibold">{relevamiento.fecha}</div>
+                        </div>
+                      </div>
+                      <Link
+                        href={`/dashboard/empresas/${encodeURIComponent(relevamiento.empresaId)}/sucursales/${encodeURIComponent(relevamiento.sucursalId)}`}
+                        className="px-3 py-1.5 text-sm bg-gray-600 text-white rounded-md hover:bg-gray-700 transition-colors flex-shrink-0 text-center sm:text-left"
+                        onClick={onClose}
+                      >
+                        Ver detalle
+                      </Link>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+          <div className="bg-gray-50 px-4 py-3 sm:px-6 sm:flex sm:flex-row-reverse">
+            <button
+              type="button"
+              onClick={onClose}
+              className="w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-gray-600 text-base font-medium text-white hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500 sm:ml-3 sm:w-auto sm:text-sm"
+            >
+              Cerrar
+            </button>
+          </div>
+        </div>
+      </div>
     </div>
   );
 }
