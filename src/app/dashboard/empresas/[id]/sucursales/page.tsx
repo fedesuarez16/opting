@@ -644,7 +644,6 @@ export default function SucursalesPage({ params }: SucursalesPageProps) {
                 : `Incumplimientos por Tipo de Estudio - ${empresa?.nombre || 'Empresa'}`
               }
             </h4>
-            <span className="text-xs text-gray-400">Esta empresa</span>
         </div>
         
           {loadingMediciones ? (

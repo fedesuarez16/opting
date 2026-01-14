@@ -329,24 +329,24 @@ export default function OneDriveFolders({ empresaId, sucursalId, sucursalNombre,
 
   if (loading && items.length === 0) {
     return (
-      <div className="bg-white rounded-2xl p-6 border border-gray-200 shadow-sm mb-6">
-        <div className="flex items-center justify-between mb-6">
-          <div>
-            <div className="h-6 bg-gray-200 rounded w-64 mb-2 animate-pulse"></div>
-            <div className="h-4 bg-gray-200 rounded w-48 animate-pulse"></div>
+      <div className="bg-white rounded-2xl p-4 sm:p-6 border border-gray-200 shadow-sm mb-6">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-4 sm:mb-6 gap-3">
+          <div className="flex-1">
+            <div className="h-5 sm:h-6 bg-gray-200 rounded w-48 sm:w-64 mb-2 animate-pulse"></div>
+            <div className="h-3 sm:h-4 bg-gray-200 rounded w-32 sm:w-48 animate-pulse"></div>
           </div>
-          <div className="h-4 bg-gray-200 rounded w-24 animate-pulse"></div>
+          <div className="h-4 bg-gray-200 rounded w-20 sm:w-24 animate-pulse"></div>
         </div>
         
         {/* Skeleton de barra de búsqueda */}
-        <div className="mb-6">
-          <div className="h-10 bg-gray-200 rounded-lg w-full animate-pulse"></div>
+        <div className="mb-4 sm:mb-6">
+          <div className="h-11 sm:h-10 bg-gray-200 rounded-lg w-full animate-pulse"></div>
         </div>
 
-        {/* Skeleton de tabla */}
-        <div className="rounded-md border border-gray-200 shadow-md">
-          <div className="px-6 py-4 border-b bg-gray-50 border-gray-100">
-            <div className="h-6 bg-gray-200 rounded w-40 animate-pulse"></div>
+        {/* Skeleton de tabla (desktop) */}
+        <div className="hidden sm:block rounded-md border border-gray-200 shadow-md">
+          <div className="px-4 sm:px-6 py-3 sm:py-4 border-b bg-gray-50 border-gray-100">
+            <div className="h-5 sm:h-6 bg-gray-200 rounded w-32 sm:w-40 animate-pulse"></div>
           </div>
           <div className="p-4 space-y-3">
             {[1, 2, 3, 4, 5].map((i) => (
@@ -361,6 +361,21 @@ export default function OneDriveFolders({ empresaId, sucursalId, sucursalNombre,
               </div>
             ))}
           </div>
+        </div>
+
+        {/* Skeleton de cards (mobile) */}
+        <div className="sm:hidden space-y-3">
+          {[1, 2, 3, 4, 5].map((i) => (
+            <div key={i} className="border border-gray-200 rounded-lg p-4">
+              <div className="flex items-start gap-3">
+                <div className="h-12 w-12 bg-gray-200 rounded-lg animate-pulse"></div>
+                <div className="flex-1">
+                  <div className="h-4 bg-gray-200 rounded w-full mb-2 animate-pulse"></div>
+                  <div className="h-3 bg-gray-200 rounded w-24 animate-pulse"></div>
+                </div>
+              </div>
+            </div>
+          ))}
         </div>
       </div>
     );
@@ -398,21 +413,21 @@ export default function OneDriveFolders({ empresaId, sucursalId, sucursalNombre,
       );
 
   return (
-    <div className="bg-white rounded-2xl p-6 border border-gray-200 shadow-sm mb-6">
-      <div className="flex items-center justify-between mb-6">
-        <div>
-          <div className="flex items-center space-x-2 mb-2">
-            <h3 className="text-lg font-medium text-gray-900">
+    <div className="bg-white rounded-2xl p-4 sm:p-6 border border-gray-200 shadow-sm mb-6">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-4 sm:mb-6 gap-3">
+        <div className="flex-1 min-w-0">
+          <div className="flex flex-col sm:flex-row sm:items-center gap-2 mb-2">
+            <h3 className="text-base sm:text-lg font-medium text-gray-900 truncate">
               {filterByEmpresa && empresaNombre 
-                ? `Sucursales de   ${empresaNombre}` 
+                ? `Sucursales de ${empresaNombre}` 
                 : filterBySucursal && sucursalNombre 
-                ? `Sucursales de   - ${sucursalNombre}` 
-                : 'Sucursales de  '}
+                ? `Sucursales - ${sucursalNombre}` 
+                : 'Sucursales'}
             </h3>
             {folderHistory.length > 0 && (
               <button
                 onClick={navigateBack}
-                className="px-2 py-1 text-sm bg-gray-100 text-gray-600 rounded-md hover:bg-gray-200 transition-colors"
+                className="px-3 py-2 text-sm bg-gray-100 text-gray-600 rounded-md hover:bg-gray-200 transition-colors active:bg-gray-300 flex-shrink-0"
                 title="Volver"
               >
                 ← Volver
@@ -421,41 +436,43 @@ export default function OneDriveFolders({ empresaId, sucursalId, sucursalNombre,
           </div>
          
           {folderHistory.length > 0 && (
-            <div className="flex items-center space-x-1 mt-1">
-              <span className="text-xs text-gray-400">Ubicación actual:</span>
-              {folderHistory.map((folder, index) => (
-                <span key={folder.id} className="text-xs text-gray-600">
-                  {folder.name}
-                  {index < folderHistory.length - 1 && <span className="mx-1">/</span>}
-                </span>
-              ))}
+            <div className="flex items-center space-x-1 mt-1 overflow-x-auto pb-1">
+              <span className="text-xs text-gray-400 flex-shrink-0">Ubicación:</span>
+              <div className="flex items-center space-x-1 min-w-0">
+                {folderHistory.map((folder, index) => (
+                  <span key={folder.id} className="text-xs text-gray-600 whitespace-nowrap">
+                    {folder.name}
+                    {index < folderHistory.length - 1 && <span className="mx-1">/</span>}
+                  </span>
+                ))}
+              </div>
             </div>
           )}
         </div>
-        <div className="flex items-center space-x-3">
-          <div className="text-sm text-gray-500">
+        <div className="flex items-center justify-between sm:justify-end gap-3">
+          <div className="text-xs sm:text-sm text-gray-500 whitespace-nowrap">
             {searchTerm.trim() ? (
               <span>
-                {filteredItems.length} de {items.length} elemento{items.length !== 1 ? 's' : ''}
+                {filteredItems.length}/{items.length}
               </span>
             ) : (
               <span>
-                {items.length} elemento{items.length !== 1 ? 's' : ''}
+                {items.length} {items.length !== 1 ? 'items' : 'item'}
               </span>
             )}
           </div>
           <button
             onClick={handleRefresh}
             disabled={loading}
-            className="px-3 py-1 text-sm bg-gray-100 text-gray-600 rounded-md hover:bg-gray-200 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            className="px-3 py-2 text-sm bg-gray-100 text-gray-600 rounded-md hover:bg-gray-200 transition-colors disabled:opacity-50 disabled:cursor-not-allowed active:bg-gray-300 flex-shrink-0"
           >
-            {loading ? 'Cargando...' : 'Actualizar'}
+            {loading ? '...' : '🔄'}
           </button>
         </div>
       </div>
 
       {/* Barra de búsqueda */}
-      <div className="mb-6">
+      <div className="mb-4 sm:mb-6">
         <div className="relative">
           <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
             <svg
@@ -477,13 +494,13 @@ export default function OneDriveFolders({ empresaId, sucursalId, sucursalNombre,
             type="text"
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg leading-5 bg-white placeholder-gray-500 focus:outline-none focus:placeholder-gray-400 focus:ring-1 focus:ring-gray-500 focus:border-gray-500 sm:text-sm"
+            className="block w-full pl-10 pr-10 py-2.5 sm:py-2 text-base sm:text-sm border border-gray-300 rounded-lg leading-5 bg-white placeholder-gray-500 focus:outline-none focus:placeholder-gray-400 focus:ring-2 focus:ring-gray-500 focus:border-gray-500"
             placeholder="Buscar archivos y carpetas..."
           />
           {searchTerm && (
             <button
               onClick={() => setSearchTerm('')}
-              className="absolute inset-y-0 right-0 pr-3 flex items-center"
+              className="absolute inset-y-0 right-0 pr-3 flex items-center active:opacity-70"
               title="Limpiar búsqueda"
             >
               <svg
@@ -588,13 +605,13 @@ export default function OneDriveFolders({ empresaId, sucursalId, sucursalNombre,
         </div>
       ) : filteredItems.length > 0 ? (
         <div className="w-full">
-          <div className="rounded-md border border-gray-200 shadow-md">
-            <div className="px-6 py-4 border-b bg-gray-50 border-gray-100 text-gray-500">
+          {/* Desktop: Tabla */}
+          <div className="hidden sm:block rounded-md border border-gray-200 shadow-md">
+            <div className="px-4 sm:px-6 py-3 sm:py-4 border-b bg-gray-50 border-gray-100 text-gray-500">
               <div className="flex items-center justify-between">
-                <h3 className="text-lg font-semibold">
+                <h3 className="text-base sm:text-lg font-semibold">
                   {currentFolderId || filterByEmpresa ? 'Documentación' : 'Documentación'}
                 </h3>
-
               </div>
             </div>
 
@@ -747,6 +764,126 @@ export default function OneDriveFolders({ empresaId, sucursalId, sucursalNombre,
                 </tbody>
               </table>
             </div>
+          </div>
+
+          {/* Mobile: Cards */}
+          <div className="sm:hidden space-y-3">
+            {filteredItems.map((item) => {
+              const getFileIcon = (fileName: string): string => {
+                const extension = fileName.split('.').pop()?.toLowerCase() || '';
+                switch (extension) {
+                  case 'pdf': return '📄';
+                  case 'doc':
+                  case 'docx': return '📝';
+                  case 'xls':
+                  case 'xlsx': return '📊';
+                  case 'ppt':
+                  case 'pptx': return '📋';
+                  case 'jpg':
+                  case 'jpeg':
+                  case 'png':
+                  case 'gif': return '🖼️';
+                  case 'zip':
+                  case 'rar': return '🗜️';
+                  case 'txt': return '📃';
+                  default: return '📄';
+                }
+              };
+
+              const formatFileSize = (bytes?: number): string => {
+                if (!bytes) return '-';
+                const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+                const i = Math.floor(Math.log(bytes) / Math.log(1024));
+                return Math.round(bytes / Math.pow(1024, i) * 100) / 100 + ' ' + sizes[i];
+              };
+
+              // Verificar si esta carpeta es una sucursal
+              const itemNameLower = item.name.toLowerCase().trim();
+              const isSucursal = filterByEmpresa && empresaId && item.type === 'folder' && sucursales.some(s => {
+                const sucursalNombreLower = s.nombre.toLowerCase().trim();
+                const sucursalIdLower = s.id.toLowerCase().trim();
+                
+                if (sucursalNombreLower === itemNameLower || sucursalIdLower === itemNameLower) {
+                  return true;
+                }
+                
+                if (itemNameLower.includes(sucursalIdLower) || sucursalIdLower.includes(itemNameLower)) {
+                  return true;
+                }
+                
+                if (itemNameLower.startsWith(sucursalIdLower) || sucursalIdLower.startsWith(itemNameLower)) {
+                  return true;
+                }
+                
+                return false;
+              });
+
+              return (
+                <div
+                  key={item.id}
+                  className={`border border-gray-200 rounded-lg p-4 transition-colors ${
+                    item.type === 'folder' 
+                      ? 'bg-white active:bg-gray-50 cursor-pointer'
+                      : 'bg-gray-50'
+                  }`}
+                  onClick={item.type === 'folder' ? () => navigateToFolder(item.id, item.name) : undefined}
+                >
+                  <div className="flex items-start gap-3">
+                    <div className={`h-12 w-12 rounded-lg flex items-center justify-center flex-shrink-0 ${
+                      item.type === 'folder' 
+                        ? 'bg-blue-50'
+                        : 'bg-gray-100'
+                    }`}>
+                      <span className="text-2xl">
+                        {item.type === 'folder' ? '📁' : getFileIcon(item.name)}
+                      </span>
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="font-medium text-gray-900 mb-1 break-words">
+                        {item.name}
+                      </div>
+                      {item.type === 'file' && item.size && (
+                        <div className="text-xs text-gray-500">
+                          {formatFileSize(item.size)}
+                        </div>
+                      )}
+                      {item.type === 'folder' && (
+                        <div className="text-xs text-gray-500 mt-1">
+                          Carpeta
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                  {item.type === 'file' && (
+                    <div className="flex gap-2 mt-3 pt-3 border-t border-gray-100">
+                      {item.webUrl && (
+                        <a
+                          href={item.webUrl}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="flex-1 inline-flex items-center justify-center rounded-lg text-sm font-medium transition-colors border border-gray-300 bg-white text-gray-700 hover:bg-gray-50 active:bg-gray-100 h-10 px-4"
+                          onClick={(e) => e.stopPropagation()}
+                        >
+                          Ver
+                        </a>
+                      )}
+                      {item.downloadUrl && (
+                        <a
+                          href={item.downloadUrl}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          download
+                          className="flex-1 inline-flex items-center justify-center rounded-lg text-sm font-medium transition-colors bg-gray-600 text-white hover:bg-gray-700 active:bg-gray-800 h-10 px-4"
+                          onClick={(e) => e.stopPropagation()}
+                        >
+                          Descargar
+                        </a>
+                      )}
+                    </div>
+                  )}
+                </div>
+              );
+            })}
           </div>
         </div>
       ) : null}

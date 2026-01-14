@@ -579,7 +579,6 @@ export default function EmpresaGerentePage() {
               <div className="bg-white rounded-2xl p-6 border border-gray-200 shadow-sm">
                 <div className="flex items-center justify-between mb-4">
                   <h4 className="text-lg font-medium text-gray-900">Incumplimientos por Tipo de Estudio - {empresaAsignadaNombre}</h4>
-                  <span className="text-xs text-gray-400">Esta empresa</span>
                 </div>
                 
                 {loadingMediciones ? (
