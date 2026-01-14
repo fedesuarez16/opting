@@ -473,7 +473,7 @@ export default function SucursalDetailPage({ params }: SucursalDetailPageProps) 
               };
 
               return (
-                <div className="overflow-x-auto -mx-4 sm:mx-0 px-4 sm:px-0">
+                <div className="overflow-x-auto -mx-4 sm:mx-0 px-2 sm:px-0">
                   <div className="min-w-[600px] sm:min-w-0">
                     <ChartContainer config={chartConfig} className="h-[250px] sm:h-[350px] text-black w-full">
                       <BarChart data={chartData}>
@@ -516,16 +516,16 @@ export default function SucursalDetailPage({ params }: SucursalDetailPageProps) 
 
       {/* Lista de mediciones mejorada */}
       {filteredMediciones.length === 0 ? (
-        <div className="bg-gray-100 rounded-3xl shadow-sm border border-gray-100 p-6 text-center text-gray-500">
-          <p className="text-lg mb-2">No se encontraron mediciones para esta sucursal.</p>
-          <p className="text-sm">Las mediciones se encuentran en la subcolección de esta sucursal en Firestore.</p>
+        <div className="bg-gray-100 rounded-2xl sm:rounded-3xl shadow-sm border border-gray-100 p-4 sm:p-6 text-center text-gray-500">
+          <p className="text-base sm:text-lg mb-2">No se encontraron mediciones para esta sucursal.</p>
+          <p className="text-xs sm:text-sm">Las mediciones se encuentran en la subcolección de esta sucursal en Firestore.</p>
         </div>
       ) : (
         <div className="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden">
-          <div className="px-6 py-4 border-b border-gray-200 bg-gray-50">
-            <div className="flex items-center justify-between">
-              <h3 className="text-lg font-medium text-gray-900">Relevamientos</h3>
-              <span className="text-sm text-gray-500">{filteredMediciones.length} relevamientos</span>
+          <div className="px-4 sm:px-6 py-3 sm:py-4 border-b border-gray-200 bg-gray-50">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+              <h3 className="text-base sm:text-lg font-medium text-gray-900">Relevamientos</h3>
+              <span className="text-xs sm:text-sm text-gray-500">{filteredMediciones.length} relevamiento{filteredMediciones.length !== 1 ? 's' : ''}</span>
             </div>
           </div>
           
@@ -540,8 +540,89 @@ export default function SucursalDetailPage({ params }: SucursalDetailPageProps) 
               const puestaTierra = datos['PUESTA A TIERRA'] ? String(datos['PUESTA A TIERRA']).trim() : '';
               
               return (
-                <div key={medicion.id} className="p-6 hover:bg-gray-50 transition-colors">
-                  <div className="flex items-start justify-between">
+                <div key={medicion.id} className="p-4 sm:p-6 hover:bg-gray-50 transition-colors">
+                  {/* Mobile: Layout vertical */}
+                  <div className="flex flex-col sm:hidden gap-4">
+                    {/* Header móvil */}
+                    <div className="flex items-start gap-3">
+                      <div className="flex-shrink-0">
+                        <div className="w-10 h-10 bg-gray-100 rounded-lg flex items-center justify-center">
+                          <svg className="w-5 h-5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                          </svg>
+                        </div>
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <h4 className="text-base font-semibold text-gray-900">
+                          Relevamiento del {medicion.fecha}
+                        </h4>
+                      </div>
+                    </div>
+                    
+                    {/* Información en mobile - vertical stack */}
+                    <div className="space-y-3">
+                      <div className="flex flex-col gap-1">
+                        <span className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Técnico</span>
+                        <span className="text-sm text-gray-900">{String(datos.TÉCNICOS || datos.tecnico || 'No especificado')}</span>
+                      </div>
+                      
+                      <div className="flex flex-col gap-1">
+                        <span className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Servicio</span>
+                        <span className="text-sm text-gray-900">{String(datos.SERVICIO || datos.servicio || 'No especificado')}</span>
+                      </div>
+
+                      {cuit && (
+                        <div className="flex flex-col gap-1">
+                          <span className="text-xs font-semibold text-gray-500 uppercase tracking-wide">CUIT</span>
+                          <span className="text-sm text-gray-900">{cuit}</span>
+                        </div>
+                      )}
+
+                      {telefono && (
+                        <div className="flex flex-col gap-1">
+                          <span className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Teléfono</span>
+                          <span className="text-sm text-gray-900">{telefono}</span>
+                        </div>
+                      )}
+
+                      {email && (
+                        <div className="flex flex-col gap-1">
+                          <span className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Email</span>
+                          <span className="text-sm text-gray-900 break-all">{email}</span>
+                        </div>
+                      )}
+
+                      {puestaTierra && (
+                        <div className="flex flex-col gap-1">
+                          <span className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Puesta a Tierra</span>
+                          <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium w-fit ${
+                            puestaTierra.toUpperCase() === 'EN NUBE' 
+                              ? 'bg-green-100 text-green-800'
+                              : puestaTierra.toUpperCase() === 'PENDIENTE'
+                              ? 'bg-yellow-100 text-yellow-800'
+                              : 'bg-gray-100 text-gray-800'
+                          }`}>
+                            {puestaTierra}
+                          </span>
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Botón móvil - full width */}
+                    <button
+                      onClick={() => setSelectedMedicion(medicion)}
+                      className="w-full inline-flex items-center justify-center px-4 py-2.5 border border-transparent text-sm font-medium rounded-lg text-white bg-gray-600 hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500 transition-colors"
+                    >
+                      <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                      </svg>
+                      Ver detalles
+                    </button>
+                  </div>
+
+                  {/* Desktop: Layout horizontal */}
+                  <div className="hidden sm:flex items-start justify-between">
                     {/* Información principal */}
                     <div className="flex-1">
                       <div className="flex items-center gap-4 mb-3">

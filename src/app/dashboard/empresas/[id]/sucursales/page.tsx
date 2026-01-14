@@ -67,6 +67,9 @@ export default function SucursalesPage({ params }: SucursalesPageProps) {
   const [showModal, setShowModal] = useState(false);
   const [currentSucursal, setCurrentSucursal] = useState<Sucursal | null>(null);
   const [search, setSearch] = useState('');
+  const [showPendienteModal, setShowPendienteModal] = useState(false);
+  const [selectedStudyType, setSelectedStudyType] = useState<'pat' | 'iluminacion' | 'ruido' | null>(null);
+  const [sucursalesConPendiente, setSucursalesConPendiente] = useState<Array<{ sucursalId: string; sucursalNombre: string }>>([]);
 
   // Mediciones "en nube" por sucursal
   const medicionesEnNubePorSucursal = useMemo(() => {
@@ -364,6 +367,55 @@ export default function SucursalesPage({ params }: SucursalesPageProps) {
     };
   }, [medicionesCountsEmpresa]);
 
+  // Función para obtener sucursales con estudios pendientes
+  const getSucursalesConPendiente = (studyType: 'pat' | 'iluminacion' | 'ruido') => {
+    const sucursalesSet = new Set<string>();
+    const sucursalesMap = new Map<string, string>(); // sucursalId -> sucursalNombre
+    
+    mediciones.forEach((m) => {
+      const datos = m.datos as Record<string, unknown>;
+      const getValue = (k: string) => String((datos[k] ?? '') as any);
+      
+      let studyValue = '';
+      if (studyType === 'pat') {
+        studyValue = getValue('PAT');
+      } else if (studyType === 'iluminacion') {
+        studyValue = getValue('ILUMINACIÓN') || getValue('ILUMINACION');
+      } else if (studyType === 'ruido') {
+        studyValue = getValue('RUIDO');
+      }
+      
+      // Verificar si está pendiente (no en nube)
+      if (studyValue === 'PENDIENTE' || studyValue === 'PEDIR A TEC' || studyValue === 'PROCESAR') {
+        const sucursalId = m.sucursalId;
+        if (sucursalId) {
+          sucursalesSet.add(sucursalId);
+          // Obtener nombre de sucursal
+          const sucursal = sucursales.find(s => s.id === sucursalId);
+          if (sucursal && !sucursalesMap.has(sucursalId)) {
+            sucursalesMap.set(sucursalId, sucursal.nombre);
+          }
+        }
+      }
+    });
+    
+    const sucursalesList = Array.from(sucursalesSet).map(sucursalId => ({
+      sucursalId,
+      sucursalNombre: sucursalesMap.get(sucursalId) || sucursalId
+    }));
+    
+    return sucursalesList;
+  };
+
+  const handlePendienteCardClick = (studyType: 'pat' | 'iluminacion' | 'ruido') => {
+    if (userRole !== 'admin') return;
+    
+    setSelectedStudyType(studyType);
+    const sucursalesList = getSucursalesConPendiente(studyType);
+    setSucursalesConPendiente(sucursalesList);
+    setShowPendienteModal(true);
+  };
+
   // Conteos de incumplimientos por tipo para el gráfico (para gerentes)
   const incumplimientosCountsForChart = useMemo(() => {
     const isArcosDorados = empresaId === 'ARCOS DORADOS' || empresa?.nombre === 'ARCOS DORADOS';
@@ -525,7 +577,10 @@ export default function SucursalesPage({ params }: SucursalesPageProps) {
         </div>
       </div>
 
-      <div className="bg-gradient-to-b from-black to-gray-700 rounded-2xl sm:rounded-3xl p-4 sm:p-6 text-white border border-gray-800 shadow-sm">
+      <div 
+        className={`bg-gradient-to-b from-black to-gray-700 rounded-2xl sm:rounded-3xl p-4 sm:p-6 text-white border border-gray-800 shadow-sm ${userRole === 'admin' ? 'cursor-pointer hover:opacity-90 transition-opacity' : ''}`}
+        onClick={() => userRole === 'admin' && handlePendienteCardClick('pat')}
+      >
         <div className="flex items-center justify-between">
           <div className="flex-1 min-w-0">
             <p className="text-gray-300 text-xs sm:text-sm truncate">
@@ -549,7 +604,10 @@ export default function SucursalesPage({ params }: SucursalesPageProps) {
         </div>
       </div>
 
-      <div className="bg-gradient-to-b from-black to-gray-700 rounded-2xl sm:rounded-3xl p-4 sm:p-6 text-white border border-gray-800 shadow-sm">
+      <div 
+        className={`bg-gradient-to-b from-black to-gray-700 rounded-2xl sm:rounded-3xl p-4 sm:p-6 text-white border border-gray-800 shadow-sm ${userRole === 'admin' ? 'cursor-pointer hover:opacity-90 transition-opacity' : ''}`}
+        onClick={() => userRole === 'admin' && handlePendienteCardClick('iluminacion')}
+      >
         <div className="flex items-center justify-between">
           <div className="flex-1 min-w-0">
             <p className="text-gray-300 text-xs sm:text-sm truncate">
@@ -573,7 +631,10 @@ export default function SucursalesPage({ params }: SucursalesPageProps) {
         </div>
       </div>
 
-      <div className="bg-gradient-to-b from-black to-gray-700 rounded-2xl sm:rounded-3xl p-4 sm:p-6 text-white border border-gray-800 shadow-sm">
+      <div 
+        className={`bg-gradient-to-b from-black to-gray-700 rounded-2xl sm:rounded-3xl p-4 sm:p-6 text-white border border-gray-800 shadow-sm ${userRole === 'admin' ? 'cursor-pointer hover:opacity-90 transition-opacity' : ''}`}
+        onClick={() => userRole === 'admin' && handlePendienteCardClick('ruido')}
+      >
         <div className="flex items-center justify-between">
           <div className="flex-1 min-w-0">
             <p className="text-gray-300 text-xs sm:text-sm truncate">
@@ -989,6 +1050,19 @@ export default function SucursalesPage({ params }: SucursalesPageProps) {
 
        */}
 
+      {/* Modal de sucursales con estudios pendientes */}
+      {showPendienteModal && selectedStudyType && (
+        <PendienteModal
+          studyType={selectedStudyType}
+          sucursales={sucursalesConPendiente}
+          empresaId={empresaId}
+          onClose={() => {
+            setShowPendienteModal(false);
+            setSelectedStudyType(null);
+            setSucursalesConPendiente([]);
+          }}
+        />
+      )}
     
        
     </div>
@@ -1135,6 +1209,88 @@ function SucursalFormModal({ sucursal, empresaId: _empresaId, onClose, onSave }:
               </button>
             </div>
           </form>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+interface PendienteModalProps {
+  studyType: 'pat' | 'iluminacion' | 'ruido';
+  sucursales: Array<{ sucursalId: string; sucursalNombre: string }>;
+  empresaId: string;
+  onClose: () => void;
+}
+
+function PendienteModal({ studyType, sucursales, empresaId, onClose }: PendienteModalProps) {
+  const studyNames = {
+    pat: 'PAT',
+    iluminacion: 'Iluminación',
+    ruido: 'Ruido'
+  };
+
+  return (
+    <div className="fixed z-50 inset-0 overflow-y-auto">
+      <div className="flex items-center justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
+        <div className="fixed inset-0 transition-opacity z-40" aria-hidden="true">
+          <div className="absolute inset-0 bg-gray-500 opacity-75" onClick={onClose}></div>
+        </div>
+        <span className="hidden sm:inline-block sm:align-middle sm:h-screen" aria-hidden="true">&#8203;</span>
+        <div className="relative z-50 inline-block align-bottom bg-white rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-2xl sm:w-full">
+          <div className="bg-white px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-medium text-gray-900">
+                {studyNames[studyType]} - Pendiente de Entrega
+              </h3>
+              <button
+                onClick={onClose}
+                className="text-gray-400 hover:text-gray-500"
+              >
+                <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+            
+            {sucursales.length === 0 ? (
+              <div className="py-8 text-center text-gray-500">
+                <p>No hay sucursales con estudios pendientes de entrega para este tipo.</p>
+              </div>
+            ) : (
+              <div className="max-h-[60vh] overflow-y-auto">
+                <div className="space-y-3">
+                  {sucursales.map((sucursal, index) => (
+                    <div
+                      key={`${sucursal.sucursalId}_${index}`}
+                      className="flex items-center justify-between p-4 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors"
+                    >
+                      <div className="flex-1 min-w-0">
+                        <p className="text-base font-medium text-gray-900 truncate">
+                          {sucursal.sucursalNombre}
+                        </p>
+                      </div>
+                      <Link
+                        href={`/dashboard/empresas/${encodeURIComponent(empresaId)}/sucursales/${encodeURIComponent(sucursal.sucursalId)}`}
+                        className="ml-4 px-3 py-1.5 text-sm bg-gray-600 text-white rounded-md hover:bg-gray-700 transition-colors flex-shrink-0"
+                        onClick={onClose}
+                      >
+                        Ver detalle
+                      </Link>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+          <div className="bg-gray-50 px-4 py-3 sm:px-6 sm:flex sm:flex-row-reverse">
+            <button
+              type="button"
+              onClick={onClose}
+              className="w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-gray-600 text-base font-medium text-white hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500 sm:ml-3 sm:w-auto sm:text-sm"
+            >
+              Cerrar
+            </button>
+          </div>
         </div>
       </div>
     </div>
