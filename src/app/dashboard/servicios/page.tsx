@@ -91,9 +91,9 @@ export default function ServiciosPage() {
           };
         });
         
-        // Ordenar por cantidad de sucursales (descendente)
+        // Ordenar alfabéticamente por nombre del servicio
         const sortedServicios = Object.keys(serviciosData).sort((a, b) => 
-          serviciosData[b].sucursalesCount - serviciosData[a].sucursalesCount
+          a.localeCompare(b, 'es', { sensitivity: 'base' })
         );
         
         const orderedServicios: Record<string, ServicioData> = {};
