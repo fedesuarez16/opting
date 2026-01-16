@@ -476,34 +476,34 @@ export default function SucursalDetailPage({ params }: SucursalDetailPageProps) 
                 <div className="overflow-x-auto -mx-4 sm:mx-0 px-2 sm:px-0">
                   <div className="min-w-[600px] sm:min-w-0">
                     <ChartContainer config={chartConfig} className="h-[250px] sm:h-[350px] text-black w-full">
-                      <BarChart data={chartData}>
-                        <CartesianGrid strokeDasharray="3 3" vertical={false} />
-                        <XAxis
-                          dataKey="name"
-                          tickLine={false}
-                          tickMargin={10}
-                          axisLine={false}
-                          tick={{ fontSize: 12 }}
+                  <BarChart data={chartData}>
+                    <CartesianGrid strokeDasharray="3 3" vertical={false} />
+                    <XAxis
+                      dataKey="name"
+                      tickLine={false}
+                      tickMargin={10}
+                      axisLine={false}
+                      tick={{ fontSize: 12 }}
                           angle={-45}
                           textAnchor="end"
                           height={80}
-                        />
-                        <YAxis
-                          tickLine={false}
-                          axisLine={false}
-                          tick={{ fontSize: 12 }}
-                          label={{ value: 'Cantidad de Mediciones', angle: -90, position: 'insideLeft' }}
-                        />
-                        <ChartTooltip
-                          cursor={false}
-                          content={<ChartTooltipContent />}
-                        />
-                        <Bar dataKey="PENDIENTE" fill="#ef4444" radius={4} />
-                        <Bar dataKey="PEDIR A TEC" fill="#f59e0b" radius={4} />
-                        <Bar dataKey="Procesar" fill="#3b82f6" radius={4} />
-                        <Bar dataKey="En nube" fill="#22c55e" radius={4} />
-                      </BarChart>
-                    </ChartContainer>
+                    />
+                    <YAxis
+                      tickLine={false}
+                      axisLine={false}
+                      tick={{ fontSize: 12 }}
+                      label={{ value: 'Cantidad de Mediciones', angle: -90, position: 'insideLeft' }}
+                    />
+                    <ChartTooltip
+                      cursor={false}
+                      content={<ChartTooltipContent />}
+                    />
+                    <Bar dataKey="PENDIENTE" fill="#ef4444" radius={4} />
+                    <Bar dataKey="PEDIR A TEC" fill="#f59e0b" radius={4} />
+                    <Bar dataKey="Procesar" fill="#3b82f6" radius={4} />
+                    <Bar dataKey="En nube" fill="#22c55e" radius={4} />
+                  </BarChart>
+                </ChartContainer>
                   </div>
                 </div>
               );
@@ -788,11 +788,22 @@ function MedicionDetailModal({ medicion, onClose }: MedicionDetailModalProps) {
     'FECHA EXTINTORES'
   ];
 
+  // Campos a excluir (sin INCUMPLIMIENTO)
+  const excludedFields = ['RUIDO', 'CARGA TÉRMICA', 'CARGA TERMICA', 'TERMOGRAFIA', 'TERMOGRAFÍA', 'PAT', 'PUESTA A TIERRA'];
+
   // Filtrar y mapear los campos permitidos
   const filteredData = Object.entries(medicion.datos)
     .filter(([key]) => {
-      // Incluir solo los campos permitidos
       const keyUpper = key.toUpperCase();
+      
+      // Excluir campos que no tienen INCUMPLIMIENTO y están en la lista de exclusiones
+      if (!keyUpper.includes('INCUMPLIMIENTO')) {
+        if (excludedFields.some(excluded => keyUpper === excluded || keyUpper.includes(excluded))) {
+          return false;
+        }
+      }
+      
+      // Incluir solo los campos permitidos
       return allowedFields.some(field => {
         const fieldUpper = field.toUpperCase();
         return keyUpper === fieldUpper || 
@@ -839,7 +850,7 @@ function MedicionDetailModal({ medicion, onClose }: MedicionDetailModalProps) {
               <div>
                 <h3 className="text-xl font-semibold text-gray-900">
                   Detalles de Medición
-                </h3>
+              </h3>
                 <p className="mt-1 text-sm text-gray-500">
                   {medicion.fecha}
                 </p>
@@ -865,12 +876,12 @@ function MedicionDetailModal({ medicion, onClose }: MedicionDetailModalProps) {
               </div>
             ) : (
               <div className="max-h-[60vh] overflow-y-auto pr-2">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   {filteredData.map(({ key, value }) => {
                     const valueStr = value !== null && value !== undefined ? String(value) : 'No especificado';
                     const isEmpty = !valueStr || valueStr.trim() === '' || valueStr === 'No especificado';
-                    
-                    return (
+                  
+                  return (
                       <div 
                         key={key} 
                         className="bg-white rounded-lg border border-gray-200 p-4 hover:shadow-md transition-shadow"
@@ -892,23 +903,23 @@ function MedicionDetailModal({ medicion, onClose }: MedicionDetailModalProps) {
                             </p>
                           </div>
                         </div>
-                      </div>
-                    );
-                  })}
-                </div>
+                    </div>
+                  );
+                })}
               </div>
+            </div>
             )}
           </div>
           
           <div className="bg-gray-50 px-4 py-4 sm:px-8 sm:py-5 border-t border-gray-200">
             <div className="flex justify-end">
-              <button
-                type="button"
-                onClick={onClose}
+            <button
+              type="button"
+              onClick={onClose}
                 className="inline-flex items-center justify-center rounded-lg border border-transparent shadow-sm px-6 py-2.5 bg-gray-700 text-base font-medium text-white hover:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500 transition-colors"
-              >
-                Cerrar
-              </button>
+            >
+              Cerrar
+            </button>
             </div>
           </div>
         </div>

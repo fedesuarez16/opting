@@ -277,17 +277,22 @@ export default function EmpresaGerentePage() {
     return sucursalesSet.size;
   }, [mediciones, empresaId]);
 
-  // Calcular extintores que vencen el mes siguiente
+  // Calcular Extintores vencidos / próximos a vencer (próximos 30 días)
   const extintoresVencenMesSiguiente = useMemo(() => {
     const ahora = new Date();
-    const mesSiguiente = new Date(ahora.getFullYear(), ahora.getMonth() + 1, 1);
-    const finMesSiguiente = new Date(ahora.getFullYear(), ahora.getMonth() + 2, 0);
+    // Resetear a inicio del día para comparaciones precisas
+    ahora.setHours(0, 0, 0, 0);
+    // Calcular fecha dentro de 30 días
+    const proximos30Dias = new Date(ahora);
+    proximos30Dias.setDate(proximos30Dias.getDate() + 30);
+    proximos30Dias.setHours(23, 59, 59, 999);
     
     const sucursalesConExtintoresVencen: Array<{
       empresaId: string;
       sucursalId: string;
       sucursalNombre: string;
       fechaVencimiento: string;
+      estaVencido: boolean;
     }> = [];
 
     // Agrupar mediciones por sucursal
@@ -319,8 +324,9 @@ export default function EmpresaGerentePage() {
         if (fechaExtintoresValue && fechaExtintoresValue.trim() !== '') {
           try {
             const fecha = new Date(fechaExtintoresValue);
+            fecha.setHours(0, 0, 0, 0);
             if (!isNaN(fecha.getTime())) {
-              if (!fechaMasReciente || fecha > fechaMasReciente) {
+              if (fechaMasReciente === null || fecha.getTime() > fechaMasReciente.getTime()) {
                 fechaMasReciente = fecha;
                 fechaMasRecienteStr = fechaExtintoresValue;
               }
@@ -331,20 +337,32 @@ export default function EmpresaGerentePage() {
         }
       });
 
-      // Verificar si la fecha está en el mes siguiente
-      if (fechaMasReciente && fechaMasReciente >= mesSiguiente && fechaMasReciente <= finMesSiguiente) {
-        const sucursal = sucursales.find(s => s.id === sucursalId);
-        sucursalesConExtintoresVencen.push({
-          empresaId: empresaId || '',
-          sucursalId,
-          sucursalNombre: sucursal?.nombre || sucursalId,
-          fechaVencimiento: fechaMasRecienteStr || (fechaMasReciente ? fechaMasReciente.toLocaleDateString('es-AR') : 'N/A')
-        });
+      // Verificar si la fecha está vencida o vence en los próximos 30 días
+      if (fechaMasReciente) {
+        const fecha = fechaMasReciente as Date;
+        const fechaTime = fecha.getTime();
+        const ahoraTime = ahora.getTime();
+        const proximos30DiasTime = proximos30Dias.getTime();
+        
+        const estaVencido = fechaTime < ahoraTime;
+        const venceProximos30Dias = fechaTime >= ahoraTime && fechaTime <= proximos30DiasTime;
+        
+        if (estaVencido || venceProximos30Dias) {
+          const sucursal = sucursales.find(s => s.id === sucursalId);
+          const fechaVencimientoStr = fechaMasRecienteStr || fecha.toLocaleDateString('es-AR');
+          sucursalesConExtintoresVencen.push({
+            empresaId: empresaId || '',
+            sucursalId,
+            sucursalNombre: sucursal?.nombre || sucursalId,
+            fechaVencimiento: fechaVencimientoStr,
+            estaVencido
+          });
+        }
       }
     });
 
     return sucursalesConExtintoresVencen;
-  }, [mediciones, sucursales]);
+  }, [mediciones, sucursales, empresaId]);
 
   // Función para obtener sucursales con incumplimientos
   const getSucursalesConIncumplimiento = (type: 'pat' | 'iluminacion' | 'ruido') => {
@@ -612,7 +630,7 @@ export default function EmpresaGerentePage() {
                 <div className="flex items-center justify-between">
                   <div>
                     <p className={`text-sm ${extintoresVencenMesSiguiente.length > 0 ? 'text-gray-200' : 'text-gray-300'}`}>
-                      Extintores vencen mes siguiente
+                      Extintores vencidos / próximos a vencer
                     </p>
                     {loadingMediciones ? (
                       <div className="animate-pulse">
@@ -815,7 +833,7 @@ export default function EmpresaGerentePage() {
               <div className="bg-white px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
                 <div className="flex items-center justify-between mb-4">
                   <h3 className="text-lg font-medium text-gray-900">
-                    Extintores que vencen el mes siguiente
+                    Extintores vencidos y próximos a vencer
                   </h3>
                   <button
                     onClick={() => setShowExtintoresModal(false)}
@@ -829,19 +847,33 @@ export default function EmpresaGerentePage() {
                 
                 {extintoresVencenMesSiguiente.length === 0 ? (
                   <div className="text-center py-8">
-                    <p className="text-gray-500">No hay extintores que venzan el mes siguiente.</p>
+                    <p className="text-gray-500">No hay extintores vencidos ni próximos a vencer.</p>
                   </div>
                 ) : (
-                  <div className="space-y-3">
+                  <div className="space-y-3 max-h-96 overflow-y-auto">
                     {extintoresVencenMesSiguiente.map((item, index) => (
                       <div
                         key={index}
-                        className="border border-gray-200 rounded-lg p-4 hover:bg-gray-50 transition-colors"
+                        className={`border rounded-lg p-4 hover:bg-gray-50 transition-colors ${
+                          item.estaVencido ? 'border-red-300 bg-red-50' : 'border-yellow-300 bg-yellow-50'
+                        }`}
                       >
                         <div className="flex items-center justify-between">
                           <div className="flex-1">
-                            <p className="font-medium text-gray-900">{item.sucursalNombre}</p>
-                            <p className="text-sm text-gray-500 mt-1">
+                            <div className="flex items-center gap-2">
+                              <p className="font-medium text-gray-900">{item.sucursalNombre}</p>
+                              {item.estaVencido && (
+                                <span className="px-2 py-0.5 text-xs font-semibold bg-red-600 text-white rounded">
+                                  VENCIDO
+                                </span>
+                              )}
+                              {!item.estaVencido && (
+                                <span className="px-2 py-0.5 text-xs font-semibold bg-yellow-600 text-white rounded">
+                                  PRÓXIMO A VENCER
+                                </span>
+                              )}
+                            </div>
+                            <p className={`text-sm mt-1 ${item.estaVencido ? 'text-red-700' : 'text-yellow-700'}`}>
                               Fecha de vencimiento: {item.fechaVencimiento}
                             </p>
                           </div>
