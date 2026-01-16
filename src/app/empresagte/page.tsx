@@ -534,8 +534,31 @@ export default function EmpresaGerentePage() {
           </div>
 
           {/* Right side of top bar */}
-          <div className="flex items-center space-x-4">
-            {/* User menu could go here */}
+          <div className="flex items-center space-x-2">
+            {/* Soporte Técnico */}
+            <a
+              href="mailto:lelopez@optingsha.com.ar"
+              className="flex items-center gap-2 px-3 py-2 bg-gray-50 hover:bg-gray-200 rounded-md transition-colors"
+              title="Soporte Técnico: lelopez@optingsha.com.ar"
+            >
+              <svg className="w-5 h-5 text-gray-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+              </svg>
+              <span className="text-xs text-gray-600 font-medium hidden sm:inline">Soporte Técnico</span>
+            </a>
+
+            {/* Soporte Comercial */}
+            <a
+              href="mailto:comercial@optingsha.com.ar"
+              className="flex items-center gap-2 px-3 py-2 bg-gray-50 hover:bg-gray-200 rounded-md transition-colors relative group"
+              title="Soporte Comercial: comercial@optingsha.com.ar - 11 2331 2054"
+            >
+              <svg className="w-5 h-5 text-gray-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+              </svg>
+              <span className="text-xs   text-gray-600 font-medium hidden sm:inline">Soporte Comercial</span>
+            </a>
           </div>
         </div>
 
@@ -579,12 +602,18 @@ export default function EmpresaGerentePage() {
               
               {/* Nueva tarjeta de extintores que vencen */}
               <div 
-                className="bg-gradient-to-b from-red-900 to-red-700 rounded-3xl p-6 text-white border border-red-800 shadow-sm cursor-pointer hover:shadow-lg transition-shadow"
+                className={`rounded-3xl p-6 text-white border shadow-sm cursor-pointer hover:shadow-lg transition-shadow ${
+                  extintoresVencenMesSiguiente.length > 0
+                    ? 'bg-gradient-to-b from-red-900 to-red-700 border-red-800'
+                    : 'bg-gradient-to-b from-black to-gray-700 border-gray-800'
+                }`}
                 onClick={() => setShowExtintoresModal(true)}
               >
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-gray-200 text-sm">Extintores vencen mes siguiente</p>
+                    <p className={`text-sm ${extintoresVencenMesSiguiente.length > 0 ? 'text-gray-200' : 'text-gray-300'}`}>
+                      Extintores vencen mes siguiente
+                    </p>
                     {loadingMediciones ? (
                       <div className="animate-pulse">
                         <div className="h-8 bg-gray-300 rounded w-16"></div>
@@ -593,7 +622,7 @@ export default function EmpresaGerentePage() {
                       <p className="text-3xl font-bold text-white">{extintoresVencenMesSiguiente.length}</p>
                     )}
                   </div>
-                  <div className="text-red-300">
+                  <div className={extintoresVencenMesSiguiente.length > 0 ? 'text-red-300' : 'text-gray-400'}>
                     <svg className="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 16.5c-.77.833.192 2.5 1.732 2.5z" />
                     </svg>
