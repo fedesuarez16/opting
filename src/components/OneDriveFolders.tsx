@@ -847,11 +847,7 @@ export default function OneDriveFolders({ empresaId, sucursalId, sucursalNombre,
                           {formatFileSize(item.size)}
                         </div>
                       )}
-                      {item.type === 'folder' && (
-                        <div className="text-xs text-gray-500 mt-1">
-                          Carpeta
-                        </div>
-                      )}
+                     
                     </div>
                   </div>
                   {item.type === 'file' && (

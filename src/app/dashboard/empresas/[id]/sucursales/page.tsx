@@ -567,7 +567,6 @@ export default function SucursalesPage({ params }: SucursalesPageProps) {
             ) : (
               <p className="text-2xl sm:text-3xl font-bold tracking-tight mt-1">{sucursales.length}</p>
             )}
-            <p className="text-green-400 text-xs sm:text-sm mt-1">-0.03%</p>
           </div>
           <div className="text-gray-400 flex-shrink-0 ml-2">
             <svg className="h-6 w-6 sm:h-8 sm:w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
