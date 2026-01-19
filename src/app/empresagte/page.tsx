@@ -25,6 +25,7 @@ export default function EmpresaGerentePage() {
   const { user, loading: authLoading } = useAuth();
   const router = useRouter();
   const [empresaIdFromUser, setEmpresaIdFromUser] = useState<string | null>(null);
+  const [userServicio, setUserServicio] = useState<string>('BLINDAJE LEGAL'); // Default
   const [loading, setLoading] = useState(true);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isDesktopSidebarCollapsed, setIsDesktopSidebarCollapsed] = useState(false);
@@ -40,7 +41,19 @@ export default function EmpresaGerentePage() {
   const empresa = empresas.find(e => e.id === empresaIdFromUser);
   const empresaId = empresa?.id || empresaIdFromUser || undefined;
   const empresaAsignadaNombre = empresa?.nombre;
-  const { mediciones, loading: loadingMediciones } = useMediciones(empresaId);
+  const { mediciones: allMediciones, loading: loadingMediciones } = useMediciones(empresaId);
+  
+  // Filtrar mediciones por el servicio del usuario
+  const mediciones = useMemo(() => {
+    if (!userServicio) return allMediciones;
+    return allMediciones.filter((m) => {
+      const datos = m.datos as Record<string, unknown>;
+      const getValue = (k: string) => String((datos[k] ?? '') as unknown);
+      const servicio = getValue('SERVICIO') || getValue('servicio');
+      return servicio && servicio.toUpperCase().includes(userServicio.toUpperCase());
+    });
+  }, [allMediciones, userServicio]);
+  
   const { sucursales } = useSucursales(empresaId);
 
   useEffect(() => {
@@ -58,6 +71,10 @@ export default function EmpresaGerentePage() {
         
         if (snapshot.exists()) {
           const userData = snapshot.val();
+          // Obtener el servicio del usuario (default: BLINDAJE LEGAL)
+          if (userData.servicio) {
+            setUserServicio(userData.servicio);
+          }
           // Primero intentar obtener empresaId, si no existe, usar empresaNombre
           if (userData.empresaId) {
             setEmpresaIdFromUser(userData.empresaId);
@@ -265,8 +282,8 @@ export default function EmpresaGerentePage() {
       const servicio = getValue('SERVICIO') || getValue('servicio');
       const clienteId = getValue('CLIENTE');
       
-      // Verificar si contiene "BLINDAJE LEGAL" y pertenece a la empresa asignada
-      if (servicio && servicio.toUpperCase().includes('BLINDAJE LEGAL') && clienteId === empresaId) {
+      // Verificar si contiene el servicio del usuario y pertenece a la empresa asignada
+      if (servicio && servicio.toUpperCase().includes(userServicio.toUpperCase()) && clienteId === empresaId) {
         const sucursalId = getValue('SUCURSAL');
         if (sucursalId) {
           sucursalesSet.add(sucursalId);
@@ -275,7 +292,7 @@ export default function EmpresaGerentePage() {
     });
     
     return sucursalesSet.size;
-  }, [mediciones, empresaId]);
+  }, [mediciones, empresaId, userServicio]);
 
   // Calcular Extintores vencidos / próximos a vencer (próximos 30 días)
   const extintoresVencenMesSiguiente = useMemo(() => {
@@ -424,8 +441,8 @@ export default function EmpresaGerentePage() {
         const servicio = getValue('SERVICIO') || getValue('servicio');
         const clienteId = getValue('CLIENTE');
         
-        // Verificar si contiene "BLINDAJE LEGAL" y pertenece a la empresa asignada
-        if (servicio && servicio.toUpperCase().includes('BLINDAJE LEGAL') && clienteId === empresaId) {
+        // Verificar si contiene el servicio del usuario y pertenece a la empresa asignada
+        if (servicio && servicio.toUpperCase().includes(userServicio.toUpperCase()) && clienteId === empresaId) {
           const sucursalId = getValue('SUCURSAL');
           const fecha = getValue('FECHAS DE MEDICIÓN') || getValue('FECHA DE MEDICIÓN') || getValue('fecha') || 'No especificada';
           
@@ -594,7 +611,7 @@ export default function EmpresaGerentePage() {
 
             {/* Cards de métricas */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-6 mb-8">
-              {/* Card de Total Locales Relevados */}
+              {/* Card de Total Locales Relevados - Primera posición */}
               <div 
                 className="bg-gradient-to-b from-black to-gray-700 rounded-3xl p-6 text-white border border-gray-800 shadow-sm cursor-pointer hover:opacity-90 transition-opacity"
                 onClick={handleTotalMedicionesClick}
@@ -618,18 +635,24 @@ export default function EmpresaGerentePage() {
                 </div>
               </div>
               
-              {/* Nueva tarjeta de extintores que vencen */}
+              {/* Nueva tarjeta de extintores que vencen - Segunda posición */}
               <div 
-                className={`rounded-3xl p-6 text-white border shadow-sm cursor-pointer hover:shadow-lg transition-shadow ${
-                  extintoresVencenMesSiguiente.length > 0
+                className={`rounded-3xl p-6 text-white border shadow-sm ${
+                  userServicio.toUpperCase().includes('PUESTA A TIERRA') 
+                    ? '' 
+                    : 'cursor-pointer hover:shadow-lg transition-shadow'
+                } ${
+                  userServicio.toUpperCase().includes('PUESTA A TIERRA')
+                    ? 'bg-gradient-to-b from-black to-gray-700 border-gray-800'
+                    : extintoresVencenMesSiguiente.length > 0
                     ? 'bg-gradient-to-b from-red-900 to-red-700 border-red-800'
                     : 'bg-gradient-to-b from-black to-gray-700 border-gray-800'
                 }`}
-                onClick={() => setShowExtintoresModal(true)}
+                onClick={() => !userServicio.toUpperCase().includes('PUESTA A TIERRA') && setShowExtintoresModal(true)}
               >
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className={`text-sm ${extintoresVencenMesSiguiente.length > 0 ? 'text-gray-200' : 'text-gray-300'}`}>
+                    <p className={`text-sm ${extintoresVencenMesSiguiente.length > 0 && !userServicio.toUpperCase().includes('PUESTA A TIERRA') ? 'text-gray-200' : 'text-gray-300'}`}>
                       Extintores vencidos / próximos a vencer
                     </p>
                     {loadingMediciones ? (
@@ -637,10 +660,12 @@ export default function EmpresaGerentePage() {
                         <div className="h-8 bg-gray-300 rounded w-16"></div>
                       </div>
                     ) : (
-                      <p className="text-3xl font-bold text-white">{extintoresVencenMesSiguiente.length}</p>
+                      <p className={`font-bold text-white ${userServicio.toUpperCase().includes('PUESTA A TIERRA') ? 'text-xl' : 'text-3xl'}`}>
+                        {userServicio.toUpperCase().includes('PUESTA A TIERRA') ? 'NO APLICA' : extintoresVencenMesSiguiente.length}
+                      </p>
                     )}
                   </div>
-                  <div className={extintoresVencenMesSiguiente.length > 0 ? 'text-red-300' : 'text-gray-400'}>
+                  <div className={extintoresVencenMesSiguiente.length > 0 && !userServicio.toUpperCase().includes('PUESTA A TIERRA') ? 'text-red-300' : 'text-gray-400'}>
                     <svg className="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 16.5c-.77.833.192 2.5 1.732 2.5z" />
                     </svg>
@@ -671,8 +696,8 @@ export default function EmpresaGerentePage() {
               </div>
 
               <div 
-                className="bg-gradient-to-b from-black to-gray-700  rounded-3xl p-6 text-white border border-gray-800 shadow-sm cursor-pointer hover:opacity-90 transition-opacity"
-                onClick={() => handleIncumplimientoCardClick('iluminacion')}
+                className={`bg-gradient-to-b from-black to-gray-700 rounded-3xl p-6 text-white border border-gray-800 shadow-sm ${userServicio.toUpperCase().includes('PUESTA A TIERRA') ? '' : 'cursor-pointer hover:opacity-90 transition-opacity'}`}
+                onClick={() => !userServicio.toUpperCase().includes('PUESTA A TIERRA') && handleIncumplimientoCardClick('iluminacion')}
               >
                 <div className="flex items-center justify-between">
                   <div>
@@ -682,7 +707,9 @@ export default function EmpresaGerentePage() {
                         <div className="h-8 bg-gray-300 rounded w-16"></div>
                       </div>
                     ) : (
-                      <p className="text-3xl font-bold text-white">{incumplimientosCountsEmpresa.iluNoCumple}</p>
+                      <p className={`font-bold text-white ${userServicio.toUpperCase().includes('PUESTA A TIERRA') ? 'text-xl' : 'text-3xl'}`}>
+                        {userServicio.toUpperCase().includes('PUESTA A TIERRA') ? 'NO APLICA' : incumplimientosCountsEmpresa.iluNoCumple}
+                      </p>
                     )}
                   </div>
                   <div className="text-gray-400">
@@ -694,8 +721,8 @@ export default function EmpresaGerentePage() {
               </div>
 
               <div 
-                className="bg-gradient-to-b from-black to-gray-700  rounded-3xl p-6 text-white border border-gray-800 shadow-sm cursor-pointer hover:opacity-90 transition-opacity"
-                onClick={() => handleIncumplimientoCardClick('ruido')}
+                className={`bg-gradient-to-b from-black to-gray-700 rounded-3xl p-6 text-white border border-gray-800 shadow-sm ${userServicio.toUpperCase().includes('PUESTA A TIERRA') ? '' : 'cursor-pointer hover:opacity-90 transition-opacity'}`}
+                onClick={() => !userServicio.toUpperCase().includes('PUESTA A TIERRA') && handleIncumplimientoCardClick('ruido')}
               >
                 <div className="flex items-center justify-between">
                   <div>
@@ -705,7 +732,9 @@ export default function EmpresaGerentePage() {
                         <div className="h-8 bg-gray-300 rounded w-16"></div>
                       </div>
                     ) : (
-                      <p className="text-3xl font-bold text-white">{incumplimientosCountsEmpresa.ruidoNoCumple}</p>
+                      <p className={`font-bold text-white ${userServicio.toUpperCase().includes('PUESTA A TIERRA') ? 'text-xl' : 'text-3xl'}`}>
+                        {userServicio.toUpperCase().includes('PUESTA A TIERRA') ? 'NO APLICA' : incumplimientosCountsEmpresa.ruidoNoCumple}
+                      </p>
                     )}
                   </div>
                   <div className="text-gray-400">
@@ -731,6 +760,8 @@ export default function EmpresaGerentePage() {
                   </div>
                 ) : (
                   (() => {
+                    const isPuestaATierra = userServicio.toUpperCase().includes('PUESTA A TIERRA');
+                    
                     const chartData = [
                       {
                         name: "INC. PAT",
@@ -739,28 +770,33 @@ export default function EmpresaGerentePage() {
                       },
                       {
                         name: "INC. ILUM",
-                        "CUMPLE": incumplimientosCountsForChart.iluminacion.cumple,
-                        "NO CUMPLE": incumplimientosCountsForChart.iluminacion.noCumple
+                        "CUMPLE": isPuestaATierra ? null : incumplimientosCountsForChart.iluminacion.cumple,
+                        "NO CUMPLE": isPuestaATierra ? null : incumplimientosCountsForChart.iluminacion.noCumple,
+                        "NO APLICA": isPuestaATierra ? 1 : null
                       },
                       {
                         name: "INC. RUIDO",
-                        "CUMPLE": incumplimientosCountsForChart.ruido.cumple,
-                        "NO CUMPLE": incumplimientosCountsForChart.ruido.noCumple
+                        "CUMPLE": isPuestaATierra ? null : incumplimientosCountsForChart.ruido.cumple,
+                        "NO CUMPLE": isPuestaATierra ? null : incumplimientosCountsForChart.ruido.noCumple,
+                        "NO APLICA": isPuestaATierra ? 1 : null
                       },
                       {
                         name: "INC. TERMOG.",
-                        "CUMPLE": incumplimientosCountsForChart.termografia.cumple,
-                        "NO CUMPLE": incumplimientosCountsForChart.termografia.noCumple
+                        "CUMPLE": isPuestaATierra ? null : incumplimientosCountsForChart.termografia.cumple,
+                        "NO CUMPLE": isPuestaATierra ? null : incumplimientosCountsForChart.termografia.noCumple,
+                        "NO APLICA": isPuestaATierra ? 1 : null
                       },
                       {
                         name: "CARGA TÉRMICA",
-                        "CUMPLE": incumplimientosCountsForChart.cargaTermica.cumple,
-                        "NO CUMPLE": incumplimientosCountsForChart.cargaTermica.noCumple
+                        "CUMPLE": isPuestaATierra ? null : incumplimientosCountsForChart.cargaTermica.cumple,
+                        "NO CUMPLE": isPuestaATierra ? null : incumplimientosCountsForChart.cargaTermica.noCumple,
+                        "NO APLICA": isPuestaATierra ? 1 : null
                       },
                       {
                         name: "INF. PRUEBA DISYUNTORES",
-                        "CUMPLE": incumplimientosCountsForChart.informePruebaDinamicaDisyuntores.cumple,
-                        "NO CUMPLE": incumplimientosCountsForChart.informePruebaDinamicaDisyuntores.noCumple
+                        "CUMPLE": isPuestaATierra ? null : incumplimientosCountsForChart.informePruebaDinamicaDisyuntores.cumple,
+                        "NO CUMPLE": isPuestaATierra ? null : incumplimientosCountsForChart.informePruebaDinamicaDisyuntores.noCumple,
+                        "NO APLICA": isPuestaATierra ? 1 : null
                       }
                     ];
 
@@ -772,6 +808,10 @@ export default function EmpresaGerentePage() {
                       "NO CUMPLE": {
                         label: "NO CUMPLE",
                         color: "rgba(239, 68, 68, 0.4)"
+                      },
+                      "NO APLICA": {
+                        label: "NO APLICA",
+                        color: "rgba(156, 163, 175, 0.4)"
                       }
                     };
 
@@ -779,32 +819,34 @@ export default function EmpresaGerentePage() {
                       <div className="overflow-x-auto -mx-4 sm:mx-0 px-4 sm:px-0">
                         <div className="min-w-[600px] sm:min-w-0">
                           <ChartContainer config={chartConfig} className="h-[250px] sm:h-[350px] text-black w-full">
-                            <BarChart data={chartData}>
-                              <CartesianGrid strokeDasharray="3 3" vertical={false} />
-                              <XAxis
-                                dataKey="name"
-                                tickLine={false}
-                                tickMargin={10}
-                                axisLine={false}
+                        <BarChart data={chartData}>
+                          <CartesianGrid strokeDasharray="3 3" vertical={false} />
+                          <XAxis
+                            dataKey="name"
+                            tickLine={false}
+                            tickMargin={10}
+                            axisLine={false}
                                 tick={{ fontSize: 8 }}
                                 angle={-45}
                                 textAnchor="end"
                                 height={80}
-                              />
-                              <YAxis
-                                tickLine={false}
-                                axisLine={false}
-                                tick={{ fontSize: 12 }}
-                                label={{ value: 'Cantidad de Mediciones', angle: -90, position: 'insideLeft' }}
-                              />
-                              <ChartTooltip
-                                cursor={false}
-                                content={<ChartTooltipContent />}
-                              />
+                          />
+                          <YAxis
+                            tickLine={false}
+                            axisLine={false}
+                            tick={{ fontSize: 12 }}
+                            label={{ value: 'Cantidad de Mediciones', angle: -90, position: 'insideLeft' }}
+                            allowDecimals={false}
+                          />
+                          <ChartTooltip
+                            cursor={false}
+                            content={<ChartTooltipContent />}
+                          />
                               <Bar dataKey="CUMPLE" fill="rgb(34, 197, 94)" radius={4} />
                               <Bar dataKey="NO CUMPLE" fill="rgba(239, 68, 68, 0.97)" radius={4} />
-                            </BarChart>
-                          </ChartContainer>
+                              {isPuestaATierra && <Bar dataKey="NO APLICA" fill="rgba(156, 163, 175, 0.6)" radius={4} />}
+                        </BarChart>
+                      </ChartContainer>
                         </div>
                       </div>
                     );

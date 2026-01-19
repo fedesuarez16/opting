@@ -20,6 +20,7 @@ export default function RegisterPage() {
   const [role, setRole] = useState<UserRole>('branch_manager');
   const [empresaId, setEmpresaId] = useState('');
   const [sucursalId, setSucursalId] = useState('');
+  const [servicio, setServicio] = useState<string>('BLINDAJE LEGAL');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
@@ -53,6 +54,7 @@ export default function RegisterPage() {
       const userData: any = {
         email: email,
         role: role,
+        servicio: servicio || 'BLINDAJE LEGAL', // Default a BLINDAJE LEGAL si no se especifica
         createdAt: new Date().toISOString(),
       };
 
@@ -340,6 +342,25 @@ export default function RegisterPage() {
               )}
             </>
           )}
+
+          <div>
+            <label htmlFor="servicio" className="block text-sm font-medium text-gray-700">
+              Servicio
+            </label>
+            <select
+              id="servicio"
+              name="servicio"
+              className="mt-1 block text-black w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm rounded-md"
+              value={servicio}
+              onChange={(e) => setServicio(e.target.value)}
+            >
+              <option value="BLINDAJE LEGAL">Blindaje Legal</option>
+              <option value="PUESTA A TIERRA">Puesta a Tierra</option>
+            </select>
+            <p className="mt-1 text-xs text-gray-500">
+              Seleccione el servicio principal que verá este usuario en sus tarjetas y gráficos
+            </p>
+          </div>
 
           <div>
             <button

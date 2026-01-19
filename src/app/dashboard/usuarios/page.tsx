@@ -16,6 +16,7 @@ interface UserData {
   sucursalId?: string;
   empresaNombre?: string;
   sucursalNombre?: string;
+  servicio?: string;
   createdAt?: string;
   emailVerified?: boolean;
   disabled?: boolean;
@@ -192,6 +193,7 @@ export default function UsuariosPage() {
                   <th className="px-4 py-3 text-left font-medium text-gray-700">Rol</th>
                   <th className="px-4 py-3 text-left font-medium text-gray-700">Empresa</th>
                   <th className="px-4 py-3 text-left font-medium text-gray-700">Sucursal</th>
+                  <th className="px-4 py-3 text-left font-medium text-gray-700">Servicio</th>
                   <th className="px-4 py-3 text-left font-medium text-gray-700">Fecha de Registro</th>
                   <th className="px-4 py-3 text-left font-medium text-gray-700">Acciones</th>
                 </tr>
@@ -210,6 +212,9 @@ export default function UsuariosPage() {
                     </td>
                     <td className="px-4 py-3 text-gray-900">
                       {userData.sucursalNombre || (userData.sucursalId ? userData.sucursalId : '-')}
+                    </td>
+                    <td className="px-4 py-3 text-gray-900">
+                      {userData.servicio || 'BLINDAJE LEGAL'}
                     </td>
                     <td className="px-4 py-3 text-gray-500">
                       {userData.metadata?.creationTime

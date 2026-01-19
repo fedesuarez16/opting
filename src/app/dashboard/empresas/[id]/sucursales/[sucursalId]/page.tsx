@@ -34,7 +34,20 @@ export default function SucursalDetailPage({ params }: SucursalDetailPageProps) 
   const sucursalId = decodeURIComponent(resolvedParams.sucursalId);
   
   const { user } = useAuth();
-  const { mediciones, loading: loadingMediciones, error: errorMediciones } = useMediciones(empresaId, sucursalId);
+  const [userServicio, setUserServicio] = useState<string>('BLINDAJE LEGAL'); // Default
+  const { mediciones: allMediciones, loading: loadingMediciones, error: errorMediciones } = useMediciones(empresaId, sucursalId);
+  
+  // Filtrar mediciones por el servicio del usuario
+  const mediciones = useMemo(() => {
+    if (!userServicio) return allMediciones;
+    return allMediciones.filter((m) => {
+      const datos = m.datos as Record<string, unknown>;
+      const getValue = (k: string) => String((datos[k] ?? '') as unknown);
+      const servicio = getValue('SERVICIO') || getValue('servicio');
+      return servicio && servicio.toUpperCase().includes(userServicio.toUpperCase());
+    });
+  }, [allMediciones, userServicio]);
+  
   const { sucursales } = useSucursales(empresaId);
   const { empresas } = useEmpresas();
   
@@ -50,9 +63,9 @@ export default function SucursalDetailPage({ params }: SucursalDetailPageProps) 
   const [loadingArchivos, setLoadingArchivos] = useState<boolean>(true);
   const [userRole, setUserRole] = useState<UserRole | null>(null);
 
-  // Obtener el rol del usuario
+  // Obtener el rol y servicio del usuario
   useEffect(() => {
-    const fetchUserRole = async () => {
+    const fetchUserData = async () => {
       if (user) {
         try {
           const userRef = ref(database, `users/${user.uid}`);
@@ -60,14 +73,17 @@ export default function SucursalDetailPage({ params }: SucursalDetailPageProps) 
           if (snapshot.exists()) {
             const userData = snapshot.val();
             setUserRole(userData.role);
+            if (userData.servicio) {
+              setUserServicio(userData.servicio);
+            }
           }
         } catch (error) {
-          console.error('Error fetching user role:', error);
+          console.error('Error fetching user data:', error);
         }
       }
     };
 
-    fetchUserRole();
+    fetchUserData();
   }, [user]);
 
   const fetchArchivos = async () => {
@@ -345,6 +361,8 @@ export default function SucursalDetailPage({ params }: SucursalDetailPageProps) 
               
               // Si es gerente, mostrar solo CUMPLE y NO CUMPLE
               if (isManager) {
+                const isPuestaATierra = userServicio.toUpperCase().includes('PUESTA A TIERRA');
+                
                 const chartData = [
                   {
                     name: "INCUMPLIMIENTO PAT",
@@ -353,18 +371,21 @@ export default function SucursalDetailPage({ params }: SucursalDetailPageProps) 
                   },
                   {
                     name: "INCUMPLIMIENTO ILUM",
-                    "CUMPLE": incumplimientosCountsForChart.iluminacion.cumple,
-                    "NO CUMPLE": incumplimientosCountsForChart.iluminacion.noCumple
+                    "CUMPLE": isPuestaATierra ? null : incumplimientosCountsForChart.iluminacion.cumple,
+                    "NO CUMPLE": isPuestaATierra ? null : incumplimientosCountsForChart.iluminacion.noCumple,
+                    "NO APLICA": isPuestaATierra ? 1 : null
                   },
                   {
                     name: "INCUMPLIMIENTO RUIDO",
-                    "CUMPLE": incumplimientosCountsForChart.ruido.cumple,
-                    "NO CUMPLE": incumplimientosCountsForChart.ruido.noCumple
+                    "CUMPLE": isPuestaATierra ? null : incumplimientosCountsForChart.ruido.cumple,
+                    "NO CUMPLE": isPuestaATierra ? null : incumplimientosCountsForChart.ruido.noCumple,
+                    "NO APLICA": isPuestaATierra ? 1 : null
                   },
                   {
                     name: "INCUMPLIMIENTOS TERMOGRAFÍA",
-                    "CUMPLE": incumplimientosCountsForChart.termografia.cumple,
-                    "NO CUMPLE": incumplimientosCountsForChart.termografia.noCumple
+                    "CUMPLE": isPuestaATierra ? null : incumplimientosCountsForChart.termografia.cumple,
+                    "NO CUMPLE": isPuestaATierra ? null : incumplimientosCountsForChart.termografia.noCumple,
+                    "NO APLICA": isPuestaATierra ? 1 : null
                   }
                 ];
 
@@ -376,6 +397,10 @@ export default function SucursalDetailPage({ params }: SucursalDetailPageProps) 
                   "NO CUMPLE": {
                     label: "NO CUMPLE",
                     color: "rgba(239, 68, 68, 0.4)"
+                  },
+                  "NO APLICA": {
+                    label: "NO APLICA",
+                    color: "rgba(156, 163, 175, 0.4)"
                   }
                 };
 
@@ -400,6 +425,7 @@ export default function SucursalDetailPage({ params }: SucursalDetailPageProps) 
                           axisLine={false}
                           tick={{ fontSize: 12 }}
                           label={{ value: 'Cantidad de Mediciones', angle: -90, position: 'insideLeft' }}
+                          allowDecimals={false}
                         />
                         <ChartTooltip
                           cursor={false}
@@ -407,6 +433,7 @@ export default function SucursalDetailPage({ params }: SucursalDetailPageProps) 
                         />
                         <Bar dataKey="CUMPLE" fill="rgba(34, 197, 94, 0.67)" radius={4} />
                         <Bar dataKey="NO CUMPLE" fill="rgba(239, 68, 68, 0.67)" radius={4} />
+                        {isPuestaATierra && <Bar dataKey="NO APLICA" fill="rgba(156, 163, 175, 0.6)" radius={4} />}
                       </BarChart>
                     </ChartContainer>
                   </div>
@@ -493,6 +520,7 @@ export default function SucursalDetailPage({ params }: SucursalDetailPageProps) 
                       axisLine={false}
                       tick={{ fontSize: 12 }}
                       label={{ value: 'Cantidad de Mediciones', angle: -90, position: 'insideLeft' }}
+                      allowDecimals={false}
                     />
                     <ChartTooltip
                       cursor={false}

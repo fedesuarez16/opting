@@ -59,6 +59,7 @@ export async function GET(req: NextRequest) {
         sucursalId: dbUserData.sucursalId,
         empresaNombre: dbUserData.empresaNombre,
         sucursalNombre: dbUserData.sucursalNombre,
+        servicio: dbUserData.servicio || 'BLINDAJE LEGAL',
         createdAt: dbUserData.createdAt,
       };
     });
