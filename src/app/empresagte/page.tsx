@@ -20,6 +20,7 @@ import {
 import OneDriveFolders from '@/components/OneDriveFolders';
 import Sidebar from '@/components/Sidebar';
 import Breadcrumb from '@/components/Breadcrumb';
+import { getEstudiosAplicables } from '@/lib/servicioUtils';
 
 export default function EmpresaGerentePage() {
   const { user, loading: authLoading } = useAuth();
@@ -55,6 +56,9 @@ export default function EmpresaGerentePage() {
   }, [allMediciones, userServicio]);
   
   const { sucursales } = useSucursales(empresaId);
+
+  // Obtener qué estudios aplican según el servicio del usuario
+  const estudiosAplicables = useMemo(() => getEstudiosAplicables(userServicio), [userServicio]);
 
   useEffect(() => {
     if (!authLoading && !user) {
@@ -480,21 +484,10 @@ export default function EmpresaGerentePage() {
     fetchRelevamientosConBlindaje();
   };
 
-  if (authLoading || loading) {
+  if (authLoading || loading || !empresaAsignadaNombre) {
     return (
       <div className="flex items-center justify-center h-screen">
         <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-indigo-500"></div>
-      </div>
-    );
-  }
-
-  if (!empresaAsignadaNombre) {
-    return (
-      <div className="flex items-center justify-center h-screen">
-        <div className="text-center">
-          <h1 className="text-2xl font-bold text-gray-900 mb-4">No hay empresa asignada</h1>
-          <p className="text-gray-600">Por favor, contacte a un administrador para asignar una empresa.</p>
-        </div>
       </div>
     );
   }
@@ -638,21 +631,21 @@ export default function EmpresaGerentePage() {
               {/* Nueva tarjeta de extintores que vencen - Segunda posición */}
               <div 
                 className={`rounded-3xl p-6 text-white border shadow-sm ${
-                  userServicio.toUpperCase().includes('PUESTA A TIERRA') 
+                  !estudiosAplicables.extintores 
                     ? '' 
                     : 'cursor-pointer hover:shadow-lg transition-shadow'
                 } ${
-                  userServicio.toUpperCase().includes('PUESTA A TIERRA')
+                  !estudiosAplicables.extintores
                     ? 'bg-gradient-to-b from-black to-gray-700 border-gray-800'
                     : extintoresVencenMesSiguiente.length > 0
                     ? 'bg-gradient-to-b from-red-900 to-red-700 border-red-800'
                     : 'bg-gradient-to-b from-black to-gray-700 border-gray-800'
                 }`}
-                onClick={() => !userServicio.toUpperCase().includes('PUESTA A TIERRA') && setShowExtintoresModal(true)}
+                onClick={() => estudiosAplicables.extintores && setShowExtintoresModal(true)}
               >
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className={`text-sm ${extintoresVencenMesSiguiente.length > 0 && !userServicio.toUpperCase().includes('PUESTA A TIERRA') ? 'text-gray-200' : 'text-gray-300'}`}>
+                    <p className={`text-sm ${extintoresVencenMesSiguiente.length > 0 && estudiosAplicables.extintores ? 'text-gray-200' : 'text-gray-300'}`}>
                       Extintores vencidos / próximos a vencer
                     </p>
                     {loadingMediciones ? (
@@ -660,12 +653,12 @@ export default function EmpresaGerentePage() {
                         <div className="h-8 bg-gray-300 rounded w-16"></div>
                       </div>
                     ) : (
-                      <p className={`font-bold text-white ${userServicio.toUpperCase().includes('PUESTA A TIERRA') ? 'text-xl' : 'text-3xl'}`}>
-                        {userServicio.toUpperCase().includes('PUESTA A TIERRA') ? 'NO APLICA' : extintoresVencenMesSiguiente.length}
+                      <p className={`font-bold text-white ${!estudiosAplicables.extintores ? 'text-xl' : 'text-3xl'}`}>
+                        {!estudiosAplicables.extintores ? 'NO APLICA' : extintoresVencenMesSiguiente.length}
                       </p>
                     )}
                   </div>
-                  <div className={extintoresVencenMesSiguiente.length > 0 && !userServicio.toUpperCase().includes('PUESTA A TIERRA') ? 'text-red-300' : 'text-gray-400'}>
+                  <div className={extintoresVencenMesSiguiente.length > 0 && estudiosAplicables.extintores ? 'text-red-300' : 'text-gray-400'}>
                     <svg className="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 16.5c-.77.833.192 2.5 1.732 2.5z" />
                     </svg>
@@ -696,8 +689,8 @@ export default function EmpresaGerentePage() {
               </div>
 
               <div 
-                className={`bg-gradient-to-b from-black to-gray-700 rounded-3xl p-6 text-white border border-gray-800 shadow-sm ${userServicio.toUpperCase().includes('PUESTA A TIERRA') ? '' : 'cursor-pointer hover:opacity-90 transition-opacity'}`}
-                onClick={() => !userServicio.toUpperCase().includes('PUESTA A TIERRA') && handleIncumplimientoCardClick('iluminacion')}
+                className={`bg-gradient-to-b from-black to-gray-700 rounded-3xl p-6 text-white border border-gray-800 shadow-sm ${!estudiosAplicables.iluminacion ? '' : 'cursor-pointer hover:opacity-90 transition-opacity'}`}
+                onClick={() => estudiosAplicables.iluminacion && handleIncumplimientoCardClick('iluminacion')}
               >
                 <div className="flex items-center justify-between">
                   <div>
@@ -707,8 +700,8 @@ export default function EmpresaGerentePage() {
                         <div className="h-8 bg-gray-300 rounded w-16"></div>
                       </div>
                     ) : (
-                      <p className={`font-bold text-white ${userServicio.toUpperCase().includes('PUESTA A TIERRA') ? 'text-xl' : 'text-3xl'}`}>
-                        {userServicio.toUpperCase().includes('PUESTA A TIERRA') ? 'NO APLICA' : incumplimientosCountsEmpresa.iluNoCumple}
+                      <p className={`font-bold text-white ${!estudiosAplicables.iluminacion ? 'text-xl' : 'text-3xl'}`}>
+                        {!estudiosAplicables.iluminacion ? 'NO APLICA' : incumplimientosCountsEmpresa.iluNoCumple}
                       </p>
                     )}
                   </div>
@@ -721,8 +714,8 @@ export default function EmpresaGerentePage() {
               </div>
 
               <div 
-                className={`bg-gradient-to-b from-black to-gray-700 rounded-3xl p-6 text-white border border-gray-800 shadow-sm ${userServicio.toUpperCase().includes('PUESTA A TIERRA') ? '' : 'cursor-pointer hover:opacity-90 transition-opacity'}`}
-                onClick={() => !userServicio.toUpperCase().includes('PUESTA A TIERRA') && handleIncumplimientoCardClick('ruido')}
+                className={`bg-gradient-to-b from-black to-gray-700 rounded-3xl p-6 text-white border border-gray-800 shadow-sm ${!estudiosAplicables.ruido ? '' : 'cursor-pointer hover:opacity-90 transition-opacity'}`}
+                onClick={() => estudiosAplicables.ruido && handleIncumplimientoCardClick('ruido')}
               >
                 <div className="flex items-center justify-between">
                   <div>
@@ -732,8 +725,8 @@ export default function EmpresaGerentePage() {
                         <div className="h-8 bg-gray-300 rounded w-16"></div>
                       </div>
                     ) : (
-                      <p className={`font-bold text-white ${userServicio.toUpperCase().includes('PUESTA A TIERRA') ? 'text-xl' : 'text-3xl'}`}>
-                        {userServicio.toUpperCase().includes('PUESTA A TIERRA') ? 'NO APLICA' : incumplimientosCountsEmpresa.ruidoNoCumple}
+                      <p className={`font-bold text-white ${!estudiosAplicables.ruido ? 'text-xl' : 'text-3xl'}`}>
+                        {!estudiosAplicables.ruido ? 'NO APLICA' : incumplimientosCountsEmpresa.ruidoNoCumple}
                       </p>
                     )}
                   </div>
@@ -760,43 +753,42 @@ export default function EmpresaGerentePage() {
                   </div>
                 ) : (
                   (() => {
-                    const isPuestaATierra = userServicio.toUpperCase().includes('PUESTA A TIERRA');
-                    
                     const chartData = [
                       {
                         name: "INC. PAT",
-                        "CUMPLE": incumplimientosCountsForChart.pat.cumple,
-                        "NO CUMPLE": incumplimientosCountsForChart.pat.noCumple
+                        "CUMPLE": estudiosAplicables.pat ? incumplimientosCountsForChart.pat.cumple : null,
+                        "NO CUMPLE": estudiosAplicables.pat ? incumplimientosCountsForChart.pat.noCumple : null,
+                        "NO APLICA": estudiosAplicables.pat ? null : 1
                       },
                       {
                         name: "INC. ILUM",
-                        "CUMPLE": isPuestaATierra ? null : incumplimientosCountsForChart.iluminacion.cumple,
-                        "NO CUMPLE": isPuestaATierra ? null : incumplimientosCountsForChart.iluminacion.noCumple,
-                        "NO APLICA": isPuestaATierra ? 1 : null
+                        "CUMPLE": estudiosAplicables.iluminacion ? incumplimientosCountsForChart.iluminacion.cumple : null,
+                        "NO CUMPLE": estudiosAplicables.iluminacion ? incumplimientosCountsForChart.iluminacion.noCumple : null,
+                        "NO APLICA": estudiosAplicables.iluminacion ? null : 1
                       },
                       {
                         name: "INC. RUIDO",
-                        "CUMPLE": isPuestaATierra ? null : incumplimientosCountsForChart.ruido.cumple,
-                        "NO CUMPLE": isPuestaATierra ? null : incumplimientosCountsForChart.ruido.noCumple,
-                        "NO APLICA": isPuestaATierra ? 1 : null
+                        "CUMPLE": estudiosAplicables.ruido ? incumplimientosCountsForChart.ruido.cumple : null,
+                        "NO CUMPLE": estudiosAplicables.ruido ? incumplimientosCountsForChart.ruido.noCumple : null,
+                        "NO APLICA": estudiosAplicables.ruido ? null : 1
                       },
                       {
                         name: "INC. TERMOG.",
-                        "CUMPLE": isPuestaATierra ? null : incumplimientosCountsForChart.termografia.cumple,
-                        "NO CUMPLE": isPuestaATierra ? null : incumplimientosCountsForChart.termografia.noCumple,
-                        "NO APLICA": isPuestaATierra ? 1 : null
+                        "CUMPLE": estudiosAplicables.termografia ? incumplimientosCountsForChart.termografia.cumple : null,
+                        "NO CUMPLE": estudiosAplicables.termografia ? incumplimientosCountsForChart.termografia.noCumple : null,
+                        "NO APLICA": estudiosAplicables.termografia ? null : 1
                       },
                       {
                         name: "CARGA TÉRMICA",
-                        "CUMPLE": isPuestaATierra ? null : incumplimientosCountsForChart.cargaTermica.cumple,
-                        "NO CUMPLE": isPuestaATierra ? null : incumplimientosCountsForChart.cargaTermica.noCumple,
-                        "NO APLICA": isPuestaATierra ? 1 : null
+                        "CUMPLE": estudiosAplicables.cargaTermica ? incumplimientosCountsForChart.cargaTermica.cumple : null,
+                        "NO CUMPLE": estudiosAplicables.cargaTermica ? incumplimientosCountsForChart.cargaTermica.noCumple : null,
+                        "NO APLICA": estudiosAplicables.cargaTermica ? null : 1
                       },
                       {
                         name: "INF. PRUEBA DISYUNTORES",
-                        "CUMPLE": isPuestaATierra ? null : incumplimientosCountsForChart.informePruebaDinamicaDisyuntores.cumple,
-                        "NO CUMPLE": isPuestaATierra ? null : incumplimientosCountsForChart.informePruebaDinamicaDisyuntores.noCumple,
-                        "NO APLICA": isPuestaATierra ? 1 : null
+                        "CUMPLE": estudiosAplicables.pruebaDisyuntores ? incumplimientosCountsForChart.informePruebaDinamicaDisyuntores.cumple : null,
+                        "NO CUMPLE": estudiosAplicables.pruebaDisyuntores ? incumplimientosCountsForChart.informePruebaDinamicaDisyuntores.noCumple : null,
+                        "NO APLICA": estudiosAplicables.pruebaDisyuntores ? null : 1
                       }
                     ];
 
@@ -844,7 +836,7 @@ export default function EmpresaGerentePage() {
                           />
                               <Bar dataKey="CUMPLE" fill="rgb(34, 197, 94)" radius={4} />
                               <Bar dataKey="NO CUMPLE" fill="rgba(239, 68, 68, 0.97)" radius={4} />
-                              {isPuestaATierra && <Bar dataKey="NO APLICA" fill="rgba(156, 163, 175, 0.6)" radius={4} />}
+                              <Bar dataKey="NO APLICA" fill="rgba(156, 163, 175, 0.6)" radius={4} />
                         </BarChart>
                       </ChartContainer>
                         </div>

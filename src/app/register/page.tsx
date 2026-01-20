@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
 import Link from 'next/link';
@@ -8,8 +8,11 @@ import { ref, set } from 'firebase/database';
 import { database } from '@/lib/firebase';
 import { useEmpresas } from '@/hooks/useEmpresas';
 import { useSucursales } from '@/hooks/useSucursales';
+import { collectionGroup, getDocs } from 'firebase/firestore';
+import { firestore } from '@/lib/firebase';
 import Sidebar from '@/components/Sidebar';
 import Breadcrumb from '@/components/Breadcrumb';
+import { getServiciosDisponibles } from '@/lib/servicioUtils';
 
 type UserRole = 'admin' | 'general_manager' | 'branch_manager';
 
@@ -21,6 +24,8 @@ export default function RegisterPage() {
   const [empresaId, setEmpresaId] = useState('');
   const [sucursalId, setSucursalId] = useState('');
   const [servicio, setServicio] = useState<string>('BLINDAJE LEGAL');
+  const [serviciosDisponibles, setServiciosDisponibles] = useState<string[]>(['BLINDAJE LEGAL', 'PUESTA A TIERRA']);
+  const [loadingServicios, setLoadingServicios] = useState(true);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
@@ -29,6 +34,37 @@ export default function RegisterPage() {
   const router = useRouter();
   const { empresas } = useEmpresas();
   const { sucursales } = useSucursales(empresaId || undefined);
+
+  // Obtener servicios disponibles del sistema
+  useEffect(() => {
+    const fetchServicios = async () => {
+      try {
+        const medicionesQuery = collectionGroup(firestore, 'mediciones');
+        const medicionesSnapshot = await getDocs(medicionesQuery);
+        
+        const mediciones = medicionesSnapshot.docs.map(doc => ({
+          datos: doc.data()
+        }));
+        
+        const servicios = getServiciosDisponibles(mediciones);
+        
+        // Si hay servicios encontrados, usarlos; si no, mantener los por defecto
+        if (servicios.length > 0) {
+          setServiciosDisponibles(servicios);
+          // Si el servicio actual no está en la lista, usar el primero
+          if (!servicios.includes(servicio)) {
+            setServicio(servicios[0]);
+          }
+        }
+      } catch (error) {
+        console.error('Error al obtener servicios:', error);
+      } finally {
+        setLoadingServicios(false);
+      }
+    };
+
+    fetchServicios();
+  }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -347,16 +383,25 @@ export default function RegisterPage() {
             <label htmlFor="servicio" className="block text-sm font-medium text-gray-700">
               Servicio
             </label>
-            <select
-              id="servicio"
-              name="servicio"
-              className="mt-1 block text-black w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm rounded-md"
-              value={servicio}
-              onChange={(e) => setServicio(e.target.value)}
-            >
-              <option value="BLINDAJE LEGAL">Blindaje Legal</option>
-              <option value="PUESTA A TIERRA">Puesta a Tierra</option>
-            </select>
+            {loadingServicios ? (
+              <div className="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 bg-gray-100 rounded-md animate-pulse">
+                <span className="text-gray-500">Cargando servicios...</span>
+              </div>
+            ) : (
+              <select
+                id="servicio"
+                name="servicio"
+                className="mt-1 block text-black w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm rounded-md"
+                value={servicio}
+                onChange={(e) => setServicio(e.target.value)}
+              >
+                {serviciosDisponibles.map((serv) => (
+                  <option key={serv} value={serv}>
+                    {serv}
+                  </option>
+                ))}
+              </select>
+            )}
             <p className="mt-1 text-xs text-gray-500">
               Seleccione el servicio principal que verá este usuario en sus tarjetas y gráficos
             </p>
