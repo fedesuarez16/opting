@@ -474,34 +474,34 @@ export default function EmpresasPage() {
                   <div className="min-w-[700px] sm:min-w-0">
                     <ChartContainer config={chartConfig} className="h-[280px] sm:h-[380px] text-black w-full">
                       <BarChart data={chartData} margin={{ bottom: 60, left: 10, right: 10, top: 10 }}>
-                        <CartesianGrid strokeDasharray="3 3" vertical={false} />
-                        <XAxis
-                          dataKey="name"
-                          tickLine={false}
+                    <CartesianGrid strokeDasharray="3 3" vertical={false} />
+                    <XAxis
+                      dataKey="name"
+                      tickLine={false}
                           tickMargin={8}
-                          axisLine={false}
+                      axisLine={false}
                           tick={{ fontSize: 10 }}
                           angle={-45}
                           textAnchor="end"
                           height={70}
                           interval={0}
-                        />
-                        <YAxis
-                          tickLine={false}
-                          axisLine={false}
-                          tick={{ fontSize: 12 }}
-                          label={{ value: 'Cantidad de Sucursales', angle: -90, position: 'insideLeft' }}
-                        />
-                        <ChartTooltip
-                          cursor={false}
-                          content={<ChartTooltipContent />}
-                        />
+                    />
+                    <YAxis
+                      tickLine={false}
+                      axisLine={false}
+                      tick={{ fontSize: 12 }}
+                      label={{ value: 'Cantidad de Sucursales', angle: -90, position: 'insideLeft' }}
+                    />
+                    <ChartTooltip
+                      cursor={false}
+                      content={<ChartTooltipContent />}
+                    />
                         <Bar dataKey="EN NUBE" fill="#22c55e" radius={4} />
                         <Bar dataKey="Procesar" fill="#3b82f6" radius={4} />
                         <Bar dataKey="PEDIR A TEC" fill="#f59e0b" radius={4} />
                         <Bar dataKey="PENDIENTE" fill="#ef4444" radius={4} />
-                      </BarChart>
-                    </ChartContainer>
+                  </BarChart>
+                </ChartContainer>
                   </div>
                 </div>
               );
@@ -615,15 +615,26 @@ export default function EmpresasPage() {
                             </span>
                           </div>
                         </div>
-                        <Link
-                          href={`/dashboard/empresas/${empresa.id}/sucursales`}
-                          className="inline-flex items-center justify-center w-full px-4 py-2.5 text-sm font-medium text-white bg-gray-900 rounded-lg hover:bg-gray-800 transition-colors active:scale-[0.98]"
-                        >
-                          Ver detalle
-                          <svg className="w-4 h-4 ml-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                          </svg>
-                        </Link>
+                        <div className="flex gap-2">
+                          <button
+                            onClick={() => handleAddEdit(empresa)}
+                            className="inline-flex items-center justify-center flex-1 px-4 py-2.5 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors active:scale-[0.98]"
+                          >
+                            <svg className="w-4 h-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                            </svg>
+                            Editar
+                          </button>
+                          <Link
+                            href={`/dashboard/empresas/${empresa.id}/sucursales`}
+                            className="inline-flex items-center justify-center flex-1 px-4 py-2.5 text-sm font-medium text-white bg-gray-900 rounded-lg hover:bg-gray-800 transition-colors active:scale-[0.98]"
+                          >
+                            Ver detalle
+                            <svg className="w-4 h-4 ml-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                            </svg>
+                          </Link>
+                        </div>
                       </div>
                     </div>
                   </div>
@@ -638,34 +649,34 @@ export default function EmpresasPage() {
                       <tr className="border-b border-gray-100">
                         <th className="px-6 py-4 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">
                           Empresa
-                        </th>
+                    </th>
                         <th className="px-6 py-4 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">
                           Contacto
-                        </th>
+                    </th>
                         <th className="px-6 py-4 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider hidden md:table-cell">
-                          CUIT
-                        </th>
+                      CUIT
+                    </th>
                         <th className="px-6 py-4 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">
-                          Sucursales
-                        </th>
+                      Sucursales
+                    </th>
                         <th className="px-6 py-4 text-right text-xs font-semibold text-gray-500 uppercase tracking-wider">
                           Acción
-                        </th>
-                      </tr>
-                    </thead>
+                    </th>
+                  </tr>
+                </thead>
                     <tbody className="divide-y divide-gray-50">
-                      {filteredEmpresas.map((empresa) => (
-                        <tr
-                          key={empresa.id}
+                  {filteredEmpresas.map((empresa) => (
+                    <tr
+                      key={empresa.id}
                           className="hover:bg-gray-50 transition-colors group"
                         >
                           <td className="px-6 py-5">
                             <div className="flex items-center gap-4">
                               <div className="h-11 w-11 rounded-xl bg-gradient-to-br from-gray-800 to-gray-900 flex items-center justify-center flex-shrink-0 shadow-sm group-hover:shadow-md transition-shadow">
                                 <span className="text-base font-semibold text-white">
-                                  {empresa.nombre.charAt(0).toUpperCase()}
-                                </span>
-                              </div>
+                              {empresa.nombre.charAt(0).toUpperCase()}
+                            </span>
+                          </div>
                               <div className="min-w-0 flex-1">
                                 <div className="font-semibold text-gray-900 truncate mb-0.5">{empresa.nombre}</div>
                                 {empresa.email && (
@@ -686,20 +697,20 @@ export default function EmpresasPage() {
                                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
                                 </svg>
                                 {empresa.telefono}
-                              </div>
+                          </div>
                             ) : (
                               <span className="text-sm text-gray-400">—</span>
-                            )}
-                          </td>
+                        )}
+                      </td>
                           <td className="px-6 py-5 hidden md:table-cell">
                             {empresa.cuit ? (
                               <span className="text-sm font-mono text-gray-700">{empresa.cuit}</span>
                             ) : (
                               <span className="text-sm text-gray-400">—</span>
-                            )}
-                          </td>
+                        )}
+                      </td>
                           <td className="px-6 py-5">
-                            {loadingSucursales ? (
+                        {loadingSucursales ? (
                               <div className="h-5 w-12 bg-gray-200 rounded animate-pulse"></div>
                             ) : (
                               <div className="flex items-center gap-2">
@@ -707,25 +718,37 @@ export default function EmpresasPage() {
                                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
                                 </svg>
                                 <span className="text-sm font-medium text-gray-900">{sucursalesPorEmpresa[empresa.id] || 0}</span>
-                              </div>
-                            )}
-                          </td>
+                          </div>
+                        )}
+                      </td>
                           <td className="px-6 py-5 text-right">
-                            <Link
-                              href={`/dashboard/empresas/${empresa.id}/sucursales`}
-                              className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 hover:border-gray-300 transition-all group-hover:shadow-sm"
-                            >
-                              Ver
-                              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                              </svg>
-                            </Link>
+                            <div className="flex items-center justify-end gap-2">
+                              <button
+                                onClick={() => handleAddEdit(empresa)}
+                                className="inline-flex items-center gap-2 px-3 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 hover:border-gray-300 transition-all group-hover:shadow-sm"
+                                title="Editar empresa"
+                              >
+                                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                                </svg>
+                                <span className="hidden lg:inline">Editar</span>
+                              </button>
+                              <Link
+                                href={`/dashboard/empresas/${empresa.id}/sucursales`}
+                                className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 hover:border-gray-300 transition-all group-hover:shadow-sm"
+                              >
+                                Ver
+                                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                                </svg>
+                              </Link>
+                            </div>
                           </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
               </div>
             </>
           )}
@@ -884,6 +907,7 @@ function EmpresaFormModal({ empresa, onClose, onSave }: EmpresaFormModalProps) {
       direccion: '',
       telefono: '',
       email: '',
+      cuit: '',
       estado: 'activa',
     }
   );
@@ -899,13 +923,13 @@ function EmpresaFormModal({ empresa, onClose, onSave }: EmpresaFormModalProps) {
   };
 
   return (
-    <div className="fixed z-10 inset-0 overflow-y-auto">
+    <div className="fixed z-50 inset-0 overflow-y-auto">
       <div className="flex items-center justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
-        <div className="fixed inset-0 transition-opacity" aria-hidden="true">
+        <div className="fixed inset-0 transition-opacity z-40" aria-hidden="true">
           <div className="absolute inset-0 bg-gray-500 opacity-75" onClick={onClose}></div>
         </div>
         <span className="hidden sm:inline-block sm:align-middle sm:h-screen" aria-hidden="true">&#8203;</span>
-        <div className="inline-block align-bottom bg-white rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full">
+        <div className="relative z-50 inline-block align-bottom bg-white rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full">
           <form onSubmit={handleSubmit}>
             <div className="bg-white px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
               <h3 className="text-lg font-medium text-gray-900 mb-4">
@@ -960,6 +984,19 @@ function EmpresaFormModal({ empresa, onClose, onSave }: EmpresaFormModalProps) {
                     className="mt-1 focus:ring-gray-500 focus:border-gray-500 block w-full shadow-sm sm:text-sm border-gray-300 rounded-md"
                   />
                 </div>
+              </div>
+              
+              <div className="mb-4">
+                <label htmlFor="cuit" className="block text-sm font-medium text-gray-700">CUIT</label>
+                <input
+                  type="text"
+                  name="cuit"
+                  id="cuit"
+                  value={formData.cuit || ''}
+                  onChange={handleChange}
+                  placeholder="30-12345678-9"
+                  className="mt-1 focus:ring-gray-500 focus:border-gray-500 block w-full shadow-sm sm:text-sm border-gray-300 rounded-md font-mono"
+                />
               </div>
               
               <div className="mb-4">

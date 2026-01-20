@@ -32,7 +32,7 @@ export default function EmpresaGerentePage() {
   const [isDesktopSidebarCollapsed, setIsDesktopSidebarCollapsed] = useState(false);
   const [showExtintoresModal, setShowExtintoresModal] = useState(false);
   const [showIncumplimientoModal, setShowIncumplimientoModal] = useState(false);
-  const [selectedIncumplimientoType, setSelectedIncumplimientoType] = useState<'pat' | 'iluminacion' | 'ruido' | null>(null);
+  const [selectedIncumplimientoType, setSelectedIncumplimientoType] = useState<'pat' | 'iluminacion' | 'ruido' | 'pruebaDisyuntores' | null>(null);
   const [sucursalesConIncumplimiento, setSucursalesConIncumplimiento] = useState<Array<{ empresaId: string; sucursalId: string; sucursalNombre: string }>>([]);
   const [showBlindajeModal, setShowBlindajeModal] = useState(false);
   const [relevamientosConBlindaje, setRelevamientosConBlindaje] = useState<Array<{ empresaId: string; empresaNombre: string; sucursalId: string; sucursalNombre: string; fecha: string }>>([]);
@@ -100,15 +100,27 @@ export default function EmpresaGerentePage() {
     fetchEmpresaAsignada();
   }, [user, authLoading, router, empresas]);
 
+  // Verificar si hay mediciones con servicio PRUEBA DINAMICA DISYUNTORES
+  const tieneMedicionesPruebaDisyuntores = useMemo(() => {
+    return allMediciones.some((m) => {
+      const datos = m.datos as Record<string, unknown>;
+      const getValue = (k: string) => String((datos[k] ?? '') as unknown);
+      const servicio = getValue('SERVICIO') || getValue('servicio');
+      return servicio && servicio.toUpperCase().includes('PRUEBA') && servicio.toUpperCase().includes('DISYUNTOR');
+    });
+  }, [allMediciones]);
+
   // Conteos de incumplimientos específicos para esta empresa
   const incumplimientosCountsEmpresa = useMemo(() => {
     const counts = {
       patNoCumple: 0,
       iluNoCumple: 0,
-      ruidoNoCumple: 0
+      ruidoNoCumple: 0,
+      pruebaDisyuntoresNoCumple: 0
     };
 
-    mediciones.forEach((m) => {
+    // Usar allMediciones para contar incumplimientos de disyuntores (no filtrado por servicio)
+    allMediciones.forEach((m) => {
       const datos = m.datos as Record<string, unknown>;
       const getValue = (k: string) => String((datos[k] ?? '') as any);
       
@@ -121,11 +133,15 @@ export default function EmpresaGerentePage() {
       
       const incumplimientoRUIDO = getValue('INCUMPLIMIENTO RUIDO');
       if (incumplimientoRUIDO === 'NO CUMPLE') counts.ruidoNoCumple += 1;
+      
+      // INCUMPLIMIENTO PRUEBA DINAMICA DISYUNTORES (usar allMediciones)
+      const incumplimientoPRUEBA = getValue('INCUMPLIMIENTO PRUEBA DINAMICA DISYUNTORES');
+      if (incumplimientoPRUEBA === 'NO CUMPLE') counts.pruebaDisyuntoresNoCumple += 1;
     });
 
     console.log('Incumplimientos counts para empresa:', empresaId, counts);
     return counts;
-  }, [mediciones, empresaId]);
+  }, [allMediciones, empresaId]);
 
   // Conteos de incumplimientos para el gráfico (solo CUMPLE y NO CUMPLE)
   const incumplimientosCountsForChart = useMemo(() => {
@@ -156,7 +172,8 @@ export default function EmpresaGerentePage() {
       }
     };
 
-    mediciones.forEach((m) => {
+    // Usar allMediciones para contar incumplimientos de disyuntores (no filtrado por servicio)
+    allMediciones.forEach((m) => {
       const datos = m.datos as Record<string, unknown>;
       const getValue = (k: string) => String((datos[k] ?? '') as any);
       
@@ -185,14 +202,45 @@ export default function EmpresaGerentePage() {
       if (incumplimientoCARGA === 'CUMPLE') counts.cargaTermica.cumple += 1;
       else if (incumplimientoCARGA === 'NO CUMPLE') counts.cargaTermica.noCumple += 1;
       
-      // INFORME PRUEBA DINAMICA DISYUNTORES
-      const incumplimientoPRUEBA = getValue('INCUMPLIMIENTO INFORME PRUEBA DINAMICA DISYUNTORES') || getValue('INCUMPLIMIENTO PRUEBA DINAMICA DISYUNTORES');
+      // INCUMPLIMIENTO PRUEBA DINAMICA DISYUNTORES (usar allMediciones)
+      const incumplimientoPRUEBA = getValue('INCUMPLIMIENTO PRUEBA DINAMICA DISYUNTORES');
       if (incumplimientoPRUEBA === 'CUMPLE') counts.informePruebaDinamicaDisyuntores.cumple += 1;
       else if (incumplimientoPRUEBA === 'NO CUMPLE') counts.informePruebaDinamicaDisyuntores.noCumple += 1;
     });
 
+    // Para los demás estudios, usar mediciones filtradas
+    mediciones.forEach((m) => {
+      const datos = m.datos as Record<string, unknown>;
+      const getValue = (k: string) => String((datos[k] ?? '') as any);
+      
+      // INCUMPLIMIENTO PAT
+      const incumplimientoPAT = getValue('INCUMPLIMIENTO PAT');
+      if (incumplimientoPAT === 'CUMPLE') counts.pat.cumple += 1;
+      else if (incumplimientoPAT === 'NO CUMPLE') counts.pat.noCumple += 1;
+      
+      // INCUMPLIMIENTO ILUM
+      const incumplimientoILU = getValue('INCUMPLIMIENTO ILUM');
+      if (incumplimientoILU === 'CUMPLE') counts.iluminacion.cumple += 1;
+      else if (incumplimientoILU === 'NO CUMPLE') counts.iluminacion.noCumple += 1;
+      
+      // INCUMPLIMIENTO RUIDO
+      const incumplimientoRUIDO = getValue('INCUMPLIMIENTO RUIDO');
+      if (incumplimientoRUIDO === 'CUMPLE') counts.ruido.cumple += 1;
+      else if (incumplimientoRUIDO === 'NO CUMPLE') counts.ruido.noCumple += 1;
+      
+      // INCUMPLIMIENTOS TERMOGRAFÍA
+      const incumplimientoTERMO = getValue('INCUMPLIMIENTOS TERMOGRAFÍA') || getValue('INCUMPLIMIENTOS TERMOGRAFÍA');
+      if (incumplimientoTERMO === 'CUMPLE') counts.termografia.cumple += 1;
+      else if (incumplimientoTERMO === 'NO CUMPLE') counts.termografia.noCumple += 1;
+      
+      // INCUMPLIMIENTO CARGA TÉRMICA
+      const incumplimientoCARGA = getValue('INCUMPLIMIENTO CARGA TERMICA') || getValue('INCUMPLIENTO CARGA TERMICA');
+      if (incumplimientoCARGA === 'CUMPLE') counts.cargaTermica.cumple += 1;
+      else if (incumplimientoCARGA === 'NO CUMPLE') counts.cargaTermica.noCumple += 1;
+    });
+
     return counts;
-  }, [mediciones]);
+  }, [mediciones, allMediciones]);
 
   // Conteos de mediciones por tipo de estudio para esta empresa específica
   const medicionesCountsEmpresa = useMemo(() => {
@@ -386,10 +434,13 @@ export default function EmpresaGerentePage() {
   }, [mediciones, sucursales, empresaId]);
 
   // Función para obtener sucursales con incumplimientos
-  const getSucursalesConIncumplimiento = (type: 'pat' | 'iluminacion' | 'ruido') => {
+  const getSucursalesConIncumplimiento = (type: 'pat' | 'iluminacion' | 'ruido' | 'pruebaDisyuntores') => {
     const sucursalesSet = new Set<string>();
     
-    mediciones.forEach((m) => {
+    // Para pruebaDisyuntores, usar allMediciones (no filtrado por servicio)
+    const medicionesAUsar = type === 'pruebaDisyuntores' ? allMediciones : mediciones;
+    
+    medicionesAUsar.forEach((m) => {
       const datos = m.datos as Record<string, unknown>;
       const getValue = (k: string) => String((datos[k] ?? '') as any);
       
@@ -400,6 +451,8 @@ export default function EmpresaGerentePage() {
         incumplimientoValue = getValue('INCUMPLIMIENTO ILUM');
       } else if (type === 'ruido') {
         incumplimientoValue = getValue('INCUMPLIMIENTO RUIDO');
+      } else if (type === 'pruebaDisyuntores') {
+        incumplimientoValue = getValue('INCUMPLIMIENTO PRUEBA DINAMICA DISYUNTORES');
       }
       
       if (incumplimientoValue === 'NO CUMPLE' && m.sucursalId) {
@@ -419,7 +472,7 @@ export default function EmpresaGerentePage() {
     return sucursalesList;
   };
 
-  const handleIncumplimientoCardClick = (type: 'pat' | 'iluminacion' | 'ruido') => {
+  const handleIncumplimientoCardClick = (type: 'pat' | 'iluminacion' | 'ruido' | 'pruebaDisyuntores') => {
     setSelectedIncumplimientoType(type);
     const sucursalesList = getSucursalesConIncumplimiento(type);
     setSucursalesConIncumplimiento(sucursalesList);
@@ -603,7 +656,7 @@ export default function EmpresaGerentePage() {
             </div>
 
             {/* Cards de métricas */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-6 mb-8">
+            <div className={`grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 ${tieneMedicionesPruebaDisyuntores ? 'xl:grid-cols-6' : 'xl:grid-cols-5'} gap-2 mb-8`}>
               {/* Card de Total Locales Relevados - Primera posición */}
               <div 
                 className="bg-gradient-to-b from-black to-gray-700 rounded-3xl p-6 text-white border border-gray-800 shadow-sm cursor-pointer hover:opacity-90 transition-opacity"
@@ -628,43 +681,7 @@ export default function EmpresaGerentePage() {
                 </div>
               </div>
               
-              {/* Nueva tarjeta de extintores que vencen - Segunda posición */}
-              <div 
-                className={`rounded-3xl p-6 text-white border shadow-sm ${
-                  !estudiosAplicables.extintores 
-                    ? '' 
-                    : 'cursor-pointer hover:shadow-lg transition-shadow'
-                } ${
-                  !estudiosAplicables.extintores
-                    ? 'bg-gradient-to-b from-black to-gray-700 border-gray-800'
-                    : extintoresVencenMesSiguiente.length > 0
-                    ? 'bg-gradient-to-b from-red-900 to-red-700 border-red-800'
-                    : 'bg-gradient-to-b from-black to-gray-700 border-gray-800'
-                }`}
-                onClick={() => estudiosAplicables.extintores && setShowExtintoresModal(true)}
-              >
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className={`text-sm ${extintoresVencenMesSiguiente.length > 0 && estudiosAplicables.extintores ? 'text-gray-200' : 'text-gray-300'}`}>
-                      Extintores vencidos / próximos a vencer
-                    </p>
-                    {loadingMediciones ? (
-                      <div className="animate-pulse">
-                        <div className="h-8 bg-gray-300 rounded w-16"></div>
-                      </div>
-                    ) : (
-                      <p className={`font-bold text-white ${!estudiosAplicables.extintores ? 'text-xl' : 'text-3xl'}`}>
-                        {!estudiosAplicables.extintores ? 'NO APLICA' : extintoresVencenMesSiguiente.length}
-                      </p>
-                    )}
-                  </div>
-                  <div className={extintoresVencenMesSiguiente.length > 0 && estudiosAplicables.extintores ? 'text-red-300' : 'text-gray-400'}>
-                    <svg className="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 16.5c-.77.833.192 2.5 1.732 2.5z" />
-                    </svg>
-                  </div>
-                </div>
-              </div>
+              
               <div 
                 className="bg-gradient-to-b from-black to-gray-700 rounded-3xl p-6 text-white border border-gray-800 shadow-sm cursor-pointer hover:opacity-90 transition-opacity"
                 onClick={() => handleIncumplimientoCardClick('pat')}
@@ -738,6 +755,72 @@ export default function EmpresaGerentePage() {
                 </div>
               </div>
 
+              {/* Card de Incumplimientos Prueba Disyuntores - Solo visible si hay mediciones con ese servicio */}
+              {tieneMedicionesPruebaDisyuntores && (
+                <div 
+                  className="bg-gradient-to-b from-black to-gray-700 rounded-3xl p-6 text-white border border-gray-800 shadow-sm cursor-pointer hover:opacity-90 transition-opacity"
+                  onClick={() => handleIncumplimientoCardClick('pruebaDisyuntores')}
+                >
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-gray-300 text-sm">Incumplimientos Prueba Disyuntores</p>
+                      {loadingMediciones ? (
+                        <div className="animate-pulse">
+                          <div className="h-8 bg-gray-300 rounded w-16"></div>
+                        </div>
+                      ) : (
+                        <p className="text-3xl font-bold text-white">
+                          {incumplimientosCountsEmpresa.pruebaDisyuntoresNoCumple}
+                        </p>
+                      )}
+                    </div>
+                    <div className="text-gray-400">
+                      <svg className="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 17h8m0 0V9m0 8l-8-8-4 4-6-6" />
+                      </svg>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Nueva tarjeta de extintores que vencen - Segunda posición */}
+              <div 
+                className={`rounded-3xl p-6 text-white border shadow-sm ${
+                  !estudiosAplicables.extintores 
+                    ? '' 
+                    : 'cursor-pointer hover:shadow-lg transition-shadow'
+                } ${
+                  !estudiosAplicables.extintores
+                    ? 'bg-gradient-to-b from-black to-gray-700 border-gray-800'
+                    : extintoresVencenMesSiguiente.length > 0
+                    ? 'bg-gradient-to-b from-red-900 to-red-700 border-red-800'
+                    : 'bg-gradient-to-b from-black to-gray-700 border-gray-800'
+                }`}
+                onClick={() => estudiosAplicables.extintores && setShowExtintoresModal(true)}
+              >
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className={`text-sm ${extintoresVencenMesSiguiente.length > 0 && estudiosAplicables.extintores ? 'text-gray-200' : 'text-gray-300'}`}>
+                      Extintores vencidos / próximos a vencer
+                    </p>
+                    {loadingMediciones ? (
+                      <div className="animate-pulse">
+                        <div className="h-8 bg-gray-300 rounded w-16"></div>
+                      </div>
+                    ) : (
+                      <p className={`font-bold text-white ${!estudiosAplicables.extintores ? 'text-xl' : 'text-3xl'}`}>
+                        {!estudiosAplicables.extintores ? 'NO APLICA' : extintoresVencenMesSiguiente.length}
+                      </p>
+                    )}
+                  </div>
+                  <div className={extintoresVencenMesSiguiente.length > 0 && estudiosAplicables.extintores ? 'text-red-300' : 'text-gray-400'}>
+                    <svg className="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 16.5c-.77.833.192 2.5 1.732 2.5z" />
+                    </svg>
+                  </div>
+                </div>
+              </div>
+
             </div>
 
             {/* Gráfico de Estados de Mediciones por Tipo de Estudio */}
@@ -786,9 +869,15 @@ export default function EmpresaGerentePage() {
                       },
                       {
                         name: "INF. PRUEBA DISYUNTORES",
-                        "CUMPLE": estudiosAplicables.pruebaDisyuntores ? incumplimientosCountsForChart.informePruebaDinamicaDisyuntores.cumple : null,
-                        "NO CUMPLE": estudiosAplicables.pruebaDisyuntores ? incumplimientosCountsForChart.informePruebaDinamicaDisyuntores.noCumple : null,
-                        "NO APLICA": estudiosAplicables.pruebaDisyuntores ? null : 1
+                        "CUMPLE": estudiosAplicables.pruebaDisyuntores && (incumplimientosCountsForChart.informePruebaDinamicaDisyuntores.cumple > 0 || incumplimientosCountsForChart.informePruebaDinamicaDisyuntores.noCumple > 0) 
+                          ? incumplimientosCountsForChart.informePruebaDinamicaDisyuntores.cumple 
+                          : null,
+                        "NO CUMPLE": estudiosAplicables.pruebaDisyuntores && (incumplimientosCountsForChart.informePruebaDinamicaDisyuntores.cumple > 0 || incumplimientosCountsForChart.informePruebaDinamicaDisyuntores.noCumple > 0) 
+                          ? incumplimientosCountsForChart.informePruebaDinamicaDisyuntores.noCumple 
+                          : null,
+                        "NO APLICA": !estudiosAplicables.pruebaDisyuntores || (incumplimientosCountsForChart.informePruebaDinamicaDisyuntores.cumple === 0 && incumplimientosCountsForChart.informePruebaDinamicaDisyuntores.noCumple === 0) 
+                          ? 1 
+                          : null
                       }
                     ];
 
@@ -954,7 +1043,7 @@ export default function EmpresaGerentePage() {
               <div className="bg-white px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
                 <div className="flex items-center justify-between mb-4">
                   <h3 className="text-lg font-medium text-gray-900">
-                    Incumplimientos {selectedIncumplimientoType === 'pat' ? 'PAT' : selectedIncumplimientoType === 'iluminacion' ? 'Iluminación' : 'Ruido'}
+                    Incumplimientos {selectedIncumplimientoType === 'pat' ? 'PAT' : selectedIncumplimientoType === 'iluminacion' ? 'Iluminación' : selectedIncumplimientoType === 'ruido' ? 'Ruido' : 'Prueba Disyuntores'}
                   </h3>
                   <button
                     onClick={() => {

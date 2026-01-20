@@ -34,8 +34,9 @@ export default function SucursalesPage({ params }: SucursalesPageProps) {
   const [customLabels, setCustomLabels] = useState<Record<string, string>>({});
   const { user } = useAuth();
   const [userRole, setUserRole] = useState<UserRole | null>(null);
+  const [userServicio, setUserServicio] = useState<string>('BLINDAJE LEGAL'); // Default
   
-  // Obtener el rol del usuario
+  // Obtener el rol y servicio del usuario
   useEffect(() => {
     const fetchUserRole = async () => {
       if (user) {
@@ -45,6 +46,10 @@ export default function SucursalesPage({ params }: SucursalesPageProps) {
           if (snapshot.exists()) {
             const userData = snapshot.val();
             setUserRole(userData.role);
+            // Obtener el servicio del usuario (default: BLINDAJE LEGAL)
+            if (userData.servicio) {
+              setUserServicio(userData.servicio);
+            }
           }
         } catch (error) {
           console.error('Error fetching user role:', error);
@@ -68,7 +73,7 @@ export default function SucursalesPage({ params }: SucursalesPageProps) {
   const [currentSucursal, setCurrentSucursal] = useState<Sucursal | null>(null);
   const [search, setSearch] = useState('');
   const [showPendienteModal, setShowPendienteModal] = useState(false);
-  const [selectedStudyType, setSelectedStudyType] = useState<'pat' | 'iluminacion' | 'ruido' | null>(null);
+  const [selectedStudyType, setSelectedStudyType] = useState<'pat' | 'iluminacion' | 'ruido' | 'pruebaDisyuntores' | null>(null);
   const [sucursalesConPendiente, setSucursalesConPendiente] = useState<Array<{ sucursalId: string; sucursalNombre: string }>>([]);
 
   // Mediciones "en nube" por sucursal
@@ -363,12 +368,17 @@ export default function SucursalesPage({ params }: SucursalesPageProps) {
                   medicionesCountsEmpresa.iluminacion.procesar,
       ruido: medicionesCountsEmpresa.ruido.pendienteVisita + 
              medicionesCountsEmpresa.ruido.pedirTecnico + 
-             medicionesCountsEmpresa.ruido.procesar
+             medicionesCountsEmpresa.ruido.procesar,
+      pruebaDisyuntores: (medicionesCountsEmpresa as any).informePruebaDinamicaDisyuntores 
+        ? (medicionesCountsEmpresa as any).informePruebaDinamicaDisyuntores.pendienteVisita + 
+          (medicionesCountsEmpresa as any).informePruebaDinamicaDisyuntores.pedirTecnico + 
+          (medicionesCountsEmpresa as any).informePruebaDinamicaDisyuntores.procesar
+        : 0
     };
   }, [medicionesCountsEmpresa]);
 
   // Función para obtener sucursales con estudios pendientes
-  const getSucursalesConPendiente = (studyType: 'pat' | 'iluminacion' | 'ruido') => {
+  const getSucursalesConPendiente = (studyType: 'pat' | 'iluminacion' | 'ruido' | 'pruebaDisyuntores') => {
     const sucursalesSet = new Set<string>();
     const sucursalesMap = new Map<string, string>(); // sucursalId -> sucursalNombre
     
@@ -383,6 +393,8 @@ export default function SucursalesPage({ params }: SucursalesPageProps) {
         studyValue = getValue('ILUMINACIÓN') || getValue('ILUMINACION');
       } else if (studyType === 'ruido') {
         studyValue = getValue('RUIDO');
+      } else if (studyType === 'pruebaDisyuntores') {
+        studyValue = getValue('INFORME PRUEBA DINAMICA DISYUNTORES') || getValue('PRUEBA DINAMICA DE DISYUNTORES');
       }
       
       // Verificar si está pendiente (no en nube)
@@ -407,7 +419,7 @@ export default function SucursalesPage({ params }: SucursalesPageProps) {
     return sucursalesList;
   };
 
-  const handlePendienteCardClick = (studyType: 'pat' | 'iluminacion' | 'ruido') => {
+  const handlePendienteCardClick = (studyType: 'pat' | 'iluminacion' | 'ruido' | 'pruebaDisyuntores') => {
     if (userRole !== 'admin') return;
     
     setSelectedStudyType(studyType);
@@ -415,6 +427,12 @@ export default function SucursalesPage({ params }: SucursalesPageProps) {
     setSucursalesConPendiente(sucursalesList);
     setShowPendienteModal(true);
   };
+  
+  // Verificar si el servicio del usuario es "prueba dinamica de disyuntores"
+  const isPruebaDisyuntores = useMemo(() => {
+    return userServicio.toUpperCase().includes('PRUEBA') && 
+           userServicio.toUpperCase().includes('DISYUNTOR');
+  }, [userServicio]);
 
   // Conteos de incumplimientos por tipo para el gráfico (para gerentes)
   const incumplimientosCountsForChart = useMemo(() => {
@@ -555,7 +573,7 @@ export default function SucursalesPage({ params }: SucursalesPageProps) {
         </div>
 
          {/* Cards de métricas */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4 sm:gap-6 mb-6 sm:mb-8">
+      <div className={`grid grid-cols-1 sm:grid-cols-2 ${isPruebaDisyuntores ? 'lg:grid-cols-6' : 'lg:grid-cols-5'} gap-4 sm:gap-6 mb-6 sm:mb-8`}>
       
 
       <div className="bg-gradient-to-b from-black to-gray-700 rounded-2xl sm:rounded-3xl p-4 sm:p-6 text-white border border-gray-800 shadow-sm">
@@ -690,6 +708,36 @@ export default function SucursalesPage({ params }: SucursalesPageProps) {
           </div>
         </div>
       </div>
+
+      {/* Card de Prueba Dinamica Disyuntores - Solo visible si el servicio corresponde */}
+      {isPruebaDisyuntores && (
+        <div 
+          className={`bg-gradient-to-b from-black to-gray-700 rounded-2xl sm:rounded-3xl p-4 sm:p-6 text-white border border-gray-800 shadow-sm ${userRole === 'admin' ? 'cursor-pointer hover:opacity-90 transition-opacity' : ''}`}
+          onClick={() => userRole === 'admin' && handlePendienteCardClick('pruebaDisyuntores')}
+        >
+          <div className="flex items-center justify-between">
+            <div className="flex-1 min-w-0">
+              <p className="text-gray-300 text-xs sm:text-sm truncate">
+                {userRole === 'admin' ? 'Prueba Disyuntores Pendiente de Entrega' : 'Prueba Disyuntores'}
+              </p>
+              {loadingMediciones ? (
+                <div className="h-6 sm:h-8 bg-gray-300 rounded w-12 sm:w-16 animate-pulse mt-1"></div>
+              ) : (
+                <p className="text-2xl sm:text-3xl font-bold text-white mt-1">
+                  {userRole === 'admin' 
+                    ? pendienteEntregaCounts.pruebaDisyuntores 
+                    : 0}
+                </p>
+              )}
+            </div>
+            <div className="text-gray-400 flex-shrink-0 ml-2">
+              <svg className="h-6 w-6 sm:h-8 sm:w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 17h8m0 0V9m0 8l-8-8-4 4-6-6" />
+              </svg>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
 
       
@@ -1215,7 +1263,7 @@ function SucursalFormModal({ sucursal, empresaId: _empresaId, onClose, onSave }:
 }
 
 interface PendienteModalProps {
-  studyType: 'pat' | 'iluminacion' | 'ruido';
+  studyType: 'pat' | 'iluminacion' | 'ruido' | 'pruebaDisyuntores';
   sucursales: Array<{ sucursalId: string; sucursalNombre: string }>;
   empresaId: string;
   onClose: () => void;
@@ -1225,7 +1273,8 @@ function PendienteModal({ studyType, sucursales, empresaId, onClose }: Pendiente
   const studyNames = {
     pat: 'PAT',
     iluminacion: 'Iluminación',
-    ruido: 'Ruido'
+    ruido: 'Ruido',
+    pruebaDisyuntores: 'Prueba Dinámica Disyuntores'
   };
 
   return (

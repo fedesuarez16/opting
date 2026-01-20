@@ -53,6 +53,34 @@ export function useEmpresas() {
           
           if (testDoc.exists()) {
             const data = testDoc.data();
+            
+            // Manejar fechaCreacion de forma segura
+            let fechaCreacionStr = 'No disponible';
+            if (data.fechaCreacion) {
+              try {
+                if (data.fechaCreacion.seconds) {
+                  // Es un Timestamp de Firestore
+                  const fecha = new Date(data.fechaCreacion.seconds * 1000);
+                  if (!isNaN(fecha.getTime())) {
+                    fechaCreacionStr = fecha.toISOString().split('T')[0];
+                  }
+                } else if (data.fechaCreacion instanceof Date) {
+                  // Es un objeto Date
+                  if (!isNaN(data.fechaCreacion.getTime())) {
+                    fechaCreacionStr = data.fechaCreacion.toISOString().split('T')[0];
+                  }
+                } else if (typeof data.fechaCreacion === 'string') {
+                  // Es una string
+                  const fecha = new Date(data.fechaCreacion);
+                  if (!isNaN(fecha.getTime())) {
+                    fechaCreacionStr = fecha.toISOString().split('T')[0];
+                  }
+                }
+              } catch (e) {
+                console.warn('Error al procesar fechaCreacion:', e);
+              }
+            }
+            
             empresasList.push({
               id: testDoc.id,
               nombre: data.CLIENTE || data.nombre || 'Sin nombre',
@@ -62,7 +90,7 @@ export function useEmpresas() {
               cuit: data.cuit || data.CUIT || 'No disponible',
               totalSucursales: data.totalSucursales || 0,
               totalEmpleados: data.totalEmpleados || 0,
-              fechaCreacion: data.fechaCreacion ? new Date(data.fechaCreacion.seconds * 1000).toISOString().split('T')[0] : 'No disponible',
+              fechaCreacion: fechaCreacionStr,
               estado: data.estado || 'activa',
             });
           }
@@ -86,6 +114,39 @@ export function useEmpresas() {
           const nombre = data.CLIENTE || data.nombre || data.cliente || 'Sin nombre';
           console.log('Nombre extraído:', nombre);
           
+          // Manejar fechaCreacion de forma segura
+          let fechaCreacionStr = 'No disponible';
+          if (data.fechaCreacion) {
+            try {
+              if (data.fechaCreacion.seconds !== undefined) {
+                // Es un Timestamp de Firestore
+                const fecha = new Date(data.fechaCreacion.seconds * 1000);
+                if (!isNaN(fecha.getTime())) {
+                  fechaCreacionStr = fecha.toISOString().split('T')[0];
+                }
+              } else if (data.fechaCreacion instanceof Date) {
+                // Es un objeto Date
+                if (!isNaN(data.fechaCreacion.getTime())) {
+                  fechaCreacionStr = data.fechaCreacion.toISOString().split('T')[0];
+                }
+              } else if (typeof data.fechaCreacion === 'string') {
+                // Es una string
+                const fecha = new Date(data.fechaCreacion);
+                if (!isNaN(fecha.getTime())) {
+                  fechaCreacionStr = fecha.toISOString().split('T')[0];
+                }
+              } else if (data.fechaCreacion.toDate && typeof data.fechaCreacion.toDate === 'function') {
+                // Es un Timestamp de Firestore (método toDate)
+                const fecha = data.fechaCreacion.toDate();
+                if (!isNaN(fecha.getTime())) {
+                  fechaCreacionStr = fecha.toISOString().split('T')[0];
+                }
+              }
+            } catch (e) {
+              console.warn('Error al procesar fechaCreacion para documento', doc.id, ':', e);
+            }
+          }
+          
           empresasList.push({
             id: doc.id,
             nombre: nombre,
@@ -95,7 +156,7 @@ export function useEmpresas() {
             cuit: data.cuit || data.CUIT || 'No disponible',
             totalSucursales: data.totalSucursales || 0,
             totalEmpleados: data.totalEmpleados || 0,
-            fechaCreacion: data.fechaCreacion ? new Date(data.fechaCreacion.seconds * 1000).toISOString().split('T')[0] : 'No disponible',
+            fechaCreacion: fechaCreacionStr,
             estado: data.estado || 'activa',
           });
         });
