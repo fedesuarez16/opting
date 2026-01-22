@@ -824,6 +824,11 @@ function MedicionDetailModal({ medicion, onClose }: MedicionDetailModalProps) {
     .filter(([key]) => {
       const keyUpper = key.toUpperCase();
       
+      // Excluir específicamente el campo "FECHA" (pero no "FECHAS DE MEDICIÓN" ni "FECHA EXTINTORES")
+      if (keyUpper === 'FECHA' || (keyUpper.includes('FECHA') && !keyUpper.includes('FECHAS DE MEDICIÓN') && !keyUpper.includes('FECHA EXTINTORES') && !keyUpper.includes('FECHAS'))) {
+        return false;
+      }
+      
       // Excluir campos que no tienen INCUMPLIMIENTO y están en la lista de exclusiones
       if (!keyUpper.includes('INCUMPLIMIENTO')) {
         if (excludedFields.some(excluded => keyUpper === excluded || keyUpper.includes(excluded))) {

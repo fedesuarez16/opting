@@ -75,6 +75,7 @@ export default function SucursalesPage({ params }: SucursalesPageProps) {
   const [showPendienteModal, setShowPendienteModal] = useState(false);
   const [selectedStudyType, setSelectedStudyType] = useState<'pat' | 'iluminacion' | 'ruido' | 'pruebaDisyuntores' | null>(null);
   const [sucursalesConPendiente, setSucursalesConPendiente] = useState<Array<{ sucursalId: string; sucursalNombre: string }>>([]);
+  const [showExtintoresModal, setShowExtintoresModal] = useState(false);
 
   // Mediciones "en nube" por sucursal
   const medicionesEnNubePorSucursal = useMemo(() => {
@@ -165,42 +166,102 @@ export default function SucursalesPage({ params }: SucursalesPageProps) {
     return { puesta, informe, incumpl, extintores };
   }, [mediciones]);
 
-  // Obtener la fecha más reciente de extintores
-  const fechaExtintores = useMemo(() => {
-    let fechaMasReciente: string | null = null;
-    let fechaMasRecienteDate: Date | null = null;
+  // Calcular extintores próximos a vencer (próximos 30 días) y obtener la fecha más próxima
+  const extintoresProximosAVencer = useMemo(() => {
+    const ahora = new Date();
+    ahora.setHours(0, 0, 0, 0);
+    const proximos30Dias = new Date(ahora);
+    proximos30Dias.setDate(proximos30Dias.getDate() + 30);
+    proximos30Dias.setHours(23, 59, 59, 999);
+    
+    const extintoresList: Array<{
+      sucursalId: string;
+      sucursalNombre: string;
+      fechaVencimiento: string;
+      fechaVencimientoDate: Date;
+      estaVencido: boolean;
+    }> = [];
 
+    // Agrupar mediciones por sucursal
+    const medicionesPorSucursal = new Map<string, typeof mediciones>();
     mediciones.forEach((m) => {
-      const datos = m.datos as Record<string, unknown>;
-      const getValue = (k: string) => String((datos[k] ?? '') as any);
-      
-      // Buscar campos relacionados con fecha de extintores
-      const fechaExtintoresValue = getValue('FECHA EXTINTORES') || 
-                                   getValue('FECHA EXTINTOR') || 
-                                   getValue('FECHA DE EXTINTORES') ||
-                                   getValue('FECHA REGISTRO EXTINTORES');
-      
-      if (fechaExtintoresValue && fechaExtintoresValue.trim() !== '') {
-        try {
-          // Intentar parsear la fecha en diferentes formatos
-          const fecha = new Date(fechaExtintoresValue);
-          if (!isNaN(fecha.getTime())) {
-            if (!fechaMasRecienteDate || fecha > fechaMasRecienteDate) {
-              fechaMasRecienteDate = fecha;
-              fechaMasReciente = fechaExtintoresValue;
-            }
-          }
-        } catch (e) {
-          // Si no se puede parsear, intentar con el valor original
-          if (!fechaMasReciente) {
-            fechaMasReciente = fechaExtintoresValue;
-          }
+      const sucursalId = m.sucursalId;
+      if (sucursalId) {
+        if (!medicionesPorSucursal.has(sucursalId)) {
+          medicionesPorSucursal.set(sucursalId, []);
         }
+        medicionesPorSucursal.get(sucursalId)!.push(m);
       }
     });
 
-    return fechaMasReciente;
-  }, [mediciones]);
+    // Para cada sucursal, obtener la fecha más próxima a vencer
+    medicionesPorSucursal.forEach((medicionesSucursal, sucursalId) => {
+      let fechaMasProxima: Date | null = null;
+      let fechaMasProximaStr: string | null = null;
+
+      medicionesSucursal.forEach((m) => {
+        const datos = m.datos as Record<string, unknown>;
+        const getValue = (k: string) => String((datos[k] ?? '') as any);
+        
+        const fechaExtintoresValue = getValue('FECHA EXTINTORES') || 
+                                     getValue('FECHA EXTINTOR') || 
+                                     getValue('FECHA DE EXTINTORES') ||
+                                     getValue('FECHA REGISTRO EXTINTORES');
+        
+        if (fechaExtintoresValue && fechaExtintoresValue.trim() !== '') {
+          try {
+            const fecha = new Date(fechaExtintoresValue);
+            fecha.setHours(0, 0, 0, 0);
+            if (!isNaN(fecha.getTime())) {
+              // Solo considerar fechas que están vencidas o vencen en los próximos 30 días
+              const fechaTime = fecha.getTime();
+              const ahoraTime = ahora.getTime();
+              const proximos30DiasTime = proximos30Dias.getTime();
+              
+              const estaVencido = fechaTime < ahoraTime;
+              const venceProximos30Dias = fechaTime >= ahoraTime && fechaTime <= proximos30DiasTime;
+              
+              if (estaVencido || venceProximos30Dias) {
+                if (fechaMasProxima === null || fechaTime < fechaMasProxima.getTime()) {
+                  fechaMasProxima = fecha;
+                  fechaMasProximaStr = fechaExtintoresValue;
+                }
+              }
+            }
+          } catch (e) {
+            // Ignorar errores de parsing
+          }
+        }
+      });
+
+      if (fechaMasProxima) {
+        const sucursal = sucursales.find(s => s.id === sucursalId);
+        const fecha = fechaMasProxima as Date;
+        const fechaTime = fecha.getTime();
+        const ahoraTime = ahora.getTime();
+        const estaVencido = fechaTime < ahoraTime;
+        
+        extintoresList.push({
+          sucursalId,
+          sucursalNombre: sucursal?.nombre || sucursalId,
+          fechaVencimiento: fechaMasProximaStr || fecha.toLocaleDateString('es-AR'),
+          fechaVencimientoDate: fecha,
+          estaVencido
+        });
+      }
+    });
+
+    // Ordenar por fecha de vencimiento (más próximas primero)
+    extintoresList.sort((a, b) => a.fechaVencimientoDate.getTime() - b.fechaVencimientoDate.getTime());
+
+    return extintoresList;
+  }, [mediciones, sucursales]);
+
+  // Obtener la fecha más próxima a vencer para mostrar en la card
+  const fechaExtintoresMasProxima = useMemo(() => {
+    if (extintoresProximosAVencer.length === 0) return null;
+    return extintoresProximosAVencer[0].fechaVencimiento;
+  }, [extintoresProximosAVencer]);
 
   // Conteos de mediciones por tipo de estudio para esta empresa específica
   const medicionesCountsEmpresa = useMemo(() => {
@@ -675,17 +736,20 @@ export default function SucursalesPage({ params }: SucursalesPageProps) {
         </div>
       </div>
 
-      <div className="bg-gradient-to-b from-black to-gray-700 rounded-2xl sm:rounded-3xl p-4 sm:p-6 text-white border border-gray-800 shadow-sm">
+      <div 
+        className={`bg-gradient-to-b from-black to-gray-700 rounded-2xl sm:rounded-3xl p-4 sm:p-6 text-white border border-gray-800 shadow-sm ${extintoresProximosAVencer.length > 0 ? 'cursor-pointer hover:opacity-90 transition-opacity' : ''}`}
+        onClick={() => extintoresProximosAVencer.length > 0 && setShowExtintoresModal(true)}
+      >
         <div className="flex items-center justify-between">
           <div className="flex-1 min-w-0">
-            <p className="text-gray-300 text-xs sm:text-sm truncate">Fecha extintores</p>
+            <p className="text-gray-300 text-xs sm:text-sm truncate">Fecha extintores próximos a vencer</p>
             {loadingMediciones ? (
               <div className="h-6 sm:h-8 bg-gray-300 rounded w-12 sm:w-16 animate-pulse mt-1"></div>
             ) : (
               <p className="text-base sm:text-lg font-bold text-white mt-1">
-                {fechaExtintores ? (() => {
+                {fechaExtintoresMasProxima ? (() => {
                   try {
-                    const fecha = new Date(fechaExtintores);
+                    const fecha = new Date(fechaExtintoresMasProxima);
                     if (!isNaN(fecha.getTime())) {
                       return fecha.toLocaleDateString('es-AR', { 
                         year: 'numeric', 
@@ -693,9 +757,9 @@ export default function SucursalesPage({ params }: SucursalesPageProps) {
                         day: 'numeric' 
                       });
                     }
-                    return fechaExtintores;
+                    return fechaExtintoresMasProxima;
                   } catch {
-                    return fechaExtintores;
+                    return fechaExtintoresMasProxima;
                   }
                 })() : 'N/A'}
               </p>
@@ -1110,6 +1174,15 @@ export default function SucursalesPage({ params }: SucursalesPageProps) {
           }}
         />
       )}
+
+      {/* Modal de extintores próximos a vencer */}
+      {showExtintoresModal && (
+        <ExtintoresModal
+          extintores={extintoresProximosAVencer}
+          empresaId={empresaId}
+          onClose={() => setShowExtintoresModal(false)}
+        />
+      )}
     
        
     </div>
@@ -1324,6 +1397,118 @@ function PendienteModal({ studyType, sucursales, empresaId, onClose }: Pendiente
                       >
                         Ver detalle
                       </Link>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+          <div className="bg-gray-50 px-4 py-3 sm:px-6 sm:flex sm:flex-row-reverse">
+            <button
+              type="button"
+              onClick={onClose}
+              className="w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-gray-600 text-base font-medium text-white hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500 sm:ml-3 sm:w-auto sm:text-sm"
+            >
+              Cerrar
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+interface ExtintoresModalProps {
+  extintores: Array<{
+    sucursalId: string;
+    sucursalNombre: string;
+    fechaVencimiento: string;
+    fechaVencimientoDate: Date;
+    estaVencido: boolean;
+  }>;
+  empresaId: string;
+  onClose: () => void;
+}
+
+function ExtintoresModal({ extintores, empresaId, onClose }: ExtintoresModalProps) {
+  return (
+    <div className="fixed z-50 inset-0 overflow-y-auto">
+      <div className="flex items-center justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
+        <div className="fixed inset-0 transition-opacity z-40" aria-hidden="true">
+          <div className="absolute inset-0 bg-gray-500 opacity-75" onClick={onClose}></div>
+        </div>
+        <span className="hidden sm:inline-block sm:align-middle sm:h-screen" aria-hidden="true">&#8203;</span>
+        <div className="relative z-50 inline-block align-bottom bg-white rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-2xl sm:w-full">
+          <div className="bg-white px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-medium text-gray-900">
+                Extintores próximos a vencer
+              </h3>
+              <button
+                onClick={onClose}
+                className="text-gray-400 hover:text-gray-500"
+              >
+                <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+            
+            {extintores.length === 0 ? (
+              <div className="py-8 text-center text-gray-500">
+                <p>No hay extintores próximos a vencer en los próximos 30 días.</p>
+              </div>
+            ) : (
+              <div className="max-h-[60vh] overflow-y-auto">
+                <div className="space-y-3">
+                  {extintores.map((extintor, index) => (
+                    <div
+                      key={`${extintor.sucursalId}_${index}`}
+                      className={`border rounded-lg p-4 hover:bg-gray-50 transition-colors ${
+                        extintor.estaVencido ? 'border-red-300 bg-red-50' : 'border-yellow-300 bg-yellow-50'
+                      }`}
+                    >
+                      <div className="flex items-center justify-between">
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2 mb-1">
+                            <p className="font-medium text-gray-900">{extintor.sucursalNombre}</p>
+                            {extintor.estaVencido && (
+                              <span className="px-2 py-0.5 text-xs font-semibold bg-red-600 text-white rounded">
+                                VENCIDO
+                              </span>
+                            )}
+                            {!extintor.estaVencido && (
+                              <span className="px-2 py-0.5 text-xs font-semibold bg-yellow-600 text-white rounded">
+                                PRÓXIMO A VENCER
+                              </span>
+                            )}
+                          </div>
+                          <p className={`text-sm ${extintor.estaVencido ? 'text-red-700' : 'text-yellow-700'}`}>
+                            Fecha de vencimiento: {(() => {
+                              try {
+                                const fecha = extintor.fechaVencimientoDate;
+                                if (fecha && !isNaN(fecha.getTime())) {
+                                  return fecha.toLocaleDateString('es-AR', { 
+                                    year: 'numeric', 
+                                    month: 'long', 
+                                    day: 'numeric' 
+                                  });
+                                }
+                                return extintor.fechaVencimiento;
+                              } catch {
+                                return extintor.fechaVencimiento;
+                              }
+                            })()}
+                          </p>
+                        </div>
+                        <Link
+                          href={`/dashboard/empresas/${encodeURIComponent(empresaId)}/sucursales/${encodeURIComponent(extintor.sucursalId)}`}
+                          className="ml-4 px-3 py-1.5 text-sm bg-gray-600 text-white rounded-md hover:bg-gray-700 transition-colors flex-shrink-0"
+                          onClick={onClose}
+                        >
+                          Ver detalle
+                        </Link>
+                      </div>
                     </div>
                   ))}
                 </div>

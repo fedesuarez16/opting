@@ -268,12 +268,12 @@ export default function SucursalOneDriveFiles({ empresaId, sucursalId }: Sucursa
             <div className="flex items-center space-x-1 mt-1 overflow-x-auto pb-1">
               <span className="text-xs text-gray-400 flex-shrink-0">Ubicación:</span>
               <div className="flex items-center space-x-1 min-w-0">
-                {folderHistory.map((folder, index) => (
+              {folderHistory.map((folder, index) => (
                   <span key={folder.id} className="text-xs text-gray-600 whitespace-nowrap">
-                    {folder.name}
-                    {index < folderHistory.length - 1 && <span className="mx-1">/</span>}
-                  </span>
-                ))}
+                  {folder.name}
+                  {index < folderHistory.length - 1 && <span className="mx-1">/</span>}
+                </span>
+              ))}
               </div>
             </div>
           )}
@@ -318,27 +318,27 @@ export default function SucursalOneDriveFiles({ empresaId, sucursalId }: Sucursa
             >
               {/* Desktop Layout */}
               <div className="hidden sm:flex items-center justify-between p-4">
-                <div className="flex items-center space-x-3 flex-1 min-w-0">
-                  <span className="text-2xl flex-shrink-0">
-                    {getFileIcon(file)}
-                  </span>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium text-gray-900 truncate">
-                      {file.name}
-                    </p>
+              <div className="flex items-center space-x-3 flex-1 min-w-0">
+                <span className="text-2xl flex-shrink-0">
+                  {getFileIcon(file)}
+                </span>
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-medium text-gray-900 truncate">
+                    {file.name}
+                  </p>
                     <div className="flex items-center space-x-4 text-xs text-gray-500 mt-1">
-                      {file.type === 'folder' ? (
-                        <span>{file.childCount || 0} elemento{(file.childCount || 0) !== 1 ? 's' : ''}</span>
-                      ) : (
-                        <span>{formatFileSize(file.size)}</span>
-                      )}
-                      {file.lastModified && (
-                        <span>Modificado: {formatDate(file.lastModified)}</span>
-                      )}
-                    </div>
+                    {file.type === 'folder' ? (
+                      <span>{file.childCount || 0} elemento{(file.childCount || 0) !== 1 ? 's' : ''}</span>
+                    ) : (
+                      <span>{formatFileSize(file.size)}</span>
+                    )}
+                    {file.lastModified && (
+                      <span>Modificado: {formatDate(file.lastModified)}</span>
+                    )}
                   </div>
                 </div>
-                
+              </div>
+              
                 <div className="flex items-center space-x-2 flex-shrink-0 ml-4">
                   {file.type === 'folder' ? (
                     <span className="px-3 py-1.5 bg-gray-200 text-gray-700 text-sm rounded-md">
@@ -412,7 +412,7 @@ export default function SucursalOneDriveFiles({ empresaId, sucursalId }: Sucursa
                 ) : (
                   <div className="mt-3 pt-3 border-t border-gray-200">
                     <div className="w-full px-4 py-2.5 bg-gray-300 text-gray-500 text-sm rounded-lg text-center">
-                      No disponible
+                    No disponible
                     </div>
                   </div>
                 )}
