@@ -40,6 +40,7 @@ export default function SucursalOneDriveFiles({ empresaId, sucursalId }: Sucursa
   const [folderPath, setFolderPath] = useState<string>('');
   const [currentFolderId, setCurrentFolderId] = useState<string | null>(null);
   const [folderHistory, setFolderHistory] = useState<Array<{ id: string; name: string }>>([]);
+  const [searchTerm, setSearchTerm] = useState<string>('');
   const isFetchingRef = useRef(false);
   const hasFetchedRef = useRef(false);
 
@@ -280,7 +281,15 @@ export default function SucursalOneDriveFiles({ empresaId, sucursalId }: Sucursa
         </div>
         <div className="flex items-center justify-between sm:justify-end gap-3">
           <div className="text-xs sm:text-sm text-gray-500 whitespace-nowrap">
-            {files.length} {files.length !== 1 ? 'items' : 'item'}
+            {searchTerm.trim() ? (
+              <span>
+                {files.filter(file => file.name.toLowerCase().includes(searchTerm.toLowerCase().trim())).length}/{files.length}
+              </span>
+            ) : (
+              <span>
+                {files.length} {files.length !== 1 ? 'items' : 'item'}
+              </span>
+            )}
           </div>
           <button
             onClick={handleRefresh}
@@ -292,21 +301,100 @@ export default function SucursalOneDriveFiles({ empresaId, sucursalId }: Sucursa
         </div>
       </div>
 
-      {files.length === 0 ? (
-        <div className="text-center py-8">
-          <div className="text-gray-400 mb-4">
-            <svg className="mx-auto h-12 w-12" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+      {/* Barra de búsqueda */}
+      <div className="mb-4 sm:mb-6">
+        <div className="relative">
+          <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+            <svg
+              className="h-5 w-5 text-gray-400"
+              xmlns="http://www.w3.org/2000/svg"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
+              />
             </svg>
           </div>
-          <h4 className="text-base sm:text-lg font-medium text-gray-900 mb-2">No hay archivos disponibles</h4>
-          <p className="text-sm sm:text-base text-gray-500 px-2">
-            No se encontraron archivos en la carpeta de OneDrive para esta sucursal
-          </p>
+          <input
+            type="text"
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="block w-full pl-10 pr-10 py-2.5 sm:py-2 text-base sm:text-sm border border-gray-300 rounded-lg leading-5 bg-white placeholder-gray-500 focus:outline-none focus:placeholder-gray-400 focus:ring-2 focus:ring-gray-500 focus:border-gray-500"
+            placeholder="Buscar archivos y carpetas..."
+          />
+          {searchTerm && (
+            <button
+              onClick={() => setSearchTerm('')}
+              className="absolute inset-y-0 right-0 pr-3 flex items-center active:opacity-70"
+              title="Limpiar búsqueda"
+            >
+              <svg
+                className="h-5 w-5 text-gray-400 hover:text-gray-600"
+                xmlns="http://www.w3.org/2000/svg"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M6 18L18 6M6 6l12 12"
+                />
+              </svg>
+            </button>
+          )}
         </div>
-      ) : (
-        <div className="space-y-3">
-          {files.map((file) => (
+      </div>
+
+      {/* Filtrar archivos basado en el término de búsqueda */}
+      {(() => {
+        const filteredFiles = searchTerm.trim() === '' 
+          ? files 
+          : files.filter(file => 
+              file.name.toLowerCase().includes(searchTerm.toLowerCase().trim())
+            );
+
+        if (files.length === 0) {
+          return (
+            <div className="text-center py-8">
+              <div className="text-gray-400 mb-4">
+                <svg className="mx-auto h-12 w-12" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                </svg>
+              </div>
+              <h4 className="text-base sm:text-lg font-medium text-gray-900 mb-2">No hay archivos disponibles</h4>
+              <p className="text-sm sm:text-base text-gray-500 px-2">
+                No se encontraron archivos en la carpeta de OneDrive para esta sucursal
+              </p>
+            </div>
+          );
+        }
+
+        if (searchTerm.trim() && filteredFiles.length === 0) {
+          return (
+            <div className="text-center py-8">
+              <div className="text-gray-400 mb-4">
+                <svg className="mx-auto h-12 w-12" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                </svg>
+              </div>
+              <h4 className="text-base sm:text-lg font-medium text-gray-900 mb-2">No se encontraron resultados</h4>
+              <p className="text-sm sm:text-base text-gray-500 px-2">
+                No se encontraron archivos o carpetas que coincidan con "{searchTerm}"
+              </p>
+            </div>
+          );
+        }
+
+        return (
+          <div className="space-y-3">
+            {filteredFiles.map((file) => (
             <div
               key={file.id}
               className={`rounded-lg transition-colors ${
@@ -419,8 +507,9 @@ export default function SucursalOneDriveFiles({ empresaId, sucursalId }: Sucursa
               </div>
             </div>
           ))}
-        </div>
-      )}
+          </div>
+        );
+      })()}
     </div>
   );
 }

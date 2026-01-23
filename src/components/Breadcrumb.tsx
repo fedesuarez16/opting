@@ -14,7 +14,16 @@ export default function Breadcrumb({ customLabels = {} }: BreadcrumbProps) {
   const { empresas } = useEmpresas();
   
   // Skip the first empty segment after splitting - memoize to prevent unnecessary re-renders
-  const segments = useMemo(() => pathname.split('/').filter(Boolean), [pathname]);
+  // Decode URL-encoded characters (like %20 for spaces) for better visual display
+  const segments = useMemo(() => {
+    return pathname.split('/').filter(Boolean).map(segment => {
+      try {
+        return decodeURIComponent(segment);
+      } catch {
+        return segment;
+      }
+    });
+  }, [pathname]);
   
   // Custom mapping for segment labels
   const defaultLabels: Record<string, string> = {
@@ -91,6 +100,13 @@ export default function Breadcrumb({ customLabels = {} }: BreadcrumbProps) {
             displayLabel = labels[paramName] || customLabels[paramName] || paramName;
           } else {
             displayLabel = labels[segment] || segment;
+          }
+          
+          // Decode any remaining URL-encoded characters (like %20) for visual display
+          try {
+            displayLabel = decodeURIComponent(displayLabel);
+          } catch {
+            // If decoding fails, use the original label
           }
           
           return (
