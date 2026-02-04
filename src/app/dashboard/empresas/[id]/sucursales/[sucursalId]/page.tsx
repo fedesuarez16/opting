@@ -257,50 +257,58 @@ export default function SucursalDetailPage({ params }: SucursalDetailPageProps) 
     return counts;
   }, [mediciones, sucursalId]);
 
-  // Conteos de incumplimientos para el gráfico (solo CUMPLE y NO CUMPLE)
+  // Conteos de incumplimientos para el gráfico (CUMPLE, NO CUMPLE y EN PROCESO)
   const incumplimientosCountsForChart = useMemo(() => {
     const counts = {
       pat: {
         cumple: 0,
-        noCumple: 0
+        noCumple: 0,
+        enProceso: 0
       },
       iluminacion: {
         cumple: 0,
-        noCumple: 0
+        noCumple: 0,
+        enProceso: 0
       },
       ruido: {
         cumple: 0,
-        noCumple: 0
+        noCumple: 0,
+        enProceso: 0
       },
       termografia: {
         cumple: 0,
-        noCumple: 0
+        noCumple: 0,
+        enProceso: 0
       }
     };
 
     mediciones.forEach((m) => {
       const datos = m.datos as Record<string, unknown>;
-      const getValue = (k: string) => String((datos[k] ?? '') as any);
+      const getValue = (k: string) => String((datos[k] ?? '') as any).trim();
       
       // INCUMPLIMIENTO PAT
       const incumplimientoPAT = getValue('INCUMPLIMIENTO PAT');
       if (incumplimientoPAT === 'CUMPLE') counts.pat.cumple += 1;
       else if (incumplimientoPAT === 'NO CUMPLE') counts.pat.noCumple += 1;
+      else if (incumplimientoPAT && incumplimientoPAT !== 'NO APLICA') counts.pat.enProceso += 1;
       
       // INCUMPLIMIENTO ILUM
       const incumplimientoILU = getValue('INCUMPLIMIENTO ILUM');
       if (incumplimientoILU === 'CUMPLE') counts.iluminacion.cumple += 1;
       else if (incumplimientoILU === 'NO CUMPLE') counts.iluminacion.noCumple += 1;
+      else if (incumplimientoILU && incumplimientoILU !== 'NO APLICA') counts.iluminacion.enProceso += 1;
       
       // INCUMPLIMIENTO RUIDO
       const incumplimientoRUIDO = getValue('INCUMPLIMIENTO RUIDO');
       if (incumplimientoRUIDO === 'CUMPLE') counts.ruido.cumple += 1;
       else if (incumplimientoRUIDO === 'NO CUMPLE') counts.ruido.noCumple += 1;
+      else if (incumplimientoRUIDO && incumplimientoRUIDO !== 'NO APLICA') counts.ruido.enProceso += 1;
       
       // INCUMPLIMIENTOS TERMOGRAFÍA
       const incumplimientoTERMO = getValue('INCUMPLIMIENTOS TERMOGRAFÍA') || getValue('INCUMPLIMIENTO TERMOGRAFIA');
       if (incumplimientoTERMO === 'CUMPLE') counts.termografia.cumple += 1;
       else if (incumplimientoTERMO === 'NO CUMPLE') counts.termografia.noCumple += 1;
+      else if (incumplimientoTERMO && incumplimientoTERMO !== 'NO APLICA') counts.termografia.enProceso += 1;
     });
 
     return counts;
@@ -371,32 +379,36 @@ export default function SucursalDetailPage({ params }: SucursalDetailPageProps) 
             (() => {
               const isManager = userRole === 'general_manager' || userRole === 'branch_manager';
               
-              // Si es gerente, mostrar solo CUMPLE y NO CUMPLE
+              // Si es gerente, mostrar CUMPLE, NO CUMPLE y EN PROCESO
               if (isManager) {
                 const isPuestaATierra = userServicio.toUpperCase().includes('PUESTA A TIERRA');
                 
                 const chartData = [
                   {
-                    name: "INCUMPLIMIENTO PAT",
+                    name: "EST. PAT",
                     "CUMPLE": incumplimientosCountsForChart.pat.cumple,
-                    "NO CUMPLE": incumplimientosCountsForChart.pat.noCumple
+                    "NO CUMPLE": incumplimientosCountsForChart.pat.noCumple,
+                    "EN PROCESO": incumplimientosCountsForChart.pat.enProceso
                   },
                   {
-                    name: "INCUMPLIMIENTO ILUM",
+                    name: "EST. ILU",
                     "CUMPLE": isPuestaATierra ? null : incumplimientosCountsForChart.iluminacion.cumple,
                     "NO CUMPLE": isPuestaATierra ? null : incumplimientosCountsForChart.iluminacion.noCumple,
+                    "EN PROCESO": isPuestaATierra ? null : incumplimientosCountsForChart.iluminacion.enProceso,
                     "NO APLICA": isPuestaATierra ? 1 : null
                   },
                   {
-                    name: "INCUMPLIMIENTO RUIDO",
+                    name: "EST. RUIDO",
                     "CUMPLE": isPuestaATierra ? null : incumplimientosCountsForChart.ruido.cumple,
                     "NO CUMPLE": isPuestaATierra ? null : incumplimientosCountsForChart.ruido.noCumple,
+                    "EN PROCESO": isPuestaATierra ? null : incumplimientosCountsForChart.ruido.enProceso,
                     "NO APLICA": isPuestaATierra ? 1 : null
                   },
                   {
-                    name: "INCUMPLIMIENTOS TERMOGRAFÍA",
+                    name: "EST. TERMOG.",
                     "CUMPLE": isPuestaATierra ? null : incumplimientosCountsForChart.termografia.cumple,
                     "NO CUMPLE": isPuestaATierra ? null : incumplimientosCountsForChart.termografia.noCumple,
+                    "EN PROCESO": isPuestaATierra ? null : incumplimientosCountsForChart.termografia.enProceso,
                     "NO APLICA": isPuestaATierra ? 1 : null
                   }
                 ];
@@ -409,6 +421,10 @@ export default function SucursalDetailPage({ params }: SucursalDetailPageProps) 
                   "NO CUMPLE": {
                     label: "NO CUMPLE",
                     color: "rgba(239, 68, 68, 0.4)"
+                  },
+                  "EN PROCESO": {
+                    label: "EN PROCESO",
+                    color: "rgba(59, 130, 246, 0.4)"
                   },
                   "NO APLICA": {
                     label: "NO APLICA",
@@ -445,6 +461,7 @@ export default function SucursalDetailPage({ params }: SucursalDetailPageProps) 
                         />
                         <Bar dataKey="CUMPLE" fill="rgba(34, 197, 94, 0.67)" radius={4} />
                         <Bar dataKey="NO CUMPLE" fill="rgba(239, 68, 68, 0.67)" radius={4} />
+                        <Bar dataKey="EN PROCESO" fill="rgba(59, 130, 246, 0.67)" radius={4} />
                         {isPuestaATierra && <Bar dataKey="NO APLICA" fill="rgba(156, 163, 175, 0.6)" radius={4} />}
                       </BarChart>
                     </ChartContainer>
@@ -456,35 +473,35 @@ export default function SucursalDetailPage({ params }: SucursalDetailPageProps) 
               // Para admin, mostrar estados de mediciones
               const chartData = [
                 {
-                  name: "PAT",
+                  name: "EST. PAT",
                   "PENDIENTE": medicionesCountsSucursal.pat.pendienteVisita,
                   "PEDIR A TEC": medicionesCountsSucursal.pat.pedirTecnico,
                   "Procesar": medicionesCountsSucursal.pat.procesar,
                   "En nube": medicionesCountsSucursal.pat.enNube
                 },
                 {
-                  name: "Iluminación",
+                  name: "EST. ILU",
                   "PENDIENTE": medicionesCountsSucursal.iluminacion.pendienteVisita,
                   "PEDIR A TEC": medicionesCountsSucursal.iluminacion.pedirTecnico,
                   "Procesar": medicionesCountsSucursal.iluminacion.procesar,
                   "En nube": medicionesCountsSucursal.iluminacion.enNube
                 },
                 {
-                  name: "Ruido",
+                  name: "EST. RUIDO",
                   "PENDIENTE": medicionesCountsSucursal.ruido.pendienteVisita,
                   "PEDIR A TEC": medicionesCountsSucursal.ruido.pedirTecnico,
                   "Procesar": medicionesCountsSucursal.ruido.procesar,
                   "En nube": medicionesCountsSucursal.ruido.enNube
                 },
                 {
-                  name: "Carga Térmica",
+                  name: "EST. CARGA TÉRMICA",
                   "PENDIENTE": medicionesCountsSucursal.cargaTermica.pendienteVisita,
                   "PEDIR A TEC": medicionesCountsSucursal.cargaTermica.pedirTecnico,
                   "Procesar": medicionesCountsSucursal.cargaTermica.procesar,
                   "En nube": medicionesCountsSucursal.cargaTermica.enNube
                 },
                 {
-                  name: "ESTUDIO TERMOGRAFÍA",
+                  name: "EST. TERMOG.",
                   "PENDIENTE": medicionesCountsSucursal.termografia.pendienteVisita,
                   "PEDIR A TEC": medicionesCountsSucursal.termografia.pedirTecnico,
                   "Procesar": medicionesCountsSucursal.termografia.procesar,
@@ -756,7 +773,7 @@ export default function SucursalDetailPage({ params }: SucursalDetailPageProps) 
 
 
        
-     
+
       
               
 

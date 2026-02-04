@@ -503,60 +503,52 @@ export default function SucursalesPage({ params }: SucursalesPageProps) {
       pat: {
         cumple: 0,
         noCumple: 0,
-        noAplica: 0,
-        pendiente: 0
+        enProceso: 0
       },
       iluminacion: {
         cumple: 0,
         noCumple: 0,
-        noAplica: 0,
-        pendiente: 0
+        enProceso: 0
       },
       ruido: {
         cumple: 0,
         noCumple: 0,
-        noAplica: 0,
-        pendiente: 0
+        enProceso: 0
       },
       termografia: {
         cumple: 0,
         noCumple: 0,
-        noAplica: 0,
-        pendiente: 0
+        enProceso: 0
       }
     };
 
     mediciones.forEach((m) => {
       const datos = m.datos as Record<string, unknown>;
-      const getValue = (k: string) => String((datos[k] ?? '') as any);
+      const getValue = (k: string) => String((datos[k] ?? '') as any).trim();
       
       // INCUMPLIMIENTO PAT
       const incumplimientoPAT = getValue('INCUMPLIMIENTO PAT');
       if (incumplimientoPAT === 'CUMPLE') counts.pat.cumple += 1;
       else if (incumplimientoPAT === 'NO CUMPLE') counts.pat.noCumple += 1;
-      else if (incumplimientoPAT === 'NO APLICA') counts.pat.noAplica += 1;
-      else if (incumplimientoPAT === 'PENDIENTE') counts.pat.pendiente += 1;
+      else if (incumplimientoPAT && incumplimientoPAT !== 'NO APLICA') counts.pat.enProceso += 1;
       
       // INCUMPLIMIENTO ILUM
       const incumplimientoILU = getValue('INCUMPLIMIENTO ILUM');
       if (incumplimientoILU === 'CUMPLE') counts.iluminacion.cumple += 1;
       else if (incumplimientoILU === 'NO CUMPLE') counts.iluminacion.noCumple += 1;
-      else if (incumplimientoILU === 'NO APLICA') counts.iluminacion.noAplica += 1;
-      else if (incumplimientoILU === 'PENDIENTE') counts.iluminacion.pendiente += 1;
+      else if (incumplimientoILU && incumplimientoILU !== 'NO APLICA') counts.iluminacion.enProceso += 1;
       
       // INCUMPLIMIENTO RUIDO
       const incumplimientoRUIDO = getValue('INCUMPLIMIENTO RUIDO');
       if (incumplimientoRUIDO === 'CUMPLE') counts.ruido.cumple += 1;
       else if (incumplimientoRUIDO === 'NO CUMPLE') counts.ruido.noCumple += 1;
-      else if (incumplimientoRUIDO === 'NO APLICA') counts.ruido.noAplica += 1;
-      else if (incumplimientoRUIDO === 'PENDIENTE') counts.ruido.pendiente += 1;
+      else if (incumplimientoRUIDO && incumplimientoRUIDO !== 'NO APLICA') counts.ruido.enProceso += 1;
       
       // INCUMPLIMIENTOS TERMOGRAFÍA (si existe el campo)
       const incumplimientoTERMO = getValue('INCUMPLIMIENTOS TERMOGRAFÍA') || getValue('INCUMPLIMIENTO TERMOGRAFIA');
       if (incumplimientoTERMO === 'CUMPLE') counts.termografia.cumple += 1;
       else if (incumplimientoTERMO === 'NO CUMPLE') counts.termografia.noCumple += 1;
-      else if (incumplimientoTERMO === 'NO APLICA') counts.termografia.noAplica += 1;
-      else if (incumplimientoTERMO === 'PENDIENTE') counts.termografia.pendiente += 1;
+      else if (incumplimientoTERMO && incumplimientoTERMO !== 'NO APLICA') counts.termografia.enProceso += 1;
     });
 
     console.log('Incumplimientos counts para gráfico:', empresaId, counts);
@@ -825,28 +817,32 @@ export default function SucursalesPage({ params }: SucursalesPageProps) {
               const isArcosDorados = empresaId === 'ARCOS DORADOS' || empresa?.nombre === 'ARCOS DORADOS';
               const isManager = userRole === 'general_manager' || userRole === 'branch_manager';
               
-              // Si es gerente, mostrar incumplimientos (solo CUMPLE y NO CUMPLE)
+              // Si es gerente, mostrar incumplimientos (CUMPLE, NO CUMPLE y EN PROCESO)
               if (isManager) {
                 const chartData = [
                   {
-                    name: "INC. PAT",
+                    name: "EST. PAT",
                     "CUMPLE": incumplimientosCountsForChart.pat.cumple,
-                    "NO CUMPLE": incumplimientosCountsForChart.pat.noCumple
+                    "NO CUMPLE": incumplimientosCountsForChart.pat.noCumple,
+                    "EN PROCESO": incumplimientosCountsForChart.pat.enProceso
                   },
                   {
-                    name: "INC. ILUM",
+                    name: "EST. ILU",
                     "CUMPLE": incumplimientosCountsForChart.iluminacion.cumple,
-                    "NO CUMPLE": incumplimientosCountsForChart.iluminacion.noCumple
+                    "NO CUMPLE": incumplimientosCountsForChart.iluminacion.noCumple,
+                    "EN PROCESO": incumplimientosCountsForChart.iluminacion.enProceso
                   },
                   {
-                    name: "INC. RUIDO",
+                    name: "EST. RUIDO",
                     "CUMPLE": incumplimientosCountsForChart.ruido.cumple,
-                    "NO CUMPLE": incumplimientosCountsForChart.ruido.noCumple
+                    "NO CUMPLE": incumplimientosCountsForChart.ruido.noCumple,
+                    "EN PROCESO": incumplimientosCountsForChart.ruido.enProceso
                   },
                   {
-                    name: "INC. TERMOG.",
+                    name: "EST. TERMOG.",
                     "CUMPLE": incumplimientosCountsForChart.termografia.cumple,
-                    "NO CUMPLE": incumplimientosCountsForChart.termografia.noCumple
+                    "NO CUMPLE": incumplimientosCountsForChart.termografia.noCumple,
+                    "EN PROCESO": incumplimientosCountsForChart.termografia.enProceso
                   }
                 ];
 
@@ -858,6 +854,10 @@ export default function SucursalesPage({ params }: SucursalesPageProps) {
                   "NO CUMPLE": {
                     label: "NO CUMPLE",
                     color: "rgba(239, 68, 68, 0.4)"
+                  },
+                  "EN PROCESO": {
+                    label: "EN PROCESO",
+                    color: "rgba(59, 130, 246, 0.4)"
                   }
                 };
 
@@ -890,6 +890,7 @@ export default function SucursalesPage({ params }: SucursalesPageProps) {
                           />
                           <Bar dataKey="CUMPLE" fill="rgba(34, 197, 94, 0.67)" radius={4} />
                           <Bar dataKey="NO CUMPLE" fill="rgba(239, 68, 68, 0.67)" radius={4} />
+                          <Bar dataKey="EN PROCESO" fill="rgba(59, 130, 246, 0.67)" radius={4} />
                         </BarChart>
                       </ChartContainer>
                     </div>
@@ -900,42 +901,42 @@ export default function SucursalesPage({ params }: SucursalesPageProps) {
               // Si es admin, mostrar estados de mediciones (comportamiento original)
               const chartData = [
                 {
-                  name: "PAT",
+                  name: "EST. PAT",
                   "EN NUBE": medicionesCountsEmpresa.pat.enNube,
                   "Procesar": medicionesCountsEmpresa.pat.procesar,
                   "PEDIR A TEC": medicionesCountsEmpresa.pat.pedirTecnico,
                   "PENDIENTE": medicionesCountsEmpresa.pat.pendienteVisita
                 },
                 {
-                  name: "Iluminación",
+                  name: "EST. ILU",
                   "EN NUBE": medicionesCountsEmpresa.iluminacion.enNube,
                   "Procesar": medicionesCountsEmpresa.iluminacion.procesar,
                   "PEDIR A TEC": medicionesCountsEmpresa.iluminacion.pedirTecnico,
                   "PENDIENTE": medicionesCountsEmpresa.iluminacion.pendienteVisita
                 },
                 {
-                  name: "Ruido",
+                  name: "EST. RUIDO",
                   "EN NUBE": medicionesCountsEmpresa.ruido.enNube,
                   "Procesar": medicionesCountsEmpresa.ruido.procesar,
                   "PEDIR A TEC": medicionesCountsEmpresa.ruido.pedirTecnico,
                   "PENDIENTE": medicionesCountsEmpresa.ruido.pendienteVisita
                 },
                 {
-                  name: "Carga Térmica",
+                  name: "EST. CARGA TÉRMICA",
                   "EN NUBE": medicionesCountsEmpresa.cargaTermica.enNube,
                   "Procesar": medicionesCountsEmpresa.cargaTermica.procesar,
                   "PEDIR A TEC": medicionesCountsEmpresa.cargaTermica.pedirTecnico,
                   "PENDIENTE": medicionesCountsEmpresa.cargaTermica.pendienteVisita
                 },
                 {
-                  name: "TERMOGRAFÍA",
+                  name: "EST. TERMOG.",
                   "EN NUBE": medicionesCountsEmpresa.termografia.enNube,
                   "Procesar": medicionesCountsEmpresa.termografia.procesar,
                   "PEDIR A TEC": medicionesCountsEmpresa.termografia.pedirTecnico,
                   "PENDIENTE": medicionesCountsEmpresa.termografia.pendienteVisita
                 },
                 {
-                  name: "INF. PRUEBA DISYUNTORES",
+                  name: "EST. DISYUNTORES",
                   "EN NUBE": (medicionesCountsEmpresa as any).informePruebaDinamicaDisyuntores.enNube,
                   "Procesar": (medicionesCountsEmpresa as any).informePruebaDinamicaDisyuntores.procesar,
                   "PEDIR A TEC": (medicionesCountsEmpresa as any).informePruebaDinamicaDisyuntores.pedirTecnico,

@@ -19,7 +19,20 @@ export function getEstudiosAplicables(servicio: string) {
     };
   }
   
-  // Para "BLINDAJE LEGAL" y otros servicios, todos los estudios aplican
+  // Si el servicio es "BLINDAJE LEGAL", pruebaDisyuntores NO aplica
+  if (servicioUpper.includes('BLINDAJE LEGAL')) {
+    return {
+      pat: true,
+      iluminacion: true,
+      ruido: true,
+      termografia: true,
+      cargaTermica: true,
+      pruebaDisyuntores: false,
+      extintores: true,
+    };
+  }
+  
+  // Para otros servicios, todos los estudios aplican
   return {
     pat: true,
     iluminacion: true,
