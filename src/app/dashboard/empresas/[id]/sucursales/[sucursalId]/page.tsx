@@ -314,6 +314,50 @@ export default function SucursalDetailPage({ params }: SucursalDetailPageProps) 
     return counts;
   }, [mediciones]);
 
+  // Función helper para formatear el porcentaje (quitar 0 inicial si existe)
+  const formatearPorcentaje = (valor: string | number | null): string | null => {
+    if (!valor) return null;
+    
+    const numValue = typeof valor === 'string' 
+      ? parseFloat(valor.replace('%', '').replace(',', '.').trim())
+      : valor;
+    
+    if (isNaN(numValue)) return null;
+    
+    // Si el valor es < 1 (tiene 0 inicial), quitar el 0 y mostrar el resto
+    if (numValue < 1 && numValue > 0) {
+      // Multiplicar por 100 y redondear
+      return Math.round(numValue * 100).toString();
+    }
+    
+    // Si es >= 1, mostrar tal cual (redondeado)
+    return Math.round(numValue).toString();
+  };
+
+  // Obtener el porcentaje de cobertura legal de las mediciones
+  const porcentajeCoberturaLegal = useMemo(() => {
+    if (mediciones.length === 0) return null;
+    
+    // Buscar el valor en todas las mediciones, priorizando la más reciente
+    let valor: string | null = null;
+    
+    // Intentar obtener de la medición más reciente primero
+    for (const m of mediciones) {
+      const datos = m.datos as Record<string, unknown>;
+      const getValue = (k: string) => String((datos[k] ?? '') as any).trim();
+      
+      // Buscar exactamente "PORCENTAJE DE COBERTURA LEGAL"
+      const coberturaValue = getValue('PORCENTAJE DE COBERTURA LEGAL');
+      
+      if (coberturaValue && coberturaValue !== '' && coberturaValue !== 'undefined' && coberturaValue !== 'null') {
+        valor = coberturaValue;
+        break; // Usar el primer valor encontrado (más reciente)
+      }
+    }
+    
+    return formatearPorcentaje(valor);
+  }, [mediciones]);
+
   if (loadingMediciones) {
     return (
       <div className="flex items-center justify-center h-64">
@@ -360,9 +404,30 @@ export default function SucursalDetailPage({ params }: SucursalDetailPageProps) 
       
       </div>
 
-
-     
-
+      {/* Card de Porcentaje de Cobertura Legal */}
+      <div className="mb-6">
+        <div className="bg-gradient-to-b from-black to-gray-700 rounded-3xl p-6 text-white border border-gray-800 shadow-sm">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-gray-300 text-sm">Porcentaje de Cobertura Legal</p>
+              {loadingMediciones ? (
+                <div className="animate-pulse">
+                  <div className="h-8 bg-gray-300 rounded w-16"></div>
+                </div>
+              ) : (
+                <p className="text-3xl font-bold text-white">
+                  {porcentajeCoberturaLegal !== null ? `${porcentajeCoberturaLegal}%` : 'N/A'}
+                </p>
+              )}
+            </div>
+            <div className="text-gray-400">
+              <svg className="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+              </svg>
+            </div>
+          </div>
+        </div>
+      </div>
 
       {/* Gráfico de Estados de Mediciones por Tipo de Estudio */}
       <div className="mb-6">

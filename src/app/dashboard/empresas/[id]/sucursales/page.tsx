@@ -391,6 +391,56 @@ export default function SucursalesPage({ params }: SucursalesPageProps) {
     return counts;
   }, [mediciones, empresaId, empresa]);
 
+  // Función helper para formatear el porcentaje (quitar 0 inicial si existe)
+  const formatearPorcentaje = (valor: number | null): string | null => {
+    if (valor === null || isNaN(valor)) return null;
+    
+    // Si el valor es < 1 (tiene 0 inicial), quitar el 0 y mostrar el resto
+    if (valor < 1 && valor > 0) {
+      // Multiplicar por 100 y redondear
+      return Math.round(valor * 100).toString();
+    }
+    
+    // Si es >= 1, mostrar tal cual (redondeado)
+    return Math.round(valor).toString();
+  };
+
+  // Calcular el índice de cobertura legal general (promedio de todas las sucursales)
+  const indiceCoberturaLegalGeneral = useMemo(() => {
+    if (mediciones.length === 0) return null;
+    
+    // Agrupar mediciones por sucursal y obtener el valor más reciente de cada una
+    const valoresPorSucursal = new Map<string, number>();
+    
+    mediciones.forEach((m) => {
+      const datos = m.datos as Record<string, unknown>;
+      const getValue = (k: string) => String((datos[k] ?? '') as any).trim();
+      
+      const coberturaValue = getValue('PORCENTAJE DE COBERTURA LEGAL');
+      
+      if (coberturaValue && coberturaValue !== '' && coberturaValue !== 'undefined' && coberturaValue !== 'null') {
+        // Intentar convertir a número
+        const numValue = parseFloat(coberturaValue.replace('%', '').replace(',', '.'));
+        
+        if (!isNaN(numValue) && m.sucursalId) {
+          // Si ya existe un valor para esta sucursal, mantener el más reciente (o el mayor, según prefieras)
+          const existingValue = valoresPorSucursal.get(m.sucursalId);
+          if (existingValue === undefined || numValue > existingValue) {
+            valoresPorSucursal.set(m.sucursalId, numValue);
+          }
+        }
+      }
+    });
+    
+    // Calcular el promedio
+    if (valoresPorSucursal.size === 0) return null;
+    
+    const valores = Array.from(valoresPorSucursal.values());
+    const promedio = valores.reduce((sum, val) => sum + val, 0) / valores.length;
+    
+    return formatearPorcentaje(promedio);
+  }, [mediciones]);
+
   // Conteos de incumplimientos específicos para esta empresa
   const incumplimientosCountsEmpresa = useMemo(() => {
     const counts = {
@@ -626,8 +676,28 @@ export default function SucursalesPage({ params }: SucursalesPageProps) {
         </div>
 
          {/* Cards de métricas */}
-      <div className={`grid grid-cols-1 sm:grid-cols-2 ${isPruebaDisyuntores ? 'lg:grid-cols-6' : 'lg:grid-cols-5'} gap-4 sm:gap-6 mb-6 sm:mb-8`}>
+      <div className={`grid grid-cols-1 sm:grid-cols-2 ${isPruebaDisyuntores ? 'lg:grid-cols-7' : 'lg:grid-cols-6'} gap-4 sm:gap-6 mb-6 sm:mb-8`}>
       
+      {/* Card de Índice de Cobertura Legal General - Primera posición */}
+      <div className="bg-gradient-to-b from-black to-gray-700 rounded-2xl sm:rounded-3xl p-4 sm:p-6 text-white border border-gray-800 shadow-sm">
+        <div className="flex items-center justify-between">
+          <div className="flex-1 min-w-0">
+            <p className="text-gray-300 text-xs sm:text-sm truncate">Índice de Cobertura Legal General</p>
+            {loadingMediciones ? (
+              <div className="h-6 sm:h-8 bg-gray-300 rounded w-12 sm:w-16 animate-pulse mt-1"></div>
+            ) : (
+              <p className="text-2xl sm:text-3xl font-bold text-white mt-1">
+                {indiceCoberturaLegalGeneral !== null ? `${indiceCoberturaLegalGeneral}%` : 'N/A'}
+              </p>
+            )}
+          </div>
+          <div className="text-gray-400 flex-shrink-0 ml-2">
+            <svg className="h-6 w-6 sm:h-8 sm:w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+            </svg>
+          </div>
+        </div>
+      </div>
 
       <div className="bg-gradient-to-b from-black to-gray-700 rounded-2xl sm:rounded-3xl p-4 sm:p-6 text-white border border-gray-800 shadow-sm">
         <div className="flex items-center justify-between">

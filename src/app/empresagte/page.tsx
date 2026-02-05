@@ -329,6 +329,56 @@ export default function EmpresaGerentePage() {
     return sucursalesSet.size;
   }, [mediciones, empresaId, userServicio]);
 
+  // Función helper para formatear el porcentaje (quitar 0 inicial si existe)
+  const formatearPorcentaje = (valor: number | null): string | null => {
+    if (valor === null || isNaN(valor)) return null;
+    
+    // Si el valor es < 1 (tiene 0 inicial), quitar el 0 y mostrar el resto
+    if (valor < 1 && valor > 0) {
+      // Multiplicar por 100 y redondear
+      return Math.round(valor * 100).toString();
+    }
+    
+    // Si es >= 1, mostrar tal cual (redondeado)
+    return Math.round(valor).toString();
+  };
+
+  // Calcular el índice de cobertura legal general (promedio de todas las sucursales)
+  const indiceCoberturaLegalGeneral = useMemo(() => {
+    if (allMediciones.length === 0) return null;
+    
+    // Agrupar mediciones por sucursal y obtener el valor más reciente de cada una
+    const valoresPorSucursal = new Map<string, number>();
+    
+    allMediciones.forEach((m) => {
+      const datos = m.datos as Record<string, unknown>;
+      const getValue = (k: string) => String((datos[k] ?? '') as any).trim();
+      
+      const coberturaValue = getValue('PORCENTAJE DE COBERTURA LEGAL');
+      
+      if (coberturaValue && coberturaValue !== '' && coberturaValue !== 'undefined' && coberturaValue !== 'null') {
+        // Intentar convertir a número
+        const numValue = parseFloat(coberturaValue.replace('%', '').replace(',', '.'));
+        
+        if (!isNaN(numValue) && m.sucursalId) {
+          // Si ya existe un valor para esta sucursal, mantener el más reciente (o el mayor, según prefieras)
+          const existingValue = valoresPorSucursal.get(m.sucursalId);
+          if (existingValue === undefined || numValue > existingValue) {
+            valoresPorSucursal.set(m.sucursalId, numValue);
+          }
+        }
+      }
+    });
+    
+    // Calcular el promedio
+    if (valoresPorSucursal.size === 0) return null;
+    
+    const valores = Array.from(valoresPorSucursal.values());
+    const promedio = valores.reduce((sum, val) => sum + val, 0) / valores.length;
+    
+    return formatearPorcentaje(promedio);
+  }, [allMediciones]);
+
   // Calcular Extintores vencidos / próximos a vencer (próximos 30 días)
   const extintoresVencenMesSiguiente = useMemo(() => {
     const ahora = new Date();
@@ -654,12 +704,34 @@ export default function EmpresaGerentePage() {
 
             {/* Cards de métricas */}
             <div 
-              className="grid gap-2 mb-8 w-full"
-              style={{
-                gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))'
-              }}
+              className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2 mb-8 w-full"
             >
-              {/* Card de Total Locales Relevados - Primera posición */}
+              {/* Card de Índice de Cobertura Legal General - Primera posición */}
+              <div 
+                className="bg-gradient-to-b from-black to-gray-700 rounded-3xl p-6 text-white border border-gray-800 shadow-sm"
+              >
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-gray-300 text-sm">Índice de Cobertura Legal General</p>
+                    {loadingMediciones ? (
+                      <div className="animate-pulse">
+                        <div className="h-8 bg-gray-300 rounded w-16"></div>
+                      </div>
+                    ) : (
+                      <p className="text-3xl font-bold text-white">
+                        {indiceCoberturaLegalGeneral !== null ? `${indiceCoberturaLegalGeneral}%` : 'N/A'}
+                      </p>
+                    )}
+                  </div>
+                  <div className="text-gray-400">
+                    <svg className="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+                    </svg>
+                  </div>
+                </div>
+              </div>
+
+              {/* Card de Total Locales Relevados */}
               <div 
                 className="bg-gradient-to-b from-black to-gray-700 rounded-3xl p-6 text-white border border-gray-800 shadow-sm cursor-pointer hover:opacity-90 transition-opacity"
                 onClick={handleTotalMedicionesClick}
