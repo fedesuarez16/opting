@@ -704,9 +704,13 @@ export default function EmpresaGerentePage() {
 
             {/* Cards de métricas */}
             <div 
-              className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2 mb-8 w-full"
+              className="grid gap-2 mb-8 w-full"
+              style={{
+                gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))'
+              }}
             >
-              {/* Card de Índice de Cobertura Legal General - Primera posición */}
+              {/* Card de Índice de Cobertura Legal General - Primera posición - Solo visible para BLINDAJE LEGAL */}
+              {userServicio.toUpperCase().includes('BLINDAJE LEGAL') && (
               <div 
                 className="bg-gradient-to-b from-black to-gray-700 rounded-3xl p-6 text-white border border-gray-800 shadow-sm"
               >
@@ -730,6 +734,7 @@ export default function EmpresaGerentePage() {
                   </div>
                 </div>
               </div>
+              )}
 
               {/* Card de Total Locales Relevados */}
               <div 
@@ -1018,7 +1023,7 @@ export default function EmpresaGerentePage() {
 
             {/* OneDrive Folders */}
             <div className="mb-6">
-              <OneDriveFolders empresaNombre={empresaAsignadaNombre} filterByEmpresa={true} />
+              <OneDriveFolders empresaId={empresaId} empresaNombre={empresaAsignadaNombre} filterByEmpresa={true} />
             </div>
           </div>
         </main>

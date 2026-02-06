@@ -404,30 +404,32 @@ export default function SucursalDetailPage({ params }: SucursalDetailPageProps) 
       
       </div>
 
-      {/* Card de Porcentaje de Cobertura Legal */}
+      {/* Card de Porcentaje de Cobertura Legal - Solo visible para BLINDAJE LEGAL */}
+      {userServicio.toUpperCase().includes('BLINDAJE LEGAL') && (
       <div className="mb-6">
         <div className="bg-gradient-to-b from-black to-gray-700 rounded-3xl p-6 text-white border border-gray-800 shadow-sm">
           <div className="flex items-center justify-between">
-            <div>
+              <div>
               <p className="text-gray-300 text-sm">Porcentaje de Cobertura Legal</p>
               {loadingMediciones ? (
                 <div className="animate-pulse">
                   <div className="h-8 bg-gray-300 rounded w-16"></div>
-                </div>
+              </div>
               ) : (
                 <p className="text-3xl font-bold text-white">
                   {porcentajeCoberturaLegal !== null ? `${porcentajeCoberturaLegal}%` : 'N/A'}
                 </p>
               )}
-            </div>
+              </div>
             <div className="text-gray-400">
               <svg className="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
               </svg>
             </div>
+            </div>
           </div>
         </div>
-      </div>
+      )}
 
       {/* Gráfico de Estados de Mediciones por Tipo de Estudio */}
       <div className="mb-6">

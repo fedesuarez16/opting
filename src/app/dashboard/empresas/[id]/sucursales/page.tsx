@@ -676,9 +676,10 @@ export default function SucursalesPage({ params }: SucursalesPageProps) {
         </div>
 
          {/* Cards de métricas */}
-      <div className={`grid grid-cols-1 sm:grid-cols-2 ${isPruebaDisyuntores ? 'lg:grid-cols-7' : 'lg:grid-cols-6'} gap-4 sm:gap-6 mb-6 sm:mb-8`}>
+      <div className={`grid grid-cols-1 sm:grid-cols-2 ${userServicio.toUpperCase().includes('BLINDAJE LEGAL') ? (isPruebaDisyuntores ? 'lg:grid-cols-7' : 'lg:grid-cols-6') : (isPruebaDisyuntores ? 'lg:grid-cols-6' : 'lg:grid-cols-5')} gap-4 sm:gap-6 mb-6 sm:mb-8`}>
       
-      {/* Card de Índice de Cobertura Legal General - Primera posición */}
+      {/* Card de Índice de Cobertura Legal General - Primera posición - Solo visible para BLINDAJE LEGAL */}
+      {userServicio.toUpperCase().includes('BLINDAJE LEGAL') && (
       <div className="bg-gradient-to-b from-black to-gray-700 rounded-2xl sm:rounded-3xl p-4 sm:p-6 text-white border border-gray-800 shadow-sm">
         <div className="flex items-center justify-between">
           <div className="flex-1 min-w-0">
@@ -698,6 +699,7 @@ export default function SucursalesPage({ params }: SucursalesPageProps) {
           </div>
         </div>
       </div>
+      )}
 
       <div className="bg-gradient-to-b from-black to-gray-700 rounded-2xl sm:rounded-3xl p-4 sm:p-6 text-white border border-gray-800 shadow-sm">
         <div className="flex items-center justify-between">
@@ -831,9 +833,9 @@ export default function SucursalesPage({ params }: SucursalesPageProps) {
             <svg className="h-6 w-6 sm:h-8 sm:w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
             </svg>
-          </div>
         </div>
       </div>
+    </div>
 
       {/* Card de Prueba Dinamica Disyuntores - Solo visible si el servicio corresponde */}
       {isPruebaDisyuntores && (
@@ -889,8 +891,8 @@ export default function SucursalesPage({ params }: SucursalesPageProps) {
               
               // Si es gerente, mostrar incumplimientos (CUMPLE, NO CUMPLE y EN PROCESO)
               if (isManager) {
-                const chartData = [
-                  {
+              const chartData = [
+                {
                     name: "EST. PAT",
                     "CUMPLE": incumplimientosCountsForChart.pat.cumple,
                     "NO CUMPLE": incumplimientosCountsForChart.pat.noCumple,
@@ -1038,34 +1040,34 @@ export default function SucursalesPage({ params }: SucursalesPageProps) {
                   <div className="min-w-[700px] sm:min-w-0">
                     <ChartContainer config={chartConfig} className="h-[280px] sm:h-[380px] text-black w-full">
                       <BarChart data={chartData} margin={{ bottom: 60, left: 10, right: 10, top: 10 }}>
-                        <CartesianGrid strokeDasharray="3 3" vertical={false} />
-                        <XAxis
-                          dataKey="name"
-                          tickLine={false}
+                    <CartesianGrid strokeDasharray="3 3" vertical={false} />
+                    <XAxis
+                      dataKey="name"
+                      tickLine={false}
                           tickMargin={8}
-                          axisLine={false}
+                      axisLine={false}
                           tick={{ fontSize: 10 }}
                           angle={-45}
                           textAnchor="end"
                           height={70}
                           interval={0}
-                        />
-                        <YAxis
-                          tickLine={false}
-                          axisLine={false}
-                          tick={{ fontSize: 12 }}
-                          label={{ value: 'Cantidad de Mediciones', angle: -90, position: 'insideLeft' }}
-                        />
-                        <ChartTooltip
-                          cursor={false}
-                          content={<ChartTooltipContent />}
-                        />
+                    />
+                    <YAxis
+                      tickLine={false}
+                      axisLine={false}
+                      tick={{ fontSize: 12 }}
+                      label={{ value: 'Cantidad de Mediciones', angle: -90, position: 'insideLeft' }}
+                    />
+                    <ChartTooltip
+                      cursor={false}
+                      content={<ChartTooltipContent />}
+                    />
                         <Bar dataKey="EN NUBE" fill="#22c55e" radius={4} />
                         <Bar dataKey="Procesar" fill="#3b82f6" radius={4} />
                         <Bar dataKey="PEDIR A TEC" fill="#f59e0b" radius={4} />
                         <Bar dataKey="PENDIENTE" fill="#ef4444" radius={4} />
-                      </BarChart>
-                    </ChartContainer>
+                  </BarChart>
+                </ChartContainer>
                   </div>
                 </div>
               );

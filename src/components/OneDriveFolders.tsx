@@ -1,8 +1,9 @@
 'use client';
 
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import { useSucursales } from '@/hooks/useSucursales';
+import { useMediciones } from '@/hooks/useMediciones';
 
 interface OneDriveFolder {
   id: string;
@@ -45,6 +46,71 @@ export default function OneDriveFolders({ empresaId, sucursalId, sucursalNombre,
   
   // Obtener sucursales si estamos filtrando por empresa
   const { sucursales } = useSucursales(filterByEmpresa && empresaId ? empresaId : undefined);
+  
+  // Obtener mediciones de todas las sucursales para calcular porcentaje de cobertura legal
+  const { mediciones: allMediciones } = useMediciones(filterByEmpresa && empresaId ? empresaId : undefined);
+  
+  // Función helper para formatear el porcentaje (quitar 0 inicial si existe)
+  const formatearPorcentaje = (valor: string | number | null): string | null => {
+    if (!valor) return null;
+    
+    const numValue = typeof valor === 'string' 
+      ? parseFloat(valor.replace('%', '').replace(',', '.').trim())
+      : valor;
+    
+    if (isNaN(numValue)) return null;
+    
+    // Si el valor es < 1 (tiene 0 inicial), quitar el 0 y mostrar el resto
+    if (numValue < 1 && numValue > 0) {
+      // Multiplicar por 100 y redondear
+      return Math.round(numValue * 100).toString();
+    }
+    
+    // Si es >= 1, mostrar tal cual (redondeado)
+    return Math.round(numValue).toString();
+  };
+  
+  // Mapa de sucursalId -> porcentaje de cobertura legal
+  const porcentajesPorSucursal = useMemo(() => {
+    const mapa = new Map<string, string | null>();
+    
+    if (!filterByEmpresa || !empresaId) return mapa;
+    
+    // Agrupar mediciones por sucursal
+    const medicionesPorSucursal = new Map<string, typeof allMediciones>();
+    allMediciones.forEach((m) => {
+      if (m.sucursalId) {
+        if (!medicionesPorSucursal.has(m.sucursalId)) {
+          medicionesPorSucursal.set(m.sucursalId, []);
+        }
+        medicionesPorSucursal.get(m.sucursalId)!.push(m);
+      }
+    });
+    
+    // Para cada sucursal, obtener el porcentaje más reciente
+    medicionesPorSucursal.forEach((medicionesSucursal, sucursalId) => {
+      let valor: string | null = null;
+      
+      // Buscar el valor en las mediciones (priorizando la más reciente)
+      for (const m of medicionesSucursal) {
+        const datos = m.datos as Record<string, unknown>;
+        const getValue = (k: string) => String((datos[k] ?? '') as any).trim();
+        
+        const coberturaValue = getValue('PORCENTAJE DE COBERTURA LEGAL');
+        
+        if (coberturaValue && coberturaValue !== '' && coberturaValue !== 'undefined' && coberturaValue !== 'null') {
+          valor = formatearPorcentaje(coberturaValue);
+          break; // Usar el primer valor encontrado (más reciente)
+        }
+      }
+      
+      if (valor !== null) {
+        mapa.set(sucursalId, valor);
+      }
+    });
+    
+    return mapa;
+  }, [allMediciones, filterByEmpresa, empresaId]);
 
   const fetchFolders = useCallback(async (folderId?: string, isNavigation: boolean = false, forceRefresh: boolean = false) => {
     if (isFetchingRef.current && !forceRefresh) {
@@ -698,6 +764,18 @@ export default function OneDriveFolders({ empresaId, sucursalId, sucursalNombre,
                       
                       return false;
                     }) : null;
+                    
+                    // Obtener el porcentaje de cobertura legal para esta sucursal
+                    const porcentajeCobertura = sucursal ? porcentajesPorSucursal.get(sucursal.id) : null;
+                    
+                    // Si es una sucursal, redirigir a la página de detalle de la sucursal
+                    const handleFolderClick = () => {
+                      if (isSucursal && sucursal && empresaId) {
+                        router.push(`/dashboard/empresas/${encodeURIComponent(empresaId)}/sucursales/${encodeURIComponent(sucursal.id)}`);
+                      } else if (item.type === 'folder') {
+                        navigateToFolder(item.id, item.name);
+                      }
+                    };
 
                     return (
                       <tr
@@ -707,7 +785,7 @@ export default function OneDriveFolders({ empresaId, sucursalId, sucursalNombre,
                             ? 'hover:bg-gray-100 cursor-pointer bg-white'
                             : 'hover:bg-gray-50 bg-white'
                         }`}
-                        onClick={item.type === 'folder' ? () => navigateToFolder(item.id, item.name) : undefined}
+                        onClick={item.type === 'folder' ? handleFolderClick : undefined}
                       >
                         <td className="p-4 align-middle font-medium">
                           <div className="flex items-center gap-3">
@@ -722,6 +800,11 @@ export default function OneDriveFolders({ empresaId, sucursalId, sucursalNombre,
                             </div>
                             <div className="flex-1">
                               <div className="font-medium">{item.name}</div>
+                              {isSucursal && porcentajeCobertura !== null && (
+                                <div className="text-xs text-gray-500 mt-1">
+                                  Cobertura Legal: <span className="font-semibold text-gray-700">{porcentajeCobertura}%</span>
+                                </div>
+                              )}
                             </div>
                           </div>
                         </td>
@@ -817,6 +900,37 @@ export default function OneDriveFolders({ empresaId, sucursalId, sucursalNombre,
                 
                 return false;
               });
+              
+              const sucursalMobile = isSucursal ? sucursales.find(s => {
+                const sucursalNombreLower = s.nombre.toLowerCase().trim();
+                const sucursalIdLower = s.id.toLowerCase().trim();
+                
+                if (sucursalNombreLower === itemNameLower || sucursalIdLower === itemNameLower) {
+                  return true;
+                }
+                
+                if (itemNameLower.includes(sucursalIdLower) || sucursalIdLower.includes(itemNameLower)) {
+                  return true;
+                }
+                
+                if (itemNameLower.startsWith(sucursalIdLower) || sucursalIdLower.startsWith(itemNameLower)) {
+                  return true;
+                }
+                
+                return false;
+              }) : null;
+              
+              // Obtener el porcentaje de cobertura legal para esta sucursal (mobile)
+              const porcentajeCoberturaMobile = sucursalMobile ? porcentajesPorSucursal.get(sucursalMobile.id) : null;
+              
+              // Si es una sucursal, redirigir a la página de detalle de la sucursal
+              const handleFolderClickMobile = () => {
+                if (isSucursal && sucursalMobile && empresaId) {
+                  router.push(`/dashboard/empresas/${encodeURIComponent(empresaId)}/sucursales/${encodeURIComponent(sucursalMobile.id)}`);
+                } else if (item.type === 'folder') {
+                  navigateToFolder(item.id, item.name);
+                }
+              };
 
               return (
                 <div
@@ -826,7 +940,7 @@ export default function OneDriveFolders({ empresaId, sucursalId, sucursalNombre,
                       ? 'bg-white active:bg-gray-50 cursor-pointer'
                       : 'bg-gray-50'
                   }`}
-                  onClick={item.type === 'folder' ? () => navigateToFolder(item.id, item.name) : undefined}
+                  onClick={item.type === 'folder' ? handleFolderClickMobile : undefined}
                 >
                   <div className="flex items-start gap-3">
                     <div className={`h-12 w-12 rounded-lg flex items-center justify-center flex-shrink-0 ${
@@ -842,6 +956,11 @@ export default function OneDriveFolders({ empresaId, sucursalId, sucursalNombre,
                       <div className="font-medium text-gray-900 mb-1 break-words">
                         {item.name}
                       </div>
+                      {isSucursal && porcentajeCoberturaMobile !== null && (
+                        <div className="text-xs text-gray-500 mt-1">
+                          Cobertura Legal: <span className="font-semibold text-gray-700">{porcentajeCoberturaMobile}%</span>
+                        </div>
+                      )}
                       {item.type === 'file' && item.size && (
                         <div className="text-xs text-gray-500">
                           {formatFileSize(item.size)}
