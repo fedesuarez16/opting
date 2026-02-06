@@ -41,6 +41,8 @@ export default function OneDriveFolders({ empresaId, sucursalId, sucursalNombre,
   const [currentFolderId, setCurrentFolderId] = useState<string | null>(null);
   const [folderHistory, setFolderHistory] = useState<Array<{ id: string; name: string }>>([]);
   const [searchTerm, setSearchTerm] = useState<string>('');
+  const [sortBy, setSortBy] = useState<'name' | 'cobertura' | null>(null);
+  const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc');
   const isFetchingRef = useRef(false);
   const router = useRouter();
   
@@ -393,6 +395,74 @@ export default function OneDriveFolders({ empresaId, sucursalId, sucursalNombre,
     fetchFolders(undefined, false, true);
   };
 
+  // Función para manejar el ordenamiento
+  const handleSort = useCallback((type: 'name' | 'cobertura') => {
+    if (sortBy === type) {
+      // Si ya está ordenando por este criterio, cambiar el orden
+      setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc');
+    } else {
+      // Si es un nuevo criterio, establecerlo y usar orden ascendente por defecto
+      setSortBy(type);
+      setSortOrder('asc');
+    }
+  }, [sortBy, sortOrder]);
+
+  // Filtrar y ordenar items basado en el término de búsqueda y criterio de ordenamiento
+  const filteredItems = useMemo(() => {
+    let filtered = searchTerm.trim() === '' 
+      ? items 
+      : items.filter(item => 
+          item.name.toLowerCase().includes(searchTerm.toLowerCase().trim())
+        );
+    
+    // Ordenar items si hay un criterio de ordenamiento
+    if (sortBy === 'cobertura' && filterByEmpresa && empresaId) {
+      filtered = [...filtered].sort((a, b) => {
+        // Obtener sucursales para ambos items
+        const getSucursal = (item: OneDriveItem) => {
+          if (item.type !== 'folder') return null;
+          const itemNameLower = item.name.toLowerCase().trim();
+          return sucursales.find(s => {
+            const sucursalNombreLower = s.nombre.toLowerCase().trim();
+            const sucursalIdLower = s.id.toLowerCase().trim();
+            return sucursalNombreLower === itemNameLower || 
+                   sucursalIdLower === itemNameLower ||
+                   itemNameLower.includes(sucursalIdLower) || 
+                   sucursalIdLower.includes(itemNameLower) ||
+                   itemNameLower.startsWith(sucursalIdLower) || 
+                   sucursalIdLower.startsWith(itemNameLower);
+          });
+        };
+        
+        const sucursalA = getSucursal(a);
+        const sucursalB = getSucursal(b);
+        
+        const porcentajeA = sucursalA ? porcentajesPorSucursal.get(sucursalA.id) : null;
+        const porcentajeB = sucursalB ? porcentajesPorSucursal.get(sucursalB.id) : null;
+        
+        // Convertir a números para comparar
+        const numA = porcentajeA ? parseFloat(porcentajeA) : -1; // -1 para que los sin porcentaje vayan al final
+        const numB = porcentajeB ? parseFloat(porcentajeB) : -1;
+        
+        if (sortOrder === 'asc') {
+          return numA - numB; // Ascendente (menor a mayor)
+        } else {
+          return numB - numA; // Descendente (mayor a menor)
+        }
+      });
+    } else if (sortBy === 'name') {
+      filtered = [...filtered].sort((a, b) => {
+        if (sortOrder === 'asc') {
+          return a.name.localeCompare(b.name);
+        } else {
+          return b.name.localeCompare(a.name);
+        }
+      });
+    }
+    
+    return filtered;
+  }, [items, searchTerm, sortBy, sortOrder, filterByEmpresa, empresaId, sucursales, porcentajesPorSucursal]);
+
   if (loading && items.length === 0) {
     return (
       <div className="bg-white rounded-2xl p-4 sm:p-6 border border-gray-200 shadow-sm mb-6">
@@ -470,13 +540,6 @@ export default function OneDriveFolders({ empresaId, sucursalId, sucursalNombre,
       </div>
     );
   }
-
-  // Filtrar items basado en el término de búsqueda
-  const filteredItems = searchTerm.trim() === '' 
-    ? items 
-    : items.filter(item => 
-        item.name.toLowerCase().includes(searchTerm.toLowerCase().trim())
-      );
 
   return (
     <div className="bg-white rounded-2xl p-4 sm:p-6 border border-gray-200 shadow-sm mb-6">
@@ -686,8 +749,66 @@ export default function OneDriveFolders({ empresaId, sucursalId, sucursalNombre,
                 <thead className="border-gray-200">
                   <tr className="border-b border-gray-100 transition-colors hover:bg-gray-50">
                     <th className="h-12 px-4 text-left align-middle font-medium text-gray-600 [&:has([role=checkbox])]:pr-0">
-                      Nombre
+                      <button
+                        onClick={() => handleSort('name')}
+                        className="flex items-center gap-2 hover:text-gray-900 transition-colors px-2 py-1 rounded hover:bg-gray-100"
+                        title="Ordenar por nombre"
+                      >
+                        <span>Nombre</span>
+                        <div className="flex flex-col">
+                          <svg 
+                            className={`w-3 h-3 ${sortBy === 'name' && sortOrder === 'asc' ? 'text-blue-600' : 'text-gray-400'}`}
+                            fill="currentColor" 
+                            viewBox="0 0 20 20"
+                          >
+                            <path d="M5 12l5-5 5 5H5z" />
+                          </svg>
+                          <svg 
+                            className={`w-3 h-3 -mt-1 ${sortBy === 'name' && sortOrder === 'desc' ? 'text-blue-600' : 'text-gray-400'}`}
+                            fill="currentColor" 
+                            viewBox="0 0 20 20"
+                          >
+                            <path d="M5 8l5 5 5-5H5z" />
+                          </svg>
+                        </div>
+                      </button>
                     </th>
+                    {filterByEmpresa && empresaId && (
+                      <th className="h-12 px-4 text-center align-middle font-medium text-gray-600">
+                        <button
+                          onClick={() => handleSort('cobertura')}
+                          className="flex items-center justify-center gap-2 hover:text-gray-900 transition-all mx-auto px-3 py-2 rounded-md hover:bg-gray-100 border border-transparent hover:border-gray-300"
+                          title={sortBy === 'cobertura' 
+                            ? sortOrder === 'asc' 
+                              ? 'Ordenar: Menor a Mayor (click para cambiar)' 
+                              : 'Ordenar: Mayor a Menor (click para cambiar)'
+                            : 'Click para ordenar por porcentaje'}
+                        >
+                          <span className="font-medium">Cobertura Legal</span>
+                          <div className="flex flex-col items-center">
+                            <svg 
+                              className={`w-3 h-3 ${sortBy === 'cobertura' && sortOrder === 'asc' ? 'text-blue-600' : 'text-gray-400'}`}
+                              fill="currentColor" 
+                              viewBox="0 0 20 20"
+                            >
+                              <path d="M5 12l5-5 5 5H5z" />
+                            </svg>
+                            <svg 
+                              className={`w-3 h-3 -mt-1 ${sortBy === 'cobertura' && sortOrder === 'desc' ? 'text-blue-600' : 'text-gray-400'}`}
+                              fill="currentColor" 
+                              viewBox="0 0 20 20"
+                            >
+                              <path d="M5 8l5 5 5-5H5z" />
+                            </svg>
+                          </div>
+                          {sortBy === 'cobertura' && (
+                            <span className="text-xs text-blue-600 font-semibold ml-1">
+                              {sortOrder === 'asc' ? '(↑)' : '(↓)'}
+                            </span>
+                          )}
+                        </button>
+                      </th>
+                    )}
                     <th className="h-12 px-4 text-right align-middle font-medium text-gray-600 [&:has([role=checkbox])]:pr-0">
                       Acciones
                     </th>
@@ -800,14 +921,18 @@ export default function OneDriveFolders({ empresaId, sucursalId, sucursalNombre,
                             </div>
                             <div className="flex-1">
                               <div className="font-medium">{item.name}</div>
-                              {isSucursal && porcentajeCobertura !== null && (
-                                <div className="text-xs text-gray-500 mt-1">
-                                  Cobertura Legal: <span className="font-semibold text-gray-700">{porcentajeCobertura}%</span>
-                                </div>
-                              )}
                             </div>
                           </div>
                         </td>
+                        {filterByEmpresa && empresaId && (
+                          <td className="p-4 align-middle text-center">
+                            {isSucursal && porcentajeCobertura !== null ? (
+                              <span className="font-semibold text-gray-700">{porcentajeCobertura}%</span>
+                            ) : (
+                              <span className="text-gray-400">-</span>
+                            )}
+                          </td>
+                        )}
                         <td className="p-4 align-middle text-right">
                           <div className="flex items-center justify-end gap-2">
                             {item.type === 'file' ? (
