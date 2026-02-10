@@ -64,6 +64,8 @@ export default function EmpresasPage() {
   const [loadingStudyDetails, setLoadingStudyDetails] = useState(false);
   const [totalServicios, setTotalServicios] = useState<number>(0);
   const [loadingServicios, setLoadingServicios] = useState(false);
+  const [sortBy, setSortBy] = useState<'sucursales' | 'nombre' | null>(null);
+  const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc');
 
   // Obtener suma total de todos los servicios (contando todas las mediciones con servicio)
   useEffect(() => {
@@ -173,10 +175,43 @@ export default function EmpresasPage() {
     verificarEmpresas();
   }, [empresas, loading, error]);
 
-  const filteredEmpresas = empresasAMostrar.filter(empresa => 
-    empresa.nombre.toLowerCase().includes(search.toLowerCase()) ||
-    (empresa.email && empresa.email.toLowerCase().includes(search.toLowerCase()))
-  );
+  // Filtrar y ordenar empresas
+  const filteredEmpresas = useMemo(() => {
+    let filtered = empresasAMostrar.filter(empresa => 
+      empresa.nombre.toLowerCase().includes(search.toLowerCase()) ||
+      (empresa.email && empresa.email.toLowerCase().includes(search.toLowerCase()))
+    );
+
+    // Aplicar ordenamiento
+    if (sortBy === 'sucursales') {
+      filtered = [...filtered].sort((a, b) => {
+        const countA = sucursalesPorEmpresa[a.id] || 0;
+        const countB = sucursalesPorEmpresa[b.id] || 0;
+        return sortOrder === 'asc' ? countA - countB : countB - countA;
+      });
+    } else if (sortBy === 'nombre') {
+      filtered = [...filtered].sort((a, b) => {
+        const nameA = a.nombre.toLowerCase();
+        const nameB = b.nombre.toLowerCase();
+        if (sortOrder === 'asc') {
+          return nameA.localeCompare(nameB);
+        } else {
+          return nameB.localeCompare(nameA);
+        }
+      });
+    }
+
+    return filtered;
+  }, [empresasAMostrar, search, sortBy, sortOrder, sucursalesPorEmpresa]);
+
+  const handleSort = (column: 'sucursales' | 'nombre') => {
+    if (sortBy === column) {
+      setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc');
+    } else {
+      setSortBy(column);
+      setSortOrder('asc');
+    }
+  };
 
   // Función para obtener conteos por empresa para un tipo de estudio
   const fetchStudyCountsByEmpresa = async (studyType: 'pat' | 'iluminacion' | 'ruido') => {
@@ -648,7 +683,38 @@ export default function EmpresasPage() {
                     <thead>
                       <tr className="border-b border-gray-100">
                         <th className="px-6 py-4 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">
-                          Empresa
+                          <button
+                            onClick={() => handleSort('nombre')}
+                            className="flex items-center gap-2 hover:text-gray-900 transition-colors"
+                            title={sortBy === 'nombre'
+                              ? sortOrder === 'asc'
+                                ? 'Ordenar: A-Z (click para cambiar)'
+                                : 'Ordenar: Z-A (click para cambiar)'
+                              : 'Click para ordenar por nombre'}
+                          >
+                            <span>Empresa</span>
+                            <div className="flex flex-col">
+                              <svg
+                                className={`w-3 h-3 ${sortBy === 'nombre' && sortOrder === 'asc' ? 'text-blue-600' : 'text-gray-400'}`}
+                                fill="currentColor"
+                                viewBox="0 0 20 20"
+                              >
+                                <path d="M5 12l5-5 5 5H5z" />
+                              </svg>
+                              <svg
+                                className={`w-3 h-3 -mt-1 ${sortBy === 'nombre' && sortOrder === 'desc' ? 'text-blue-600' : 'text-gray-400'}`}
+                                fill="currentColor"
+                                viewBox="0 0 20 20"
+                              >
+                                <path d="M5 8l5 5 5-5H5z" />
+                              </svg>
+                            </div>
+                            {sortBy === 'nombre' && (
+                              <span className="text-xs text-blue-600 font-semibold ml-1">
+                                {sortOrder === 'asc' ? '(↑)' : '(↓)'}
+                              </span>
+                            )}
+                          </button>
                     </th>
                         <th className="px-6 py-4 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">
                           Contacto
@@ -657,7 +723,38 @@ export default function EmpresasPage() {
                       CUIT
                     </th>
                         <th className="px-6 py-4 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">
-                      Sucursales
+                          <button
+                            onClick={() => handleSort('sucursales')}
+                            className="flex items-center gap-2 hover:text-gray-900 transition-colors"
+                            title={sortBy === 'sucursales'
+                              ? sortOrder === 'asc'
+                                ? 'Ordenar: Menor a Mayor (click para cambiar)'
+                                : 'Ordenar: Mayor a Menor (click para cambiar)'
+                              : 'Click para ordenar por cantidad de sucursales'}
+                          >
+                            <span>Sucursales</span>
+                            <div className="flex flex-col">
+                              <svg
+                                className={`w-3 h-3 ${sortBy === 'sucursales' && sortOrder === 'asc' ? 'text-blue-600' : 'text-gray-400'}`}
+                                fill="currentColor"
+                                viewBox="0 0 20 20"
+                              >
+                                <path d="M5 12l5-5 5 5H5z" />
+                              </svg>
+                              <svg
+                                className={`w-3 h-3 -mt-1 ${sortBy === 'sucursales' && sortOrder === 'desc' ? 'text-blue-600' : 'text-gray-400'}`}
+                                fill="currentColor"
+                                viewBox="0 0 20 20"
+                              >
+                                <path d="M5 8l5 5 5-5H5z" />
+                              </svg>
+                            </div>
+                            {sortBy === 'sucursales' && (
+                              <span className="text-xs text-blue-600 font-semibold ml-1">
+                                {sortOrder === 'asc' ? '(↑)' : '(↓)'}
+                              </span>
+                            )}
+                          </button>
                     </th>
                         <th className="px-6 py-4 text-right text-xs font-semibold text-gray-500 uppercase tracking-wider">
                           Acción
