@@ -2,16 +2,43 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Fragment, useMemo } from 'react';
+import { Fragment, useMemo, useState, useEffect } from 'react';
 import { useEmpresas } from '@/hooks/useEmpresas';
+import { useAuth } from '@/contexts/AuthContext';
+import { ref, get } from 'firebase/database';
+import { database } from '@/lib/firebase';
 
 interface BreadcrumbProps {
   customLabels?: Record<string, string>;
 }
 
+type UserRole = 'admin' | 'general_manager' | 'branch_manager';
+
 export default function Breadcrumb({ customLabels = {} }: BreadcrumbProps) {
   const pathname = usePathname();
   const { empresas } = useEmpresas();
+  const { user } = useAuth();
+  const [userRole, setUserRole] = useState<UserRole | null>(null);
+  
+  // Obtener el rol del usuario
+  useEffect(() => {
+    const fetchUserRole = async () => {
+      if (user) {
+        try {
+          const userRef = ref(database, `users/${user.uid}`);
+          const snapshot = await get(userRef);
+          if (snapshot.exists()) {
+            const userData = snapshot.val();
+            setUserRole(userData.role);
+          }
+        } catch (error) {
+          console.error('Error fetching user role:', error);
+        }
+      }
+    };
+
+    fetchUserRole();
+  }, [user]);
   
   // Skip the first empty segment after splitting - memoize to prevent unnecessary re-renders
   // Decode URL-encoded characters (like %20 for spaces) for better visual display
@@ -80,7 +107,36 @@ export default function Breadcrumb({ customLabels = {} }: BreadcrumbProps) {
           if (segment === 'dashboard' && index === 0) return null;
           
           // Build the href up to this point
-          const href = `/${segments.slice(0, index + 1).join('/')}`;
+          let href = `/${segments.slice(0, index + 1).join('/')}`;
+          
+          // Special case: if user is general_manager and clicking on "sucursales" from any route, redirect to /empresagte
+          // This handles the case where general_manager is on /dashboard/empresas/[id]/sucursales/[sucursalId] or similar routes
+          if (segment === 'sucursales' && userRole === 'general_manager') {
+            href = '/empresagte';
+          }
+          
+          // Special case: if we're on /empresagte and clicking on "sucursales", redirect to /empresagte
+          // This handles the case where "sucursales" appears in the breadcrumb for general_manager
+          // Check if pathname includes empresasgte OR if the first segment is empresasgte
+          const isOnEmpresagte = pathname.includes('/empresagte') || segments[0] === 'empresagte' || pathname.startsWith('/empresagte');
+          
+          // If we're on empresasgte and clicking on "sucursales", always redirect to /empresagte
+          // This prevents redirecting to incorrect routes like /dashboard/empresas/[id]/sucursales
+          if (segment === 'sucursales' && isOnEmpresagte) {
+            href = '/empresagte';
+          }
+          
+          // Additional check: if we're building a path that includes "empresas" and "sucursales" but the current pathname is empresasgte, redirect to empresasgte
+          // This catches cases where the href being built would be something like /dashboard/empresas/[id]/sucursales when we're actually on empresasgte
+          if (segment === 'sucursales' && (href.includes('/empresas/') || href.includes('/dashboard/empresas/')) && isOnEmpresagte) {
+            href = '/empresagte';
+          }
+          
+          // Final check: if the href contains "empresas" and "sucursales" but we're on empresasgte, redirect to empresasgte
+          // This is a catch-all to ensure we never redirect to the wrong route
+          if (segment === 'sucursales' && href.includes('empresas') && isOnEmpresagte) {
+            href = '/empresagte';
+          }
           
           // Check if this is a dynamic segment (starts with '[' and ends with ']')
           const isDynamicSegment = segment.startsWith('[') && segment.endsWith(']');

@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import { useSucursales } from '@/hooks/useSucursales';
 import { useMediciones } from '@/hooks/useMediciones';
+import { useEmpresas } from '@/hooks/useEmpresas';
 
 interface OneDriveFolder {
   id: string;
@@ -45,12 +46,19 @@ export default function OneDriveFolders({ empresaId, sucursalId, sucursalNombre,
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc');
   const isFetchingRef = useRef(false);
   const router = useRouter();
+  const [provinciasContents, setProvinciasContents] = useState<Map<string, OneDriveItem[]>>(new Map());
+  
+  // Obtener todas las empresas (para calcular porcentajes en la raíz)
+  const { empresas: allEmpresas } = useEmpresas();
   
   // Obtener sucursales si estamos filtrando por empresa
   const { sucursales } = useSucursales(filterByEmpresa && empresaId ? empresaId : undefined);
-  
+
   // Obtener mediciones de todas las sucursales para calcular porcentaje de cobertura legal
   const { mediciones: allMediciones } = useMediciones(filterByEmpresa && empresaId ? empresaId : undefined);
+  
+  // Obtener mediciones de todas las empresas (para calcular porcentajes en la raíz)
+  const { mediciones: allMedicionesGlobales } = useMediciones(undefined);
   
   // Función helper para formatear el porcentaje (quitar 0 inicial si existe)
   const formatearPorcentaje = (valor: string | number | null): string | null => {
@@ -113,6 +121,163 @@ export default function OneDriveFolders({ empresaId, sucursalId, sucursalNombre,
     
     return mapa;
   }, [allMediciones, filterByEmpresa, empresaId]);
+
+  // Mapa de empresaId -> porcentaje promedio de cobertura legal (para carpetas en la raíz)
+  const porcentajesPorEmpresa = useMemo(() => {
+    const mapa = new Map<string, string | null>();
+    
+    // Si estamos filtrando por empresa, no calcular porcentajes por empresa
+    if (filterByEmpresa) return mapa;
+    
+    // Para cada empresa, calcular el promedio del porcentaje de cobertura legal de todas sus sucursales
+    allEmpresas.forEach((empresa) => {
+      // Obtener todas las mediciones de esta empresa
+      const medicionesEmpresa = allMedicionesGlobales.filter((m) => m.empresaId === empresa.id);
+      
+      if (medicionesEmpresa.length === 0) return;
+      
+      // Agrupar mediciones por sucursal
+      const medicionesPorSucursal = new Map<string, typeof medicionesEmpresa>();
+      medicionesEmpresa.forEach((m) => {
+        if (m.sucursalId) {
+          if (!medicionesPorSucursal.has(m.sucursalId)) {
+            medicionesPorSucursal.set(m.sucursalId, []);
+          }
+          medicionesPorSucursal.get(m.sucursalId)!.push(m);
+        }
+      });
+      
+      // Para cada sucursal, obtener el porcentaje más reciente
+      const valoresPorSucursal: number[] = [];
+      medicionesPorSucursal.forEach((medicionesSucursal) => {
+        for (const m of medicionesSucursal) {
+          const datos = m.datos as Record<string, unknown>;
+          const getValue = (k: string) => String((datos[k] ?? '') as any).trim();
+          
+          const coberturaValue = getValue('PORCENTAJE DE COBERTURA LEGAL');
+          
+          if (coberturaValue && coberturaValue !== '' && coberturaValue !== 'undefined' && coberturaValue !== 'null') {
+            const numValue = parseFloat(coberturaValue.replace('%', '').replace(',', '.'));
+            if (!isNaN(numValue)) {
+              // Si el valor es < 1, multiplicar por 100
+              const valorFinal = numValue < 1 && numValue > 0 ? numValue * 100 : numValue;
+              valoresPorSucursal.push(valorFinal);
+              break; // Usar el primer valor encontrado (más reciente)
+            }
+          }
+        }
+      });
+      
+      // Calcular el promedio
+      if (valoresPorSucursal.length > 0) {
+        const promedio = valoresPorSucursal.reduce((sum, val) => sum + val, 0) / valoresPorSucursal.length;
+        const porcentajeFormateado = formatearPorcentaje(promedio);
+        if (porcentajeFormateado !== null) {
+          mapa.set(empresa.id, porcentajeFormateado);
+        }
+      }
+    });
+    
+    return mapa;
+  }, [allEmpresas, allMedicionesGlobales, filterByEmpresa]);
+
+  // Mapa de folderId (provincia) -> porcentaje promedio de cobertura legal
+  const porcentajesPorProvincia = useMemo(() => {
+    const mapa = new Map<string, string | null>();
+    
+    // Solo calcular si estamos en la raíz y no estamos filtrando por empresa
+    if (filterByEmpresa || filterBySucursal) return mapa;
+    
+    // Para cada carpeta de provincia, calcular el promedio de las empresas dentro
+    provinciasContents.forEach((empresasEnProvincia, provinciaFolderId) => {
+      const valoresPorEmpresa: number[] = [];
+      
+      // Para cada carpeta dentro de la provincia, verificar si es una empresa
+      empresasEnProvincia.forEach((carpetaEmpresa) => {
+        if (carpetaEmpresa.type !== 'folder') return;
+        
+        // Buscar la empresa que coincida con esta carpeta
+        const itemNameLower = carpetaEmpresa.name.toLowerCase().trim();
+        const empresa = allEmpresas.find(e => {
+          const empresaNombreLower = e.nombre.toLowerCase().trim();
+          const empresaIdLower = e.id.toLowerCase().trim();
+          return empresaNombreLower === itemNameLower || 
+                 empresaIdLower === itemNameLower ||
+                 itemNameLower.includes(empresaIdLower) || 
+                 empresaIdLower.includes(itemNameLower) ||
+                 itemNameLower.startsWith(empresaIdLower) || 
+                 empresaIdLower.startsWith(itemNameLower);
+        });
+        
+        if (empresa) {
+          // Obtener el porcentaje de esta empresa
+          const porcentajeEmpresa = porcentajesPorEmpresa.get(empresa.id);
+          if (porcentajeEmpresa) {
+            const numValue = parseFloat(porcentajeEmpresa);
+            if (!isNaN(numValue)) {
+              valoresPorEmpresa.push(numValue);
+            }
+          }
+        }
+      });
+      
+      // Calcular el promedio de todas las empresas en la provincia
+      if (valoresPorEmpresa.length > 0) {
+        const promedio = valoresPorEmpresa.reduce((sum, val) => sum + val, 0) / valoresPorEmpresa.length;
+        const porcentajeFormateado = formatearPorcentaje(promedio);
+        if (porcentajeFormateado !== null) {
+          mapa.set(provinciaFolderId, porcentajeFormateado);
+        }
+      }
+    });
+    
+    return mapa;
+  }, [provinciasContents, allEmpresas, porcentajesPorEmpresa, filterByEmpresa, filterBySucursal]);
+
+  // Cargar contenido de carpetas de provincia cuando estamos en la raíz
+  useEffect(() => {
+    const loadProvinciasContents = async () => {
+      // Solo cargar si estamos en la raíz y no estamos filtrando
+      if (filterByEmpresa || filterBySucursal || items.length === 0) return;
+      
+      const newContents = new Map<string, OneDriveItem[]>();
+      
+      // Para cada carpeta en la raíz, obtener su contenido
+      for (const item of items) {
+        if (item.type !== 'folder') continue;
+        
+        try {
+          const response = await fetch(`/api/onedrive/folders?action=list-folder-contents&folderId=${item.id}`, {
+            cache: 'no-store',
+            headers: {
+              'Cache-Control': 'no-cache, no-store, must-revalidate',
+              'Pragma': 'no-cache',
+              'Expires': '0'
+            }
+          });
+          
+          if (response.ok) {
+            const data = await response.json();
+            if (data.success && data.items) {
+              // Filtrar solo carpetas (empresas dentro de la provincia)
+              const carpetas = data.items.filter((i: OneDriveItem) => i.type === 'folder');
+              if (carpetas.length > 0) {
+                newContents.set(item.id, carpetas);
+              }
+            }
+          }
+        } catch (error) {
+          console.error(`Error loading contents for folder ${item.name}:`, error);
+        }
+      }
+      
+      if (newContents.size > 0) {
+        setProvinciasContents(newContents);
+      }
+    };
+    
+    loadProvinciasContents();
+  }, [items, filterByEmpresa, filterBySucursal]);
 
   const fetchFolders = useCallback(async (folderId?: string, isNavigation: boolean = false, forceRefresh: boolean = false) => {
     if (isFetchingRef.current && !forceRefresh) {
@@ -416,29 +581,82 @@ export default function OneDriveFolders({ empresaId, sucursalId, sucursalNombre,
         );
     
     // Ordenar items si hay un criterio de ordenamiento
-    if (sortBy === 'cobertura' && filterByEmpresa && empresaId) {
+        if (sortBy === 'cobertura') {
       filtered = [...filtered].sort((a, b) => {
-        // Obtener sucursales para ambos items
-        const getSucursal = (item: OneDriveItem) => {
-          if (item.type !== 'folder') return null;
-          const itemNameLower = item.name.toLowerCase().trim();
-          return sucursales.find(s => {
-            const sucursalNombreLower = s.nombre.toLowerCase().trim();
-            const sucursalIdLower = s.id.toLowerCase().trim();
-            return sucursalNombreLower === itemNameLower || 
-                   sucursalIdLower === itemNameLower ||
-                   itemNameLower.includes(sucursalIdLower) || 
-                   sucursalIdLower.includes(itemNameLower) ||
-                   itemNameLower.startsWith(sucursalIdLower) || 
-                   sucursalIdLower.startsWith(itemNameLower);
-          });
-        };
+        let porcentajeA: string | null = null;
+        let porcentajeB: string | null = null;
         
-        const sucursalA = getSucursal(a);
-        const sucursalB = getSucursal(b);
-        
-        const porcentajeA = sucursalA ? porcentajesPorSucursal.get(sucursalA.id) : null;
-        const porcentajeB = sucursalB ? porcentajesPorSucursal.get(sucursalB.id) : null;
+        if (filterByEmpresa && empresaId) {
+          // Si estamos filtrando por empresa, buscar por sucursal
+          const getSucursal = (item: OneDriveItem) => {
+            if (item.type !== 'folder') return null;
+            const itemNameLower = item.name.toLowerCase().trim();
+            return sucursales.find(s => {
+              const sucursalNombreLower = s.nombre.toLowerCase().trim();
+              const sucursalIdLower = s.id.toLowerCase().trim();
+              return sucursalNombreLower === itemNameLower || 
+                     sucursalIdLower === itemNameLower ||
+                     itemNameLower.includes(sucursalIdLower) || 
+                     sucursalIdLower.includes(itemNameLower) ||
+                     itemNameLower.startsWith(sucursalIdLower) || 
+                     sucursalIdLower.startsWith(itemNameLower);
+            });
+          };
+          
+          const sucursalA = getSucursal(a);
+          const sucursalB = getSucursal(b);
+          
+          porcentajeA = sucursalA ? (porcentajesPorSucursal.get(sucursalA.id) ?? null) : null;
+          porcentajeB = sucursalB ? (porcentajesPorSucursal.get(sucursalB.id) ?? null) : null;
+        } else {
+          // Si estamos en la raíz, primero verificar si es provincia, luego empresa
+          const porcentajeProvinciaA = porcentajesPorProvincia.get(a.id);
+          const porcentajeProvinciaB = porcentajesPorProvincia.get(b.id);
+          
+          if (porcentajeProvinciaA !== undefined) {
+            porcentajeA = porcentajeProvinciaA;
+          } else {
+            const getEmpresa = (item: OneDriveItem) => {
+              if (item.type !== 'folder') return null;
+              const itemNameLower = item.name.toLowerCase().trim();
+              return allEmpresas.find(e => {
+                const empresaNombreLower = e.nombre.toLowerCase().trim();
+                const empresaIdLower = e.id.toLowerCase().trim();
+                return empresaNombreLower === itemNameLower || 
+                       empresaIdLower === itemNameLower ||
+                       itemNameLower.includes(empresaIdLower) || 
+                       empresaIdLower.includes(itemNameLower) ||
+                       itemNameLower.startsWith(empresaIdLower) || 
+                       empresaIdLower.startsWith(itemNameLower);
+              });
+            };
+            
+            const empresaA = getEmpresa(a);
+            porcentajeA = empresaA ? (porcentajesPorEmpresa.get(empresaA.id) ?? null) : null;
+          }
+          
+          if (porcentajeProvinciaB !== undefined) {
+            porcentajeB = porcentajeProvinciaB;
+          } else {
+            const getEmpresa = (item: OneDriveItem) => {
+              if (item.type !== 'folder') return null;
+              const itemNameLower = item.name.toLowerCase().trim();
+              return allEmpresas.find(e => {
+                const empresaNombreLower = e.nombre.toLowerCase().trim();
+                const empresaIdLower = e.id.toLowerCase().trim();
+                return empresaNombreLower === itemNameLower || 
+                       empresaIdLower === itemNameLower ||
+                       itemNameLower.includes(empresaIdLower) || 
+                       empresaIdLower.includes(itemNameLower) ||
+                       itemNameLower.startsWith(empresaIdLower) || 
+                       empresaIdLower.startsWith(itemNameLower);
+              });
+            };
+            
+            const empresaB = getEmpresa(b);
+            porcentajeB = empresaB ? (porcentajesPorEmpresa.get(empresaB.id) ?? null) : null;
+          }
+        }
         
         // Convertir a números para comparar
         const numA = porcentajeA ? parseFloat(porcentajeA) : -1; // -1 para que los sin porcentaje vayan al final
@@ -461,7 +679,7 @@ export default function OneDriveFolders({ empresaId, sucursalId, sucursalNombre,
     }
     
     return filtered;
-  }, [items, searchTerm, sortBy, sortOrder, filterByEmpresa, empresaId, sucursales, porcentajesPorSucursal]);
+  }, [items, searchTerm, sortBy, sortOrder, filterByEmpresa, empresaId, sucursales, porcentajesPorSucursal, allEmpresas, porcentajesPorEmpresa, porcentajesPorProvincia]);
 
   if (loading && items.length === 0) {
     return (
@@ -568,12 +786,12 @@ export default function OneDriveFolders({ empresaId, sucursalId, sucursalNombre,
             <div className="flex items-center space-x-1 mt-1 overflow-x-auto pb-1">
               <span className="text-xs text-gray-400 flex-shrink-0">Ubicación:</span>
               <div className="flex items-center space-x-1 min-w-0">
-                {folderHistory.map((folder, index) => (
+              {folderHistory.map((folder, index) => (
                   <span key={folder.id} className="text-xs text-gray-600 whitespace-nowrap">
-                    {folder.name}
-                    {index < folderHistory.length - 1 && <span className="mx-1">/</span>}
-                  </span>
-                ))}
+                  {folder.name}
+                  {index < folderHistory.length - 1 && <span className="mx-1">/</span>}
+                </span>
+              ))}
               </div>
             </div>
           )}
@@ -773,42 +991,40 @@ export default function OneDriveFolders({ empresaId, sucursalId, sucursalNombre,
                         </div>
                       </button>
                     </th>
-                    {filterByEmpresa && empresaId && (
-                      <th className="h-12 px-4 text-center align-middle font-medium text-gray-600">
-                        <button
-                          onClick={() => handleSort('cobertura')}
-                          className="flex items-center justify-center gap-2 hover:text-gray-900 transition-all mx-auto px-3 py-2 rounded-md hover:bg-gray-100 border border-transparent hover:border-gray-300"
-                          title={sortBy === 'cobertura' 
-                            ? sortOrder === 'asc' 
-                              ? 'Ordenar: Menor a Mayor (click para cambiar)' 
-                              : 'Ordenar: Mayor a Menor (click para cambiar)'
-                            : 'Click para ordenar por porcentaje'}
-                        >
-                          <span className="font-medium">Cobertura Legal</span>
-                          <div className="flex flex-col items-center">
-                            <svg 
-                              className={`w-3 h-3 ${sortBy === 'cobertura' && sortOrder === 'asc' ? 'text-blue-600' : 'text-gray-400'}`}
-                              fill="currentColor" 
-                              viewBox="0 0 20 20"
-                            >
-                              <path d="M5 12l5-5 5 5H5z" />
-                            </svg>
-                            <svg 
-                              className={`w-3 h-3 -mt-1 ${sortBy === 'cobertura' && sortOrder === 'desc' ? 'text-blue-600' : 'text-gray-400'}`}
-                              fill="currentColor" 
-                              viewBox="0 0 20 20"
-                            >
-                              <path d="M5 8l5 5 5-5H5z" />
-                            </svg>
-                          </div>
-                          {sortBy === 'cobertura' && (
-                            <span className="text-xs text-blue-600 font-semibold ml-1">
-                              {sortOrder === 'asc' ? '(↑)' : '(↓)'}
-                            </span>
-                          )}
-                        </button>
-                      </th>
-                    )}
+                    <th className="h-12 px-4 text-center align-middle font-medium text-gray-600">
+                      <button
+                        onClick={() => handleSort('cobertura')}
+                        className="flex items-center justify-center gap-2 hover:text-gray-900 transition-all mx-auto px-3 py-2 rounded-md hover:bg-gray-100 border border-transparent hover:border-gray-300"
+                        title={sortBy === 'cobertura' 
+                          ? sortOrder === 'asc' 
+                            ? 'Ordenar: Menor a Mayor (click para cambiar)' 
+                            : 'Ordenar: Mayor a Menor (click para cambiar)'
+                          : 'Click para ordenar por porcentaje'}
+                      >
+                        <span className="font-medium">Cobertura Legal</span>
+                        <div className="flex flex-col items-center">
+                          <svg 
+                            className={`w-3 h-3 ${sortBy === 'cobertura' && sortOrder === 'asc' ? 'text-blue-600' : 'text-gray-400'}`}
+                            fill="currentColor" 
+                            viewBox="0 0 20 20"
+                          >
+                            <path d="M5 12l5-5 5 5H5z" />
+                          </svg>
+                          <svg 
+                            className={`w-3 h-3 -mt-1 ${sortBy === 'cobertura' && sortOrder === 'desc' ? 'text-blue-600' : 'text-gray-400'}`}
+                            fill="currentColor" 
+                            viewBox="0 0 20 20"
+                          >
+                            <path d="M5 8l5 5 5-5H5z" />
+                          </svg>
+                        </div>
+                        {sortBy === 'cobertura' && (
+                          <span className="text-xs text-blue-600 font-semibold ml-1">
+                            {sortOrder === 'asc' ? '(↑)' : '(↓)'}
+                          </span>
+                        )}
+                      </button>
+                    </th>
                     <th className="h-12 px-4 text-right align-middle font-medium text-gray-600 [&:has([role=checkbox])]:pr-0">
                       Acciones
                     </th>
@@ -886,8 +1102,33 @@ export default function OneDriveFolders({ empresaId, sucursalId, sucursalNombre,
                       return false;
                     }) : null;
                     
-                    // Obtener el porcentaje de cobertura legal para esta sucursal
-                    const porcentajeCobertura = sucursal ? porcentajesPorSucursal.get(sucursal.id) : null;
+                    // Obtener el porcentaje de cobertura legal para esta sucursal, empresa o provincia
+                    let porcentajeCobertura: string | null = null;
+                    
+                    if (filterByEmpresa && empresaId) {
+                      // Si estamos filtrando por empresa, buscar por sucursal
+                      porcentajeCobertura = sucursal ? (porcentajesPorSucursal.get(sucursal.id) ?? null) : null;
+                    } else {
+                      // Si estamos en la raíz, primero verificar si es una provincia
+                      const porcentajeProvincia = porcentajesPorProvincia.get(item.id);
+                      if (porcentajeProvincia !== undefined) {
+                        porcentajeCobertura = porcentajeProvincia;
+                      } else {
+                        // Si no es provincia, buscar por empresa
+                        const itemNameLower = item.name.toLowerCase().trim();
+                        const empresa = allEmpresas.find(e => {
+                          const empresaNombreLower = e.nombre.toLowerCase().trim();
+                          const empresaIdLower = e.id.toLowerCase().trim();
+                          return empresaNombreLower === itemNameLower || 
+                                 empresaIdLower === itemNameLower ||
+                                 itemNameLower.includes(empresaIdLower) || 
+                                 empresaIdLower.includes(itemNameLower) ||
+                                 itemNameLower.startsWith(empresaIdLower) || 
+                                 empresaIdLower.startsWith(itemNameLower);
+                        });
+                        porcentajeCobertura = empresa ? (porcentajesPorEmpresa.get(empresa.id) ?? null) : null;
+                      }
+                    }
                     
                     // Si es una sucursal, redirigir a la página de detalle de la sucursal
                     const handleFolderClick = () => {
@@ -924,15 +1165,13 @@ export default function OneDriveFolders({ empresaId, sucursalId, sucursalNombre,
                             </div>
                           </div>
                         </td>
-                        {filterByEmpresa && empresaId && (
-                          <td className="p-4 align-middle text-center">
-                            {isSucursal && porcentajeCobertura !== null ? (
-                              <span className="font-semibold text-gray-700">{porcentajeCobertura}%</span>
-                            ) : (
-                              <span className="text-gray-400">-</span>
-                            )}
-                          </td>
-                        )}
+                        <td className="p-4 align-middle text-center">
+                          {porcentajeCobertura !== null ? (
+                            <span className="font-semibold text-gray-700">{porcentajeCobertura}%</span>
+                          ) : (
+                            <span className="text-gray-400">-</span>
+                          )}
+                        </td>
                         <td className="p-4 align-middle text-right">
                           <div className="flex items-center justify-end gap-2">
                             {item.type === 'file' ? (
@@ -1045,8 +1284,33 @@ export default function OneDriveFolders({ empresaId, sucursalId, sucursalNombre,
                 return false;
               }) : null;
               
-              // Obtener el porcentaje de cobertura legal para esta sucursal (mobile)
-              const porcentajeCoberturaMobile = sucursalMobile ? porcentajesPorSucursal.get(sucursalMobile.id) : null;
+              // Obtener el porcentaje de cobertura legal para esta sucursal, empresa o provincia (mobile)
+              let porcentajeCoberturaMobile: string | null = null;
+              
+              if (filterByEmpresa && empresaId) {
+                // Si estamos filtrando por empresa, buscar por sucursal
+                porcentajeCoberturaMobile = sucursalMobile ? (porcentajesPorSucursal.get(sucursalMobile.id) ?? null) : null;
+              } else {
+                // Si estamos en la raíz, primero verificar si es una provincia
+                const porcentajeProvinciaMobile = porcentajesPorProvincia.get(item.id);
+                if (porcentajeProvinciaMobile !== undefined) {
+                  porcentajeCoberturaMobile = porcentajeProvinciaMobile;
+                } else {
+                  // Si no es provincia, buscar por empresa
+                  const itemNameLower = item.name.toLowerCase().trim();
+                  const empresaMobile = allEmpresas.find(e => {
+                    const empresaNombreLower = e.nombre.toLowerCase().trim();
+                    const empresaIdLower = e.id.toLowerCase().trim();
+                    return empresaNombreLower === itemNameLower || 
+                           empresaIdLower === itemNameLower ||
+                           itemNameLower.includes(empresaIdLower) || 
+                           empresaIdLower.includes(itemNameLower) ||
+                           itemNameLower.startsWith(empresaIdLower) || 
+                           empresaIdLower.startsWith(itemNameLower);
+                  });
+                  porcentajeCoberturaMobile = empresaMobile ? (porcentajesPorEmpresa.get(empresaMobile.id) ?? null) : null;
+                }
+              }
               
               // Si es una sucursal, redirigir a la página de detalle de la sucursal
               const handleFolderClickMobile = () => {
@@ -1081,7 +1345,7 @@ export default function OneDriveFolders({ empresaId, sucursalId, sucursalNombre,
                       <div className="font-medium text-gray-900 mb-1 break-words">
                         {item.name}
                       </div>
-                      {isSucursal && porcentajeCoberturaMobile !== null && (
+                      {porcentajeCoberturaMobile !== null && (
                         <div className="text-xs text-gray-500 mt-1">
                           Cobertura Legal: <span className="font-semibold text-gray-700">{porcentajeCoberturaMobile}%</span>
                         </div>
