@@ -5,6 +5,8 @@ import { useRouter } from 'next/navigation';
 import { useSucursales } from '@/hooks/useSucursales';
 import { useMediciones } from '@/hooks/useMediciones';
 import { useEmpresas } from '@/hooks/useEmpresas';
+import { firestore } from '@/lib/firebase';
+import { collection, doc, getDocs } from 'firebase/firestore';
 
 interface OneDriveFolder {
   id: string;
@@ -47,6 +49,9 @@ export default function OneDriveFolders({ empresaId, sucursalId, sucursalNombre,
   const isFetchingRef = useRef(false);
   const router = useRouter();
   const [provinciasContents, setProvinciasContents] = useState<Map<string, OneDriveItem[]>>(new Map());
+  const [porcentajesProvinciaFirestore, setPorcentajesProvinciaFirestore] = useState<Map<string, string | null>>(new Map());
+  const [porcentajesSucursalFirestore, setPorcentajesSucursalFirestore] = useState<Map<string, string | null>>(new Map());
+  const [empresaFolderName, setEmpresaFolderName] = useState<string | null>(null);
   
   // Obtener todas las empresas (para calcular porcentajes en la raíz)
   const { empresas: allEmpresas } = useEmpresas();
@@ -61,24 +66,247 @@ export default function OneDriveFolders({ empresaId, sucursalId, sucursalNombre,
   const { mediciones: allMedicionesGlobales } = useMediciones(undefined);
   
   // Función helper para formatear el porcentaje (quitar 0 inicial si existe)
-  const formatearPorcentaje = (valor: string | number | null): string | null => {
+  const formatearPorcentaje = useCallback((valor: string | number | null): string | null => {
     if (!valor) return null;
-    
-    const numValue = typeof valor === 'string' 
+
+    const numValue = typeof valor === 'string'
       ? parseFloat(valor.replace('%', '').replace(',', '.').trim())
       : valor;
-    
+
     if (isNaN(numValue)) return null;
-    
+
     // Si el valor es < 1 (tiene 0 inicial), quitar el 0 y mostrar el resto
     if (numValue < 1 && numValue > 0) {
       // Multiplicar por 100 y redondear
       return Math.round(numValue * 100).toString();
     }
-    
+
     // Si es >= 1, mostrar tal cual (redondeado)
     return Math.round(numValue).toString();
-  };
+  }, []);
+
+  const normalizeText = useCallback((value: string): string => {
+    return value
+      .normalize('NFD') // separa acentos
+      .replace(/\p{Diacritic}/gu, '') // saca diacríticos
+      .toUpperCase()
+      .replace(/[^A-Z0-9]+/g, ' ') // normaliza separadores
+      .trim()
+      .replace(/\s+/g, ' ');
+  }, []);
+
+  const getBestProvinciaCobertura = useCallback(
+    (provinciaNombre: string): string | null => {
+      if (!provinciaNombre) return null;
+      const normTarget = normalizeText(provinciaNombre);
+      if (!normTarget) return null;
+
+      // Match exacto normalizado
+      if (porcentajesProvinciaFirestore.has(normTarget)) {
+        return porcentajesProvinciaFirestore.get(normTarget) ?? null;
+      }
+
+      // Match por contención (tolerancia a pequeñas variaciones)
+      let bestKey: string | null = null;
+      let bestVal: string | null = null;
+      let bestOverlap = 0;
+
+      const targetLettersOnly = normTarget.replace(/[^A-Z0-9]/g, '');
+
+      // Si una de las strings es corta, usar contención primero
+      if (targetLettersOnly.length < 4) {
+        for (const [key, val] of porcentajesProvinciaFirestore.entries()) {
+          if (!key) continue;
+          if (key.includes(normTarget) || normTarget.includes(key)) {
+            bestKey = key;
+            bestVal = val ?? null;
+            break;
+          }
+        }
+        return bestVal;
+      }
+
+      const make4Grams = (s: string): Set<string> => {
+        const grams = new Set<string>();
+        for (let i = 0; i <= s.length - 4; i++) {
+          grams.add(s.slice(i, i + 4));
+        }
+        return grams;
+      };
+
+      const target4 = make4Grams(targetLettersOnly);
+
+      for (const [key, val] of porcentajesProvinciaFirestore.entries()) {
+        const keyLettersOnly = key.replace(/[^A-Z0-9]/g, '');
+        if (!keyLettersOnly) continue;
+
+        if (keyLettersOnly.includes(targetLettersOnly) || targetLettersOnly.includes(keyLettersOnly)) {
+          // contención fuerte: devolvemos directo
+          bestKey = key;
+          bestVal = val ?? null;
+          bestOverlap = Infinity;
+          break;
+        }
+
+        // Overlap por segmentos de 4 letras consecutivas
+        const key4 = make4Grams(keyLettersOnly);
+        let overlap = 0;
+        for (const g of target4) {
+          if (key4.has(g)) overlap += 1;
+        }
+
+        if (overlap > bestOverlap) {
+          bestOverlap = overlap;
+          bestKey = key;
+          bestVal = val ?? null;
+        }
+      }
+
+      // Umbral: si compartieron al menos un segmento de 4 consecutivos, aceptamos
+      return bestOverlap >= 1 ? bestVal : null;
+    },
+    [normalizeText, porcentajesProvinciaFirestore]
+  );
+
+  const getBestSucursalCobertura = useCallback(
+    (sucursalNombre: string): string | null => {
+      if (!sucursalNombre) return null;
+      const normTarget = normalizeText(sucursalNombre);
+      if (!normTarget) return null;
+
+      if (porcentajesSucursalFirestore.has(normTarget)) {
+        return porcentajesSucursalFirestore.get(normTarget) ?? null;
+      }
+
+      let bestVal: string | null = null;
+      let bestOverlap = 0;
+
+      const targetLettersOnly = normTarget.replace(/[^A-Z0-9]/g, '');
+
+      // Si la string es muy corta, priorizar contención
+      if (targetLettersOnly.length < 4) {
+        for (const [key, val] of porcentajesSucursalFirestore.entries()) {
+          if (!key) continue;
+          if (key.includes(normTarget) || normTarget.includes(key)) {
+            return val ?? null;
+          }
+        }
+        return null;
+      }
+
+      const make4Grams = (s: string): Set<string> => {
+        const grams = new Set<string>();
+        for (let i = 0; i <= s.length - 4; i++) {
+          grams.add(s.slice(i, i + 4));
+        }
+        return grams;
+      };
+
+      const target4 = make4Grams(targetLettersOnly);
+
+      for (const [key, val] of porcentajesSucursalFirestore.entries()) {
+        const keyLettersOnly = key.replace(/[^A-Z0-9]/g, '');
+        if (!keyLettersOnly) continue;
+
+        if (keyLettersOnly.includes(targetLettersOnly) || targetLettersOnly.includes(keyLettersOnly)) {
+          return val ?? null;
+        }
+
+        const key4 = make4Grams(keyLettersOnly);
+        let overlap = 0;
+        for (const g of target4) {
+          if (key4.has(g)) overlap += 1;
+        }
+
+        if (overlap > bestOverlap) {
+          bestOverlap = overlap;
+          bestVal = val ?? null;
+        }
+      }
+
+      return bestOverlap >= 1 ? bestVal : null;
+    },
+    [normalizeText, porcentajesSucursalFirestore]
+  );
+
+  useEffect(() => {
+    const loadCoberturaPorProvinciaDesdeFirestore = async () => {
+      if (!filterByEmpresa || (!empresaNombre && !empresaId)) {
+        setPorcentajesProvinciaFirestore(new Map());
+        return;
+      }
+
+      const mapa = new Map<string, string | null>();
+      const empresaKey = (empresaFolderName || empresaNombre || empresaId || '').trim();
+      if (!empresaKey) {
+        setPorcentajesProvinciaFirestore(new Map());
+        return;
+      }
+
+      try {
+        const provinciasRef = collection(doc(firestore, 'coberturaLegal', empresaKey), 'provincias');
+        const snapshot = await getDocs(provinciasRef);
+
+        snapshot.forEach((provinciaDoc) => {
+          const data = provinciaDoc.data() as Record<string, unknown>;
+          // Campo esperado en Firestore:
+          // /coberturaLegal/{empresa}/provincias/{provincia} -> "COBERTURA LEGAL PROVINCIAL"
+          const coberturaRaw =
+            data['COBERTURA LEGAL PROVINCIAL'] ??
+            // fallback por si existiera con otro casing/clave
+            data['coberturaLegalProvincial'] ??
+            data['coberturaLegalProvincia'] ??
+            data['coberturaLegal'];
+          const coberturaFormateada =
+            typeof coberturaRaw === 'number' || typeof coberturaRaw === 'string'
+              ? formatearPorcentaje(coberturaRaw)
+              : null;
+
+          mapa.set(normalizeText(provinciaDoc.id), coberturaFormateada);
+        });
+      } catch (err) {
+        console.error(`Error leyendo coberturaLegal para empresa "${empresaKey}"`, err);
+      }
+
+      setPorcentajesProvinciaFirestore(mapa);
+    };
+
+    loadCoberturaPorProvinciaDesdeFirestore();
+  }, [filterByEmpresa, empresaFolderName, empresaNombre, empresaId, normalizeText]);
+
+  // Cargar COBERTURA LEGAL de sucursales desde Firestore:
+  // /cobertura_legal/{nombreSucursal} -> campo "COBERTURA LEGAL"
+  useEffect(() => {
+    const loadCoberturaPorSucursalDesdeFirestore = async () => {
+      if (!filterByEmpresa || !empresaId) {
+        setPorcentajesSucursalFirestore(new Map());
+        return;
+      }
+
+      try {
+        const snapshot = await getDocs(collection(firestore, 'cobertura_legal'));
+        const mapa = new Map<string, string | null>();
+
+        snapshot.forEach((docSnap) => {
+          const data = docSnap.data() as Record<string, unknown>;
+          const coberturaRaw = data['COBERTURA LEGAL'];
+          const coberturaFormateada =
+            typeof coberturaRaw === 'number' || typeof coberturaRaw === 'string'
+              ? formatearPorcentaje(coberturaRaw)
+              : null;
+
+          mapa.set(normalizeText(docSnap.id), coberturaFormateada);
+        });
+
+        setPorcentajesSucursalFirestore(mapa);
+      } catch (err) {
+        console.error('Error leyendo cobertura_legal para sucursales', err);
+        setPorcentajesSucursalFirestore(new Map());
+      }
+    };
+
+    loadCoberturaPorSucursalDesdeFirestore();
+  }, [filterByEmpresa, empresaId, normalizeText, formatearPorcentaje]);
   
   // Mapa de sucursalId -> porcentaje de cobertura legal
   const porcentajesPorSucursal = useMemo(() => {
@@ -396,6 +624,7 @@ export default function OneDriveFolders({ empresaId, sucursalId, sucursalNombre,
         // Si encontramos la carpeta, listar su contenido
         if (empresaFolder) {
           console.log('📁 [OneDrive] Listing contents of empresa folder:', empresaFolder.name);
+          setEmpresaFolderName(empresaFolder.name);
           response = await fetch(`/api/onedrive/folders?action=list-folder-contents&folderId=${empresaFolder.id}${timestamp}`, cacheHeaders);
         } else {
           // Verificar si el error fue por falta de autenticación antes de reportar carpeta no encontrada
@@ -421,6 +650,7 @@ export default function OneDriveFolders({ empresaId, sucursalId, sucursalNombre,
       } else {
         // Listar carpetas raíz
         console.log('🔍 [OneDrive] Fetching root folders');
+        setEmpresaFolderName(null);
         response = await fetch(`/api/onedrive/folders?action=list-root-folders${timestamp}`, cacheHeaders);
       }
 
@@ -587,6 +817,7 @@ export default function OneDriveFolders({ empresaId, sucursalId, sucursalNombre,
         let porcentajeB: string | null = null;
         
         if (filterByEmpresa && empresaId) {
+          const listingProvincias = folderHistory.length === 0;
           // Si estamos filtrando por empresa, buscar por sucursal
           const getSucursal = (item: OneDriveItem) => {
             if (item.type !== 'folder') return null;
@@ -606,12 +837,27 @@ export default function OneDriveFolders({ empresaId, sucursalId, sucursalNombre,
           const sucursalA = getSucursal(a);
           const sucursalB = getSucursal(b);
           
-          porcentajeA = sucursalA ? (porcentajesPorSucursal.get(sucursalA.id) ?? null) : null;
-          porcentajeB = sucursalB ? (porcentajesPorSucursal.get(sucursalB.id) ?? null) : null;
+          const provinciaA = getBestProvinciaCobertura(a.name);
+          const provinciaB = getBestProvinciaCobertura(b.name);
+          const sucursalCoberturaA = getBestSucursalCobertura(a.name);
+          const sucursalCoberturaB = getBestSucursalCobertura(b.name);
+
+          if (listingProvincias) {
+            // Estamos listando provincias: siempre usar Firestore de provincias
+            porcentajeA = provinciaA ?? null;
+            porcentajeB = provinciaB ?? null;
+          } else {
+            // Estamos dentro de una provincia: usar Firestore de sucursales
+            porcentajeA = sucursalCoberturaA ?? null;
+            porcentajeB = sucursalCoberturaB ?? null;
+          }
         } else {
           // Si estamos en la raíz, primero verificar si es provincia, luego empresa
-          const porcentajeProvinciaA = porcentajesPorProvincia.get(a.id);
-          const porcentajeProvinciaB = porcentajesPorProvincia.get(b.id);
+          // Para provincias en vista de empresa, usamos Firestore (matching por nombre)
+          const porcentajeProvinciaA =
+            filterByEmpresa ? getBestProvinciaCobertura(a.name) : porcentajesPorProvincia.get(a.id);
+          const porcentajeProvinciaB =
+            filterByEmpresa ? getBestProvinciaCobertura(b.name) : porcentajesPorProvincia.get(b.id);
           
           if (porcentajeProvinciaA !== undefined) {
             porcentajeA = porcentajeProvinciaA;
@@ -679,7 +925,7 @@ export default function OneDriveFolders({ empresaId, sucursalId, sucursalNombre,
     }
     
     return filtered;
-  }, [items, searchTerm, sortBy, sortOrder, filterByEmpresa, empresaId, sucursales, porcentajesPorSucursal, allEmpresas, porcentajesPorEmpresa, porcentajesPorProvincia]);
+  }, [items, searchTerm, sortBy, sortOrder, filterByEmpresa, empresaId, sucursales, folderHistory, porcentajesPorSucursal, porcentajesProvinciaFirestore, allEmpresas, porcentajesPorEmpresa, porcentajesPorProvincia, getBestProvinciaCobertura, getBestSucursalCobertura]);
 
   if (loading && items.length === 0) {
     return (
@@ -1106,8 +1352,14 @@ export default function OneDriveFolders({ empresaId, sucursalId, sucursalNombre,
                     let porcentajeCobertura: string | null = null;
                     
                     if (filterByEmpresa && empresaId) {
-                      // Si estamos filtrando por empresa, buscar por sucursal
-                      porcentajeCobertura = sucursal ? (porcentajesPorSucursal.get(sucursal.id) ?? null) : null;
+                      // Si estamos listando provincias (estamos en la raíz de la empresa), siempre usar Firestore:
+                      // `coberturaLegal/{empresa}/provincias/{provincia}` -> `COBERTURA LEGAL PROVINCIAL`
+                      // Si estamos dentro de una provincia (navegación ya hecha), usar:
+                      // `cobertura_legal/{sucursal}` -> `COBERTURA LEGAL`
+                      const listingProvincias = folderHistory.length === 0;
+                      porcentajeCobertura = listingProvincias
+                        ? getBestProvinciaCobertura(item.name)
+                        : getBestSucursalCobertura(item.name);
                     } else {
                       // Si estamos en la raíz, primero verificar si es una provincia
                       const porcentajeProvincia = porcentajesPorProvincia.get(item.id);
@@ -1288,8 +1540,10 @@ export default function OneDriveFolders({ empresaId, sucursalId, sucursalNombre,
               let porcentajeCoberturaMobile: string | null = null;
               
               if (filterByEmpresa && empresaId) {
-                // Si estamos filtrando por empresa, buscar por sucursal
-                porcentajeCoberturaMobile = sucursalMobile ? (porcentajesPorSucursal.get(sucursalMobile.id) ?? null) : null;
+                const listingProvincias = folderHistory.length === 0;
+                porcentajeCoberturaMobile = listingProvincias
+                  ? getBestProvinciaCobertura(item.name)
+                  : getBestSucursalCobertura(item.name);
               } else {
                 // Si estamos en la raíz, primero verificar si es una provincia
                 const porcentajeProvinciaMobile = porcentajesPorProvincia.get(item.id);
