@@ -420,3 +420,6 @@ function onOpen() {
     .addItem('Enviar todas las filas', 'enviarTodasLasFilas')
     .addToUi();
 } 
+
+
+

@@ -28,6 +28,44 @@ interface OneDriveItem {
   downloadUrl?: string;
 }
 
+/**
+ * syncCoberturaLegalProvincia guarda `{ ...data }` del body; las claves suelen ser las columnas del sheet,
+ * no siempre "COBERTURA LEGAL PROVINCIAL".
+ */
+function extraerValorCoberturaProvincialDesdeDoc(data: Record<string, unknown>): string | number | null {
+  const preferKeys = [
+    'COBERTURA LEGAL PROVINCIAL',
+    'PORCENTAJE DE COBERTURA LEGAL',
+    'COBERTURA LEGAL',
+    'coberturaLegalProvincial',
+    'coberturaLegalProvincia',
+    'coberturaLegal',
+  ];
+  for (const k of preferKeys) {
+    const v = data[k];
+    if (v === undefined || v === null) continue;
+    if (typeof v === 'number' && !isNaN(v)) return v;
+    if (typeof v === 'string' && v.trim() !== '' && v.trim() !== 'undefined' && v.trim() !== 'null') {
+      return v.trim();
+    }
+  }
+  for (const [k, v] of Object.entries(data)) {
+    if (v === undefined || v === null) continue;
+    const kn = k.toUpperCase();
+    if (kn === 'FECHAS DE MEDICIÓN' || kn === 'FECHA CREACION' || kn === 'CLIENTE' || kn === 'PROVINCIA') {
+      continue;
+    }
+    if (
+      kn.includes('COBERTURA') &&
+      (kn.includes('PROVINCIAL') || kn.includes('PORCENTAJE') || kn.includes('PORCENT'))
+    ) {
+      if (typeof v === 'number' && !isNaN(v)) return v;
+      if (typeof v === 'string' && v.trim() !== '') return v.trim();
+    }
+  }
+  return null;
+}
+
 interface OneDriveFoldersProps {
   empresaId?: string;
   sucursalId?: string;
@@ -104,6 +142,28 @@ export default function OneDriveFolders({ empresaId, sucursalId, sucursalNombre,
       // Match exacto normalizado
       if (porcentajesProvinciaFirestore.has(normTarget)) {
         return porcentajesProvinciaFirestore.get(normTarget) ?? null;
+      }
+
+      const compactTarget = normTarget.replace(/\s+/g, '');
+      if (compactTarget && porcentajesProvinciaFirestore.has(compactTarget)) {
+        return porcentajesProvinciaFirestore.get(compactTarget) ?? null;
+      }
+
+      // Match por tokens: ej. folder "CIUDAD AUTONOMA BUENOS AIRES" vs doc "BUENOS AIRES"
+      const wordsOf = (s: string) => s.split(' ').filter((w) => w.length >= 2);
+      for (const [key, val] of porcentajesProvinciaFirestore.entries()) {
+        if (!key) continue;
+        const wt = wordsOf(normTarget);
+        const wk = wordsOf(key);
+        if (wt.length === 0 || wk.length === 0) continue;
+        const [shorterTokens, longerStr] =
+          wt.length <= wk.length ? [wt, key] : [wk, normTarget];
+        const allTokensInLonger = shorterTokens.every((t) =>
+          new RegExp(`(^|\\s)${t.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}(\\s|$)`).test(longerStr)
+        );
+        if (allTokensInLonger) {
+          return val ?? null;
+        }
       }
 
       // Match por contención (tolerancia a pequeñas variaciones)
@@ -229,6 +289,37 @@ export default function OneDriveFolders({ empresaId, sucursalId, sucursalNombre,
     [normalizeText, porcentajesSucursalFirestore]
   );
 
+  /** IDs en Firestore son case-sensitive: probamos variantes del nombre de empresa (ej. Fravega vs FRAVEGA). */
+  const candidatosEmpresaCoberturaLegal = useMemo(() => {
+    const emp = filterByEmpresa && empresaId ? allEmpresas.find((e) => e.id === empresaId) : undefined;
+    const base = [empresaFolderName, empresaNombre, empresaId, emp?.nombre, emp?.id]
+      .map((v) => (v ?? '').replace(/\s+/g, ' ').trim())
+      .filter((v) => v.length > 0);
+    const raw: string[] = [];
+    const seenBase = new Set<string>();
+    for (const s of base) {
+      if (seenBase.has(s)) continue;
+      seenBase.add(s);
+      raw.push(s);
+      const first = s.trim().split(/\s+/)[0];
+      if (first && first !== s && !seenBase.has(first)) {
+        seenBase.add(first);
+        raw.push(first);
+      }
+    }
+    const seen = new Set<string>();
+    const out: string[] = [];
+    for (const s of raw) {
+      const variants = [s, s.toUpperCase(), s.toLowerCase(), normalizeText(s)];
+      for (const v of variants) {
+        if (!v || seen.has(v)) continue;
+        seen.add(v);
+        out.push(v);
+      }
+    }
+    return out;
+  }, [filterByEmpresa, empresaFolderName, empresaNombre, empresaId, allEmpresas, normalizeText]);
+
   useEffect(() => {
     const loadCoberturaPorProvinciaDesdeFirestore = async () => {
       if (!filterByEmpresa || (!empresaNombre && !empresaId)) {
@@ -236,43 +327,78 @@ export default function OneDriveFolders({ empresaId, sucursalId, sucursalNombre,
         return;
       }
 
-      const mapa = new Map<string, string | null>();
-      const empresaKey = (empresaFolderName || empresaNombre || empresaId || '').trim();
-      if (!empresaKey) {
+      if (candidatosEmpresaCoberturaLegal.length === 0) {
         setPorcentajesProvinciaFirestore(new Map());
         return;
       }
 
+      const mapa = new Map<string, string | null>();
+
+      const registerProvinciaDoc = (provinciaDoc: { id: string; data: () => Record<string, unknown> }) => {
+        const data = provinciaDoc.data() as Record<string, unknown>;
+        const coberturaRaw = extraerValorCoberturaProvincialDesdeDoc(data);
+        const coberturaFormateada =
+          coberturaRaw !== null ? formatearPorcentaje(coberturaRaw) : null;
+
+        const aliasFields: unknown[] = [
+          provinciaDoc.id,
+          data['NOMBRE'],
+          data['NOMBRE PROVINCIA'],
+          data['PROVINCIA'],
+          data['nombre'],
+          data['provincia'],
+        ];
+        const keys = new Set<string>();
+        for (const v of aliasFields) {
+          if (typeof v === 'string' && v.trim()) {
+            const nt = normalizeText(v);
+            keys.add(nt);
+            keys.add(nt.replace(/\s+/g, ''));
+          }
+        }
+        for (const k of keys) {
+          if (!k) continue;
+          const prev = mapa.get(k);
+          if (coberturaFormateada !== null) {
+            mapa.set(k, coberturaFormateada);
+          } else if (prev === undefined) {
+            mapa.set(k, null);
+          }
+        }
+      };
+
       try {
-        const provinciasRef = collection(doc(firestore, 'coberturaLegal', empresaKey), 'provincias');
-        const snapshot = await getDocs(provinciasRef);
-
-        snapshot.forEach((provinciaDoc) => {
-          const data = provinciaDoc.data() as Record<string, unknown>;
-          // Campo esperado en Firestore:
-          // /coberturaLegal/{empresa}/provincias/{provincia} -> "COBERTURA LEGAL PROVINCIAL"
-          const coberturaRaw =
-            data['COBERTURA LEGAL PROVINCIAL'] ??
-            // fallback por si existiera con otro casing/clave
-            data['coberturaLegalProvincial'] ??
-            data['coberturaLegalProvincia'] ??
-            data['coberturaLegal'];
-          const coberturaFormateada =
-            typeof coberturaRaw === 'number' || typeof coberturaRaw === 'string'
-              ? formatearPorcentaje(coberturaRaw)
-              : null;
-
-          mapa.set(normalizeText(provinciaDoc.id), coberturaFormateada);
-        });
+        for (const empresaKey of candidatosEmpresaCoberturaLegal) {
+          const provinciasRef = collection(doc(firestore, 'coberturaLegal', empresaKey), 'provincias');
+          const snapshot = await getDocs(provinciasRef);
+          if (snapshot.empty) continue;
+          snapshot.forEach((d) =>
+            registerProvinciaDoc({
+              id: d.id,
+              data: () => d.data() as Record<string, unknown>,
+            })
+          );
+        }
       } catch (err) {
-        console.error(`Error leyendo coberturaLegal para empresa "${empresaKey}"`, err);
+        console.error(
+          '[OneDriveFolders] coberturaLegal/provincias:',
+          candidatosEmpresaCoberturaLegal,
+          err
+        );
+      }
+
+      if (mapa.size === 0) {
+        console.warn(
+          '[OneDriveFolders] Sin docs en coberturaLegal/.../provincias para candidatos:',
+          candidatosEmpresaCoberturaLegal
+        );
       }
 
       setPorcentajesProvinciaFirestore(mapa);
     };
 
     loadCoberturaPorProvinciaDesdeFirestore();
-  }, [filterByEmpresa, empresaFolderName, empresaNombre, empresaId, normalizeText]);
+  }, [filterByEmpresa, candidatosEmpresaCoberturaLegal, normalizeText, formatearPorcentaje]);
 
   // Cargar COBERTURA LEGAL de sucursales desde Firestore:
   // /cobertura_legal/{nombreSucursal} -> campo "COBERTURA LEGAL"
@@ -1418,11 +1544,15 @@ export default function OneDriveFolders({ empresaId, sucursalId, sucursalNombre,
                           </div>
                         </td>
                         <td className="p-4 align-middle text-center">
-                          {porcentajeCobertura !== null ? (
-                            <span className="font-semibold text-gray-700">{porcentajeCobertura}%</span>
-                          ) : (
-                            <span className="text-gray-400">-</span>
-                          )}
+                          <span
+                            className={`inline-flex min-w-[3.75rem] items-center justify-center rounded-lg border px-2.5 py-1 text-sm tabular-nums shadow-sm ${
+                              porcentajeCobertura !== null
+                                ? 'border-gray-200 bg-gray-50 font-semibold text-gray-800'
+                                : 'border-dashed border-gray-200 bg-white font-medium text-gray-400'
+                            }`}
+                          >
+                            {porcentajeCobertura !== null ? `${porcentajeCobertura}%` : '—'}
+                          </span>
                         </td>
                         <td className="p-4 align-middle text-right">
                           <div className="flex items-center justify-end gap-2">
@@ -1599,11 +1729,18 @@ export default function OneDriveFolders({ empresaId, sucursalId, sucursalNombre,
                       <div className="font-medium text-gray-900 mb-1 break-words">
                         {item.name}
                       </div>
-                      {porcentajeCoberturaMobile !== null && (
-                        <div className="text-xs text-gray-500 mt-1">
-                          Cobertura Legal: <span className="font-semibold text-gray-700">{porcentajeCoberturaMobile}%</span>
-                        </div>
-                      )}
+                      <div className="mt-2 flex flex-wrap items-center gap-2">
+                        <span className="text-xs text-gray-500">Cobertura Legal</span>
+                        <span
+                          className={`inline-flex min-w-[3.25rem] items-center justify-center rounded-lg border px-2 py-0.5 text-xs tabular-nums shadow-sm ${
+                            porcentajeCoberturaMobile !== null
+                              ? 'border-gray-200 bg-gray-50 font-semibold text-gray-800'
+                              : 'border-dashed border-gray-200 bg-white font-medium text-gray-400'
+                          }`}
+                        >
+                          {porcentajeCoberturaMobile !== null ? `${porcentajeCoberturaMobile}%` : '—'}
+                        </span>
+                      </div>
                       {item.type === 'file' && item.size && (
                         <div className="text-xs text-gray-500">
                           {formatFileSize(item.size)}
