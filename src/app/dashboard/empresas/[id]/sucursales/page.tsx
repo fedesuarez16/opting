@@ -66,7 +66,7 @@ export default function SucursalesPage({ params }: SucursalesPageProps) {
   console.log('SucursalesPage - Todas las empresas disponibles:', empresas.map(e => ({ id: e.id, nombre: e.nombre })));
   console.log('SucursalesPage - Sucursales:', sucursales);
   console.log('SucursalesPage - Loading sucursales:', loading);
-  console.log('SucursalesPage - Error:', error);
+  if (error != null) console.log('SucursalesPage - Error:', error);
   console.log('SucursalesPage - Empresa encontrada:', empresa);
   
   const [showModal, setShowModal] = useState(false);

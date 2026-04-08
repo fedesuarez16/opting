@@ -108,28 +108,47 @@ export async function getOneDriveFilesWithToken(accessToken: string, folderId: s
       },
     });
 
-    return response.data.value;
+    const value = response.data?.value;
+    if (!Array.isArray(value)) {
+      console.warn('[OneDrive] Graph children response sin array "value":', response.data);
+      return [];
+    }
+    return value;
   } catch (error: unknown) {
-    console.error('Error getting OneDrive files:', (error as any).response?.data);
-    throw new Error(`Failed to get files: ${(error as any).response?.data?.error?.message || (error instanceof Error ? error.message : 'Unknown error')}`);
+    const ax = error as { response?: { status?: number; data?: { error?: { message?: string; code?: string } } } };
+    console.error('Error getting OneDrive files:', ax.response?.status, ax.response?.data);
+    const msg =
+      ax.response?.data?.error?.message ||
+      (error instanceof Error ? error.message : 'Unknown error');
+    throw new Error(`Failed to get files (${ax.response?.status ?? '?'}): ${msg}`);
   }
 }
 
-// Helper para buscar carpetas
+// Helper para buscar carpetas (OData: comilla simple en el texto se escapa duplicándola)
 export async function searchOneDriveFolders(accessToken: string, query: string) {
   try {
-    const url = `https://graph.microsoft.com/v1.0/me/drive/root/search(q='${encodeURIComponent(query)}')`;
+    const escaped = query.replace(/'/g, "''");
+    const url = `https://graph.microsoft.com/v1.0/me/drive/root/search(q='${escaped}')`;
 
     const response = await axios.get(url, {
       headers: {
-        'Authorization': `Bearer ${accessToken}`,
+        Authorization: `Bearer ${accessToken}`,
         'Content-Type': 'application/json',
       },
     });
 
-    return response.data.value.filter((item: { folder?: unknown }) => item.folder);
+    const value = response.data?.value;
+    if (!Array.isArray(value)) {
+      console.warn('[OneDrive] Graph search response sin array "value":', response.data);
+      return [];
+    }
+    return value.filter((item: { folder?: unknown }) => item.folder);
   } catch (error: unknown) {
-    console.error('Error searching folders:', (error as any).response?.data);
-    throw new Error(`Failed to search folders: ${(error as any).response?.data?.error?.message || (error instanceof Error ? error.message : 'Unknown error')}`);
+    const ax = error as { response?: { status?: number; data?: { error?: { message?: string; code?: string } } } };
+    console.error('Error searching folders:', ax.response?.status, ax.response?.data);
+    const msg =
+      ax.response?.data?.error?.message ||
+      (error instanceof Error ? error.message : 'Unknown error');
+    throw new Error(`Failed to search folders (${ax.response?.status ?? '?'}): ${msg}`);
   }
 }

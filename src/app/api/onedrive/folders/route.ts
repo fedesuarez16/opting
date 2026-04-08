@@ -16,6 +16,21 @@ interface OneDriveItem {
   size?: number;
 }
 
+/** Firestore puede devolver string ISO, Timestamp admin, o objeto cliente serializado */
+function toExpiresDate(raw: unknown): Date {
+  if (raw == null) return new Date(0);
+  if (raw instanceof Date) return raw;
+  if (typeof raw === 'object' && raw !== null && 'toDate' in raw && typeof (raw as { toDate: () => Date }).toDate === 'function') {
+    return (raw as { toDate: () => Date }).toDate();
+  }
+  if (typeof raw === 'object' && raw !== null && 'seconds' in raw && typeof (raw as { seconds: number }).seconds === 'number') {
+    const s = (raw as { seconds: number }).seconds;
+    return new Date(s * 1000);
+  }
+  const d = new Date(String(raw));
+  return Number.isNaN(d.getTime()) ? new Date(0) : d;
+}
+
 async function getValidAccessToken(): Promise<string> {
   // Obtener tokens guardados
   const tokenDoc = await adminFirestore
@@ -28,7 +43,7 @@ async function getValidAccessToken(): Promise<string> {
   }
 
   const data = tokenDoc.data()!;
-  const expiresAt = new Date(data.expires_at);
+  const expiresAt = toExpiresDate(data.expires_at);
   const now = new Date();
 
   // Si el token aún es válido (con 5 minutos de margen)
@@ -164,24 +179,65 @@ export async function GET(req: NextRequest) {
 
   } catch (error: any) {
     console.error('Error in OneDrive folders API:', error);
-    
-    if (error.message.includes('No tokens found')) {
+
+    const message = typeof error?.message === 'string' ? error.message : 'Internal server error';
+
+    // Secreto de cliente Azure vencido o inválido: no es fallo de "carpeta no encontrada"
+    const azureSecretExpired =
+      message.includes('AADSTS7000222') ||
+      message.includes('7000222') ||
+      /client secret keys.*expired/i.test(message) ||
+      message.toLowerCase().includes('invalid_client');
+
+    if (azureSecretExpired) {
       return NextResponse.json(
-        { 
+        {
+          error: 'Azure client secret expired',
+          code: 'azure_client_secret_expired',
+          message,
+          userMessageEs:
+            'El secreto de cliente (client secret) de la aplicación en Microsoft Azure venció. En Azure Portal: App registrations → tu app → Certificates & secrets → creá un nuevo secret, copiá el valor en la variable AZURE_CLIENT_SECRET del servidor y reiniciá. Después volvé a iniciar sesión en OneDrive (/api/auth/login).',
+          docsUrl: 'https://aka.ms/NewClientSecret',
+        },
+        { status: 503 }
+      );
+    }
+
+    if (message.includes('No tokens found')) {
+      return NextResponse.json(
+        {
           error: 'Not authenticated',
           message: 'Please login first',
-          loginUrl: '/api/auth/login'
+          loginUrl: '/api/auth/login',
         },
         { status: 401 }
       );
     }
-    
+
+    // Errores de Graph devueltos como "Failed to get files (401): ..."
+    const statusMatch = message.match(/\((\d{3})\):/);
+    const graphHintStatus = statusMatch ? parseInt(statusMatch[1], 10) : null;
+    if (graphHintStatus === 401) {
+      return NextResponse.json(
+        {
+          error: 'Not authenticated',
+          message,
+          loginUrl: '/api/auth/login',
+        },
+        { status: 401 }
+      );
+    }
+
     return NextResponse.json(
-      { 
-        error: error.message || 'Internal server error',
-        details: process.env.NODE_ENV === 'development' ? error.stack : undefined
+      {
+        error: message,
+        hint:
+          process.env.NODE_ENV === 'development'
+            ? 'Revisá tokens en Firestore config/onedrive_tokens, variables AZURE_* y que el login OneDrive sea reciente.'
+            : undefined,
+        details: process.env.NODE_ENV === 'development' ? error?.stack : undefined,
       },
-      { status: 500 }
+      { status: graphHintStatus && graphHintStatus >= 400 && graphHintStatus < 600 ? graphHintStatus : 500 }
     );
   }
 }

@@ -28,6 +28,33 @@ interface OneDriveItem {
   downloadUrl?: string;
 }
 
+type OneDriveApiErrorBody = {
+  code?: string;
+  error?: string;
+  message?: string;
+  userMessageEs?: string;
+};
+
+function isOneDriveAzureConfigError(data: OneDriveApiErrorBody | null, status: number): boolean {
+  if (!data) return false;
+  if (data.code === 'azure_client_secret_expired') return true;
+  if (status === 503 && String(data.error || '').includes('Azure')) return true;
+  const blob = `${data.error || ''} ${data.message || ''}`;
+  return (
+    blob.includes('AADSTS7000222') ||
+    blob.includes('7000222') ||
+    /client secret keys.*expired/i.test(blob) ||
+    blob.toLowerCase().includes('invalid_client')
+  );
+}
+
+function oneDriveAzureConfigUserMessage(data: OneDriveApiErrorBody | null): string {
+  return (
+    data?.userMessageEs ||
+    'OneDrive no está disponible: el secreto de cliente de Azure expiró o hubo un error de configuración. Contactá al administrador del sistema.'
+  );
+}
+
 /**
  * syncCoberturaLegalProvincia guarda `{ ...data }` del body; las claves suelen ser las columnas del sheet,
  * no siempre "COBERTURA LEGAL PROVINCIAL".
@@ -581,6 +608,12 @@ export default function OneDriveFolders({ empresaId, sucursalId, sucursalNombre,
           setItems([]);
           return;
         }
+
+        if (!rootResponse.ok && isOneDriveAzureConfigError(rootData, rootResponse.status)) {
+          setError(oneDriveAzureConfigUserMessage(rootData));
+          setItems([]);
+          return;
+        }
         
         if (rootResponse.ok && rootData.success && rootData.folders && rootData.folders.length > 0) {
           console.log('✅ [OneDrive] Root folders found:', rootData.folders.length);
@@ -623,6 +656,12 @@ export default function OneDriveFolders({ empresaId, sucursalId, sucursalNombre,
             setItems([]);
             return;
           }
+
+          if (!searchResponse.ok && isOneDriveAzureConfigError(searchData, searchResponse.status)) {
+            setError(oneDriveAzureConfigUserMessage(searchData));
+            setItems([]);
+            return;
+          }
           
           if (searchResponse.ok && searchData.success && searchData.folders && searchData.folders.length > 0) {
             console.log('✅ [OneDrive] Search found folders:', searchData.folders.length, 'matches');
@@ -660,6 +699,12 @@ export default function OneDriveFolders({ empresaId, sucursalId, sucursalNombre,
             setItems([]);
             return;
           }
+
+          if (isOneDriveAzureConfigError(rootData, rootResponse.status)) {
+            setError(oneDriveAzureConfigUserMessage(rootData));
+            setItems([]);
+            return;
+          }
           
           // No se encontró la carpeta
           console.log('❌ [OneDrive] Empresa folder not found:', empresaNombre);
@@ -692,6 +737,12 @@ export default function OneDriveFolders({ empresaId, sucursalId, sucursalNombre,
         // Si es un error de autenticación, guardar información adicional
         if (response.status === 401 || errorMsg.includes('Not authenticated') || errorMsg.includes('No tokens found')) {
           setError('Not authenticated');
+          setItems([]);
+          return;
+        }
+
+        if (isOneDriveAzureConfigError(data, response.status)) {
+          setError(oneDriveAzureConfigUserMessage(data));
           setItems([]);
           return;
         }
